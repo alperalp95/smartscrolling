@@ -1,0 +1,27 @@
+{
+  "name": "@smartscrolling/pipeline",
+  "version": "1.0.0",
+  "description": "AI data ingestion pipeline for SmartScrolling facts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "run:wikipedia": "node src/runners/wikipedia.js",
+    "run:nasa": "node src/runners/nasa.js",
+    "run:pdf-curated": "node src/runners/pdf-curated.js",
+    "run:reddit": "node src/runners/reddit.js",
+    "run:all": "node src/runners/run-all.js",
+    "ingest:book-sections": "node src/runners/ingest-book-sections.js",
+    "cleanup:book-sections": "node src/runners/cleanup-book-sections.js",
+    "backfill:media": "node src/runners/backfill-fact-media.js",
+    "backfill:visual-key": "node src/runners/backfill-fact-visual-keys.js",
+    "cleanup:media": "node src/runners/cleanup-fact-media.js",
+    "cleanup:facts": "node src/runners/cleanup-facts.js",
+    "report:facts": "node src/runners/report-facts.js"
+  },
+  "dependencies": {
+    "groq-sdk": "^0.7.0",
+    "@supabase/supabase-js": "^2.49.4",
+    "node-fetch": "^3.3.2",
+    "dotenv": "^16.4.5"
+  }
+}

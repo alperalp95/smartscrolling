@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartScrolling — Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#000;--bg2:#1c1c1e;--bg3:#2c2c2e;--bg4:#3a3a3c;
+  --sep:rgba(255,255,255,0.08);
+  --t1:#fff;--t2:#8e8e93;--t3:#636366;
+  --brand:#8b5cf6;--brand2:#a78bfa;
+  --orange:#ff9f0a;--green:#30d158;--blue:#0a84ff;--red:#ff453a;
+  --yellow:#ffd60a;--teal:#5ac8fa;
+  --card-bg:rgba(28,28,30,0.95);
+  --blur:blur(20px);
+}
+body{background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Inter',system-ui,-apple-system,sans-serif;overflow:hidden}
+.desktop{display:flex;gap:40px;align-items:center;padding:20px}
+.phone{width:390px;height:844px;background:var(--bg);border-radius:54px;position:relative;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,0.12),0 40px 120px rgba(0,0,0,0.8),inset 0 0 0 1px rgba(255,255,255,0.06)}
+.island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:120px;height:34px;background:#000;border-radius:20px;z-index:100}
+.statusbar{position:absolute;top:0;left:0;right:0;height:54px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;z-index:99;font-size:15px;font-weight:600;color:var(--t1)}
+.statusbar .time{font-size:16px;font-weight:700}
+.statusbar .icons{display:flex;gap:6px;align-items:center}
+.screen{position:absolute;top:0;left:0;right:0;bottom:82px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;opacity:0;pointer-events:none;transform:translateX(30px);transition:all .35s cubic-bezier(.4,0,.2,1)}
+.screen::-webkit-scrollbar{display:none}
+.screen.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.tabbar{position:absolute;bottom:0;left:0;right:0;height:82px;background:rgba(18,18,20,0.85);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-top:1px solid var(--sep);display:flex;z-index:99;padding-bottom:16px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .2s;padding-top:8px}
+.tab-icon{font-size:22px;transition:transform .2s}
+.tab-label{font-size:10px;font-weight:500;color:var(--t2);transition:color .2s}
+.tab.active .tab-label{color:var(--brand2)}
+.tab.active .tab-icon{transform:scale(1.1)}
+.tab:active .tab-icon{transform:scale(0.9)}
+
+/* FEED SCREEN */
+.feed-header{padding:60px 20px 0;background:var(--bg)}
+.greet{font-size:28px;font-weight:800;color:var(--t1);margin-bottom:4px}
+.greet span{color:var(--brand2)}
+.greet-sub{font-size:14px;color:var(--t2)}
+.streak-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,159,10,0.15);border:1px solid rgba(255,159,10,0.3);border-radius:20px;padding:6px 14px;margin-top:12px;font-size:13px;font-weight:600;color:var(--orange)}
+.cats{display:flex;gap:8px;padding:16px 20px;overflow-x:auto;scrollbar-width:none;background:var(--bg)}
+.cats::-webkit-scrollbar{display:none}
+.cat{flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;border:1px solid var(--sep);color:var(--t2);background:var(--bg3)}
+.cat.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.cards-wrap{padding:0 16px 20px;display:flex;flex-direction:column;gap:14px}
+.fact-card{background:var(--bg2);border-radius:20px;overflow:hidden;border:1px solid var(--sep)}
+.card-top{height:140px;position:relative;display:flex;align-items:flex-end;padding:16px}
+.card-cat{font-size:11px;font-weight:700;letter-spacing:.5px;padding:4px 10px;border-radius:10px;background:rgba(0,0,0,0.4);color:#fff;backdrop-filter:blur(10px)}
+.card-verified{position:absolute;top:14px;right:14px;background:rgba(48,209,88,0.2);border:1px solid rgba(48,209,88,0.4);border-radius:10px;padding:4px 8px;font-size:10px;font-weight:600;color:var(--green)}
+.card-body{padding:16px}
+.card-title{font-size:17px;font-weight:700;color:var(--t1);margin-bottom:8px;line-height:1.3}
+.card-text{font-size:14px;color:var(--t2);line-height:1.6}
+.card-source{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;color:var(--t3)}
+.card-actions{display:flex;padding:12px 16px;border-top:1px solid var(--sep);gap:4px}
+.card-action{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:12px;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--t2)}
+.card-action:active{background:var(--bg3);transform:scale(0.95)}
+.card-action.liked{color:var(--red)}
+.card-action.saved{color:var(--brand2)}
+
+/* LIBRARY SCREEN */
+.lib-header{padding:60px 20px 16px;background:var(--bg)}
+.lib-title{font-size:32px;font-weight:800;color:var(--t1)}
+.search-bar{margin:0 16px 16px;display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:14px;padding:11px 14px}
+.search-bar input{background:none;border:none;outline:none;color:var(--t1);font-size:15px;font-family:inherit;flex:1}
+.search-bar input::placeholder{color:var(--t3)}
+.section-header{display:flex;justify-content:space-between;align-items:center;padding:8px 20px 12px}
+.section-title{font-size:20px;font-weight:700;color:var(--t1)}
+.section-more{font-size:14px;color:var(--brand2);font-weight:500;cursor:pointer}
+.continue-row{display:flex;gap:12px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.continue-row::-webkit-scrollbar{display:none}
+.continue-card{flex-shrink:0;width:140px;cursor:pointer}
+.book-cover{width:140px;height:200px;border-radius:14px;display:flex;align-items:flex-end;padding:10px;position:relative;overflow:hidden}
+.book-cover-inner{position:absolute;inset:0;border-radius:14px}
+.book-progress-bar{height:3px;border-radius:2px;background:rgba(255,255,255,0.2);margin-top:8px}
+.book-progress-fill{height:100%;border-radius:2px;background:var(--brand2)}
+.book-title-small{font-size:13px;font-weight:600;color:var(--t1);margin-top:6px}
+.book-author-small{font-size:11px;color:var(--t2);margin-top:2px}
+.books-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 16px 20px}
+.book-grid-item{cursor:pointer}
+.book-cover-lg{width:100%;aspect-ratio:2/3;border-radius:14px;position:relative;overflow:hidden;margin-bottom:8px}
+.book-cover-lg-inner{position:absolute;inset:0}
+.premium-badge{position:absolute;top:8px;right:8px;background:rgba(255,159,10,0.9);border-radius:8px;padding:3px 7px;font-size:10px;font-weight:700;color:#000}
+.book-title-grid{font-size:14px;font-weight:600;color:var(--t1)}
+.book-author-grid{font-size:12px;color:var(--t2);margin-top:2px}
+
+/* READER SCREEN */
+.reader-nav{position:sticky;top:0;background:rgba(0,0,0,0.8);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);padding:54px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--sep);z-index:10}
+.back-btn{width:32px;height:32px;background:var(--bg3);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px}
+.reader-book-title{font-size:15px;font-weight:600;color:var(--t1);flex:1}
+.reader-page{font-size:13px;color:var(--t2)}
+.reader-body{padding:24px 22px 40px;line-height:1.9;font-size:16px;color:rgba(255,255,255,0.85)}
+.hl-key{background:rgba(255,214,10,0.2);color:var(--yellow);border-radius:4px;padding:1px 3px;cursor:pointer;font-weight:500;transition:background .2s}
+.hl-key:active,.hl-key:hover{background:rgba(255,214,10,0.35)}
+.hl-ref{background:rgba(90,200,250,0.2);color:var(--teal);border-radius:4px;padding:1px 3px;cursor:pointer;font-weight:500;transition:background .2s}
+.hl-ref:active,.hl-ref:hover{background:rgba(90,200,250,0.35)}
+.reader-progress{position:sticky;bottom:0;padding:12px 22px;background:rgba(0,0,0,0.8);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-top:1px solid var(--sep)}
+.reader-prog-bar{height:3px;background:var(--bg3);border-radius:2px}
+.reader-prog-fill{height:100%;border-radius:2px;background:var(--brand);width:22%}
+
+/* AI POPUP */
+.popup-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.5);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(4px)}
+.popup-overlay.open{opacity:1;pointer-events:all}
+.ai-popup{position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:24px 24px 0 0;padding:0 0 82px;transform:translateY(100%);transition:transform .4s cubic-bezier(.4,0,.2,1);z-index:201}
+.popup-overlay.open .ai-popup{transform:translateY(0)}
+.popup-handle{width:36px;height:4px;background:var(--bg4);border-radius:2px;margin:12px auto}
+.popup-header{padding:4px 20px 16px;border-bottom:1px solid var(--sep)}
+.popup-word{font-size:22px;font-weight:800;color:var(--t1)}
+.popup-type{font-size:12px;color:var(--brand2);font-weight:600;margin-top:2px}
+.popup-content{padding:16px 20px}
+.popup-label{font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
+.popup-text{font-size:14px;color:var(--t2);line-height:1.7}
+.popup-ai-box{background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);border-radius:14px;padding:14px;margin-top:14px}
+.popup-ai-label{font-size:11px;font-weight:700;color:var(--brand2);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.popup-ai-text{font-size:13px;color:rgba(255,255,255,0.75);line-height:1.6}
+.popup-ask-btn{margin:14px 20px 0;width:calc(100% - 40px);padding:14px;background:var(--brand);border-radius:14px;border:none;color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s}
+.popup-ask-btn:active{opacity:.8}
+
+/* PROFILE SCREEN */
+.profile-header{padding:60px 20px 20px;background:var(--bg)}
+.profile-title{font-size:32px;font-weight:800;color:var(--t1)}
+.profile-card{margin:0 16px 16px;background:var(--bg2);border-radius:20px;padding:20px;border:1px solid var(--sep)}
+.profile-user{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.avatar{width:60px;height:60px;border-radius:20px;background:linear-gradient(135deg,var(--brand),#ec4899);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff}
+.profile-name{font-size:18px;font-weight:700;color:var(--t1)}
+.profile-plan{font-size:12px;color:var(--brand2);font-weight:600;background:rgba(139,92,246,0.15);padding:3px 9px;border-radius:8px;display:inline-block;margin-top:4px}
+.streak-section{background:rgba(255,159,10,0.1);border:1px solid rgba(255,159,10,0.2);border-radius:14px;padding:14px}
+.streak-num{font-size:36px;font-weight:900;color:var(--orange)}
+.streak-label{font-size:13px;color:var(--t2)}
+.week-dots{display:flex;justify-content:space-between;margin-top:14px}
+.week-day{display:flex;flex-direction:column;align-items:center;gap:4px}
+.day-dot{width:28px;height:28px;border-radius:10px;background:var(--bg3)}
+.day-dot.done{background:var(--orange)}
+.day-dot.today{background:var(--orange);box-shadow:0 0 12px rgba(255,159,10,0.5)}
+.day-label{font-size:10px;color:var(--t3)}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 16px 16px}
+.stat-card{background:var(--bg2);border-radius:16px;padding:14px;text-align:center;border:1px solid var(--sep)}
+.stat-num{font-size:24px;font-weight:800;color:var(--t1)}
+.stat-label{font-size:11px;color:var(--t2);margin-top:2px}
+.settings-list{margin:0 16px 20px;background:var(--bg2);border-radius:16px;overflow:hidden;border:1px solid var(--sep)}
+.setting-row{display:flex;align-items:center;padding:14px 16px;gap:12px;cursor:pointer;transition:background .15s}
+.setting-row:not(:last-child){border-bottom:1px solid var(--sep)}
+.setting-row:active{background:var(--bg3)}
+.setting-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.setting-name{flex:1;font-size:15px;color:var(--t1)}
+.setting-arrow{color:var(--t3);font-size:14px}
+
+/* GRADIENT HELPERS */
+.g1{background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)}
+.g2{background:linear-gradient(135deg,#1a0a0a,#3d1515,#7a0000)}
+.g3{background:linear-gradient(135deg,#0a1a0a,#0d3318,#155724)}
+.g4{background:linear-gradient(135deg,#0d0d1a,#1a0d2e,#2d1b5e)}
+.g5{background:linear-gradient(135deg,#1a0d0a,#2e1506,#5e2d00)}
+.g6{background:linear-gradient(135deg,#0a1a1a,#0d2e2e,#0d4040)}
+</style>
+</head>
+<body>
+<div class="desktop">
+<div class="phone" id="phone">
+  <div class="island"></div>
+  <div class="statusbar">
+    <span class="time">22:53</span>
+    <div class="icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div>
+  </div>
+
+  <!-- FEED SCREEN -->
+  <div class="screen active" id="s-feed">
+    <div class="feed-header">
+      <div class="greet">Merhaba, <span>Ahmet</span> 👋</div>
+      <div class="greet-sub">Bugün ne öğrenmek istersin?</div>
+      <div class="streak-pill">🔥 7 Günlük Seri</div>
+    </div>
+    <div class="cats">
+      <div class="cat active">Hepsi</div>
+      <div class="cat">🔬 Bilim</div>
+      <div class="cat">📜 Tarih</div>
+      <div class="cat">🧠 Felsefe</div>
+      <div class="cat">💻 Teknoloji</div>
+      <div class="cat">🌱 Sağlık</div>
+    </div>
+    <div class="cards-wrap">
+
+      <div class="fact-card">
+        <div class="card-top g1">
+          <div class="card-cat">🔬 BİLİM</div>
+          <div class="card-verified">✓ Doğrulandı</div>
+        </div>
+        <div class="card-body">
+          <div class="card-title">Kara Delikler Işığı Nasıl Emer?</div>
+          <div class="card-text">Kara delikler, o kadar yoğun bir kütleye sahiptir ki etrafındaki uzay-zamana o denli derin bir eğrilik yaratırlar. Bu eğrilik, olay ufku adı verilen sınırın ötesinde ışık dahil hiçbir şeyin kaçmasına izin vermez.</div>
+          <div class="card-source">📖 NASA / Astrophysical Journal · 2023</div>
+        </div>
+        <div class="card-actions">
+          <div class="card-action liked" onclick="this.classList.toggle('liked')">❤️ 284</div>
+          <div class="card-action saved" onclick="this.classList.toggle('saved')">🔖 Kaydet</div>
+          <div class="card-action">↗ Paylaş</div>
+        </div>
+      </div>
+
+      <div class="fact-card">
+        <div class="card-top g2">
+          <div class="card-cat">📜 TARİH</div>
+          <div class="card-verified">✓ Doğrulandı</div>
+        </div>
+        <div class="card-body">
+          <div class="card-title">Roma İmparatorluğu Neden Çöktü?</div>
+          <div class="card-text">Batı Roma İmparatorluğu'nun çöküşü tek bir sebebe bağlanamaz. Askeri baskılar, ekonomik sorunlar, siyasi istikrarsızlık ve dini dönüşümler yüzyıllar içinde birikip imparatorluğu içten çürüttü.</div>
+          <div class="card-source">📖 Wikipedia · Peer Reviewed</div>
+        </div>
+        <div class="card-actions">
+          <div class="card-action" onclick="this.classList.toggle('liked')">🤍 512</div>
+          <div class="card-action" onclick="this.classList.toggle('saved')">🔖 Kaydet</div>
+          <div class="card-action">↗ Paylaş</div>
+        </div>
+      </div>
+
+      <div class="fact-card">
+        <div class="card-top g3">
+          <div class="card-cat">🧠 FELSEFE</div>
+          <div class="card-verified">✓ Doğrulandı</div>
+        </div>
+        <div class="card-body">
+          <div class="card-title">Stoacılık: Modern Dünya İçin Antik Hikmet</div>
+          <div class="card-text">Stoacılar, mutluluğun dış koşullara bağlı olmadığını savundu. Kontrolümüzde olanla olmayan arasındaki ayrım, günlük kaygıları azaltmanın temel anahtarıdır. Marcus Aurelius bu felsefeyi imparatorluk yönetiminde uyguladı.</div>
+          <div class="card-source">📖 Stanford Encyclopedia of Philosophy</div>
+        </div>
+        <div class="card-actions">
+          <div class="card-action" onclick="this.classList.toggle('liked')">🤍 731</div>
+          <div class="card-action" onclick="this.classList.toggle('saved')">🔖 Kaydet</div>
+          <div class="card-action">↗ Paylaş</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LIBRARY SCREEN -->
+  <div class="screen" id="s-library">
+    <div class="lib-header"><div class="lib-title">Kütüphane 📚</div></div>
+    <div class="search-bar">
+      <span style="color:var(--t3)">🔍</span>
+      <input type="text" placeholder="Kitap veya yazar ara...">
+    </div>
+    <div class="section-header">
+      <div class="section-title">Devam Et</div>
+      <div class="section-more">Tümü</div>
+    </div>
+    <div class="continue-row">
+      <div class="continue-card" onclick="showReader()">
+        <div class="book-cover g4">
+          <div class="book-cover-inner"></div>
+          <span style="font-size:32px;position:relative">📖</span>
+        </div>
+        <div class="book-progress-bar"><div class="book-progress-fill" style="width:65%"></div></div>
+        <div class="book-title-small">Sapiens</div>
+        <div class="book-author-small">Yuval Noah Harari · %65</div>
+      </div>
+      <div class="continue-card">
+        <div class="book-cover g5">
+          <div class="book-cover-inner"></div>
+          <span style="font-size:32px;position:relative">🌌</span>
+        </div>
+        <div class="book-progress-bar"><div class="book-progress-fill" style="width:12%"></div></div>
+        <div class="book-title-small">Cosmos</div>
+        <div class="book-author-small">Carl Sagan · %12</div>
+      </div>
+    </div>
+    <div class="section-header" style="margin-top:20px">
+      <div class="section-title">Tüm Kitaplar</div>
+      <div class="section-more">Filtrele</div>
+    </div>
+    <div class="books-grid">
+      <div class="book-grid-item" onclick="showReader()">
+        <div class="book-cover-lg"><div class="book-cover-lg-inner g4"></div><span style="position:absolute;bottom:10px;left:10px;font-size:28px">📖</span></div>
+        <div class="book-title-grid">Sapiens</div>
+        <div class="book-author-grid">Yuval Noah Harari</div>
+      </div>
+      <div class="book-grid-item">
+        <div class="book-cover-lg"><div class="book-cover-lg-inner g2" style="background:linear-gradient(135deg,#1a0d1a,#2d0d3d,#4a0d6b)"></div><span style="position:absolute;bottom:10px;left:10px;font-size:28px">🧬</span><div class="premium-badge">PRİM</div></div>
+        <div class="book-title-grid">A Brief History of Time</div>
+        <div class="book-author-grid">Stephen Hawking</div>
+      </div>
+      <div class="book-grid-item">
+        <div class="book-cover-lg"><div class="book-cover-lg-inner g5"></div><span style="position:absolute;bottom:10px;left:10px;font-size:28px">🌌</span></div>
+        <div class="book-title-grid">Cosmos</div>
+        <div class="book-author-grid">Carl Sagan</div>
+      </div>
+      <div class="book-grid-item">
+        <div class="book-cover-lg"><div class="book-cover-lg-inner g3"></div><span style="position:absolute;bottom:10px;left:10px;font-size:28px">🧠</span><div class="premium-badge">PRİM</div></div>
+        <div class="book-title-grid">Thinking Fast & Slow</div>
+        <div class="book-author-grid">Daniel Kahneman</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- READER SCREEN -->
+  <div class="screen" id="s-reader">
+    <div class="reader-nav">
+      <div class="back-btn" onclick="goBack()">‹</div>
+      <div class="reader-book-title">Sapiens</div>
+      <div class="reader-page">Sayfa 42 / 248</div>
+    </div>
+    <div class="reader-body">
+      <p style="margin-bottom:20px">
+        Bundan yaklaşık yetmiş bin yıl önce, <span class="hl-key" onclick="openPopup('Homo sapiens','keyword')">Homo sapiens</span> Afrika'dan çıkmaya başladı ve gezegeni hızla fethetti. Bu göç dalgasının ardındaki güç, tarihçilerin "
+        <span class="hl-key" onclick="openPopup('kognitif devrim','keyword')">kognitif devrim</span>" olarak adlandırdığı evrimsel bir sıçramaydı.
+      </p>
+      <p style="margin-bottom:20px">
+        <span class="hl-ref" onclick="openPopup('Charles Darwin','reference')">Darwin</span>'in evrim teorisine göre bu gelişme, beyin yapısındaki rastlantısal bir genetik mutasyonla başladı. İnsanlar artık gerçekte var olmayan şeyler hakkında düşünebiliyor, dil kullanarak soyut kavramlar üretebiliyordu.
+      </p>
+      <p style="margin-bottom:20px">
+        Bu sayede <span class="hl-key" onclick="openPopup('Ticaret ağları','keyword')">ticaret ağları</span> kuruldu; tanışmayan insanlar ortak bir mit, bir din ya da bir ulus fikri etrafında örgütlenebildi. Diğer türlerin sahip olmadığı bu yetenek, <span class="hl-key" onclick="openPopup('Homo sapiens','keyword')">Homo sapiens</span>'i gezegenin hâkimine dönüştürdü.
+      </p>
+      <p>
+        Neandertaller, <span class="hl-ref" onclick="openPopup('Homo erectus','reference')">Homo erectus</span> ve diğer insan türleri binlerce yıl boyunca Avrasya'da yaşadı. Ancak <span class="hl-key" onclick="openPopup('kognitif devrim','keyword')">kognitif devrim</span>'in ardından onların tamamı tarih sahnesinden silindi.
+      </p>
+    </div>
+    <div class="reader-progress">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:11px;color:var(--t3)">
+        <span>%22 tamamlandı</span><span>206 sayfa kaldı</span>
+      </div>
+      <div class="reader-prog-bar"><div class="reader-prog-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- PROFILE SCREEN -->
+  <div class="screen" id="s-profile">
+    <div class="profile-header"><div class="profile-title">Profil 👤</div></div>
+    <div class="profile-card">
+      <div class="profile-user">
+        <div class="avatar">A</div>
+        <div>
+          <div class="profile-name">Ahmet Yılmaz</div>
+          <div class="profile-plan">Ücretsiz Plan</div>
+        </div>
+      </div>
+      <div class="streak-section">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="streak-num">🔥 7</div>
+            <div class="streak-label">Günlük Seri — Rekor: 14 gün</div>
+          </div>
+          <div style="text-align:right;font-size:24px">🏆</div>
+        </div>
+        <div class="week-dots" style="margin-top:14px">
+          <div class="week-day"><div class="day-dot done"></div><div class="day-label">Pzt</div></div>
+          <div class="week-day"><div class="day-dot done"></div><div class="day-label">Sal</div></div>
+          <div class="week-day"><div class="day-dot done"></div><div class="day-label">Çar</div></div>
+          <div class="week-day"><div class="day-dot done"></div><div class="day-label">Per</div></div>
+          <div class="week-day"><div class="day-dot done"></div><div class="day-label">Cum</div></div>
+          <div class="week-day"><div class="day-dot done"></div><div class="day-label">Cmt</div></div>
+          <div class="week-day"><div class="day-dot today"></div><div class="day-label">Paz</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--brand2)">42</div>
+        <div class="stat-label">Bilgi Kartı</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--green)">2</div>
+        <div class="stat-label">Kitap</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--blue)">35</div>
+        <div class="stat-label">AI Sorgu</div>
+      </div>
+    </div>
+    <div class="settings-list">
+      <div class="setting-row"><div class="setting-icon" style="background:rgba(255,159,10,0.2)">⭐</div><div class="setting-name">Premium'a Geç</div><div class="setting-arrow">›</div></div>
+      <div class="setting-row"><div class="setting-icon" style="background:rgba(10,132,255,0.2)">🔔</div><div class="setting-name">Bildirimler</div><div class="setting-arrow">›</div></div>
+      <div class="setting-row"><div class="setting-icon" style="background:rgba(139,92,246,0.2)">🌙</div><div class="setting-name">Görünüm</div><div class="setting-arrow">›</div></div>
+      <div class="setting-row"><div class="setting-icon" style="background:rgba(48,209,88,0.2)">🌍</div><div class="setting-name">Dil</div><div class="setting-arrow">›</div></div>
+      <div class="setting-row"><div class="setting-icon" style="background:rgba(255,69,58,0.2)">🚪</div><div class="setting-name" style="color:var(--red)">Çıkış Yap</div><div class="setting-arrow">›</div></div>
+    </div>
+  </div>
+
+  <!-- AI POPUP OVERLAY -->
+  <div class="popup-overlay" id="popup" onclick="closePopup(event)">
+    <div class="ai-popup">
+      <div class="popup-handle"></div>
+      <div class="popup-header">
+        <div class="popup-word" id="popup-word">Homo sapiens</div>
+        <div class="popup-type" id="popup-type">🔑 Anahtar Kavram</div>
+      </div>
+      <div class="popup-content">
+        <div class="popup-label">Tanım</div>
+        <div class="popup-text" id="popup-def">Modern insanın bilimsel adıdır. Latince'de "akıllı insan" anlamına gelir. Yaklaşık 300.000 yıl önce Afrika'da ortaya çıkmıştır.</div>
+        <div class="popup-ai-box">
+          <div class="popup-ai-label">✨ Yapay Zeka Açıklaması</div>
+          <div class="popup-ai-text" id="popup-ai">Bu kavramın kitaptaki bağlamında Harari, Homo sapiens'in diğer insan türlerinden farkını kognitif yeteneklere bağlıyor. Diğer türler somut gerçekleri paylaşabilirken, yalnızca biz kurgusal gerçekler — para, uluslar, şirketler — hakkında konuşabiliyoruz.</div>
+        </div>
+      </div>
+      <button class="popup-ask-btn" onclick="goToChat()">✨ Yapay Zekaya Sor</button>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tabbar">
+    <div class="tab active" id="tab-feed" onclick="switchTab('feed')">
+      <div class="tab-icon">✦</div>
+      <div class="tab-label">Akış</div>
+    </div>
+    <div class="tab" id="tab-library" onclick="switchTab('library')">
+      <div class="tab-icon">📚</div>
+      <div class="tab-label">Kütüphane</div>
+    </div>
+    <div class="tab" id="tab-reader" onclick="switchTab('reader')">
+      <div class="tab-icon">📖</div>
+      <div class="tab-label">Okuyucu</div>
+    </div>
+    <div class="tab" id="tab-profile" onclick="switchTab('profile')">
+      <div class="tab-icon">👤</div>
+      <div class="tab-label">Profil</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const defs = {
+  'Homo sapiens': {type:'🔑 Anahtar Kavram', def:'Modern insanın bilimsel adıdır. Latince\'de "akıllı insan" anlamına gelir. Africa\'da ~300.000 yıl önce ortaya çıktı.', ai:'Harari bu kavramı kullanarak diğer Homo türlerinden (Neandertaller, Homo erectus) ayrımımızı vurgular. Temel farkımız: soyut düşünce ve kurgu üretme kapasitesi.'},
+  'kognitif devrim': {type:'🔑 Anahtar Kavram', def:'~70.000 yıl önce Homo sapiens\'in zihinsel kapasitesinde yaşandığı düşünülen ani sıçrama. Soyut düşünce, dil ve kurgu üretimini mümkün kıldı.', ai:'Harari\'ye göre bu devrim, genellikle beyin yapısındaki küçük genetik bir mutasyondan kaynaklandı. Bu sayede insanlar "gerçekte olmayan" şeyleri hayal edebildi.'},
+  'Charles Darwin': {type:'🔗 Referans — Bilim İnsanı', def:'İngiliz natüralist (1809-1882). Doğal seleksiyon yoluyla evrimi açıklayan "Türlerin Kökeni" (1859) kitabıyla bilim tarihini değiştirdi.', ai:'Harari, Darwin\'in evrim teorisini insanın biyolojik gelişimini açıklamak için temel çerçeve olarak kullanır; ancak kültürel evrimin biyolojik evrimin önüne geçtiğini savunur.'},
+  'Ticaret ağları': {type:'🔑 Anahtar Kavram', def:'Ortak para, hukuk veya güven sistemi üzerine kurulu, tanışmayan bireyler arasındaki mal ve hizmet alışverişi ağları.', ai:'Sapiens\'te ticaret ağları, kurguya (para, yasalar) olan ortak inancın somut bir ürünü olarak ele alınır. Bu ağlar büyük toplulukların iş birliğini mümkün kıldı.'},
+  'Homo erectus': {type:'🔗 Referans — Kavram', def:'Yaklaşık 1.9 milyon yıl önce ortaya çıkan soyu tükenmiş insan türü. İlk kez Africa\'dan Asya\'ya yayıldı.', ai:'Harari, Homo erectus\'ü Homo sapiens ile karşılaştırarak kognitif devrimin ne denli büyük bir sıçrama olduğunu pekiştirir.'}
+};
+
+let currentTab = 'feed';
+let prevTab = 'feed';
+
+function switchTab(tab) {
+  document.getElementById('s-' + currentTab).classList.remove('active');
+  document.getElementById('tab-' + currentTab).classList.remove('active');
+  currentTab = tab;
+  document.getElementById('s-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function showReader() { switchTab('reader'); }
+
+function goBack() { switchTab('library'); }
+
+function openPopup(word, type) {
+  const d = defs[word] || {type:'🔑 Kavram', def:'Tanım yükleniyor...', ai:'AI açıklaması hazırlanıyor...'};
+  document.getElementById('popup-word').textContent = word;
+  document.getElementById('popup-type').textContent = d.type;
+  document.getElementById('popup-def').textContent = d.def;
+  document.getElementById('popup-ai').textContent = '';
+  document.getElementById('popup').classList.add('open');
+  typeText('popup-ai', d.ai);
+}
+
+function typeText(id, text) {
+  const el = document.getElementById(id);
+  let i = 0;
+  el.textContent = '';
+  const iv = setInterval(() => {
+    el.textContent += text[i++];
+    if (i >= text.length) clearInterval(iv);
+  }, 18);
+}
+
+function closePopup(e) {
+  if (e.target.id === 'popup') document.getElementById('popup').classList.remove('open');
+}
+
+function goToChat() {
+  document.getElementById('popup').classList.remove('open');
+  alert('🤖 Yapay Zeka Chat ekranı — yakında gelecek!');
+}
+
+document.querySelectorAll('.cat').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.cat').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

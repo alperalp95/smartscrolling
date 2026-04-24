@@ -1,0 +1,27 @@
+{
+  "name": "smartscrolling",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "git:auto-sync": "node scripts/git-auto-sync.mjs",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "cd apps/mobile && npx tsc --noEmit",
+    "check:edge-functions": "powershell -NoProfile -Command \"if (!(Test-Path 'supabase/functions/ai-chat/index.ts')) { throw 'Missing supabase/functions/ai-chat/index.ts' }; if (!(Test-Path 'supabase/functions/ai-definition/index.ts')) { throw 'Missing supabase/functions/ai-definition/index.ts' }\"",
+    "books:ingest-sections": "npm --workspace @smartscrolling/pipeline run ingest:book-sections --",
+    "books:cleanup-sections": "npm --workspace @smartscrolling/pipeline run cleanup:book-sections --",
+    "facts:cleanup": "npm --workspace @smartscrolling/pipeline run cleanup:facts --",
+    "facts:run-all": "npm --workspace @smartscrolling/pipeline run run:all --",
+    "facts:report": "npm --workspace @smartscrolling/pipeline run report:facts --"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.1",
+    "@types/react": "^19.1.17",
+    "eas-cli": "^18.7.0",
+    "turbo": "^2.1.2"
+  }
+}

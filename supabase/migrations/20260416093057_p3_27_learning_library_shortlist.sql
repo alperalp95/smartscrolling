@@ -1,0 +1,143 @@
+INSERT INTO public.books (
+  id,
+  title,
+  author,
+  description,
+  category,
+  total_pages,
+  epub_url,
+  is_premium,
+  access_tier,
+  language
+)
+VALUES
+  (
+    '11111111-1111-1111-1111-111111111111',
+    'Kendime Dusunceler',
+    'Marcus Aurelius',
+    'Stoaci dusunce, oz disiplin ve zihinsel berraklik uzerine yazilmis kisa ama yogun notlar. Uygulamanin serbest anchor metni olarak kullanilir.',
+    'Felsefe',
+    160,
+    'https://www.gutenberg.org/ebooks/2680',
+    FALSE,
+    'free_anchor',
+    'en'
+  ),
+  (
+    '22222222-2222-2222-2222-222222222222',
+    'The Problems of Philosophy',
+    'Bertrand Russell',
+    'Bilginin sinirlari, gerceklik ve felsefi sorusturma uzerine acik ve ogretici bir giris metni.',
+    'Felsefe',
+    160,
+    'https://www.gutenberg.org/ebooks/5827',
+    TRUE,
+    'premium',
+    'en'
+  ),
+  (
+    '33333333-3333-3333-3333-333333333333',
+    'On Liberty',
+    'John Stuart Mill',
+    'Bireysel ozgurluk, devlet sinirlari ve toplumsal baski uzerine klasik bir siyaset felsefesi metni.',
+    'Felsefe',
+    220,
+    'https://www.gutenberg.org/ebooks/34901',
+    TRUE,
+    'premium',
+    'en'
+  ),
+  (
+    '44444444-4444-4444-4444-444444444444',
+    'Common Sense',
+    'Thomas Paine',
+    'Amerikan bagimsizlik dusuncesini halk diliyle savunan, tarihsel ve siyasal etkisi yuksek bir metin.',
+    'Tarih',
+    96,
+    'https://www.gutenberg.org/ebooks/147',
+    TRUE,
+    'premium',
+    'en'
+  ),
+  (
+    '55555555-5555-5555-5555-555555555555',
+    'The Republic',
+    'Plato',
+    'Adalet, devlet duzeni ve ideal toplum fikrini tartisan temel bir felsefe klasigi.',
+    'Felsefe',
+    360,
+    'https://www.gutenberg.org/ebooks/1497',
+    TRUE,
+    'premium',
+    'en'
+  ),
+  (
+    '66666666-6666-6666-6666-666666666666',
+    'The Prince',
+    'Niccolo Machiavelli',
+    'Iktidar, liderlik ve devlet yonetimi uzerine siyasal gercekligi merkeze alan etkili bir metin.',
+    'Siyaset',
+    140,
+    'https://www.gutenberg.org/ebooks/1232',
+    TRUE,
+    'premium',
+    'en'
+  ),
+  (
+    '77777777-7777-7777-7777-777777777777',
+    'Relativity: The Special and General Theory',
+    'Albert Einstein',
+    'Einsteinin gorelilik kuramini genis kitlelere anlatmak icin yazdigi bilimsel aciklama metni.',
+    'Bilim',
+    180,
+    'https://www.gutenberg.org/ebooks/5001',
+    TRUE,
+    'premium',
+    'en'
+  ),
+  (
+    '88888888-8888-8888-8888-888888888888',
+    'The Voyage of the Beagle',
+    'Charles Darwin',
+    'Dogal gozlem, kesif ve evrimsel dusuncenin erken sekillenisi icin guclu bir bilim tarihi kaynagi.',
+    'Bilim',
+    480,
+    'https://www.gutenberg.org/ebooks/944',
+    TRUE,
+    'premium',
+    'en'
+  ),
+  (
+    '99999999-9999-9999-9999-999999999999',
+    'A Short History of the World',
+    'H. G. Wells',
+    'Uygarliklarin, savaslarin ve dunyanin donusumunun hizli ama kapsayici bir tarih anlatimi.',
+    'Tarih',
+    420,
+    'https://www.gutenberg.org/ebooks/35461',
+    TRUE,
+    'premium',
+    'en'
+  ),
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    'The Souls of Black Folk',
+    'W. E. B. Du Bois',
+    'Irk, toplum, egitim ve modernlik uzerine tarihsel ve sosyolojik derinligi yuksek bir klasik.',
+    'Toplum',
+    240,
+    'https://www.gutenberg.org/ebooks/408',
+    TRUE,
+    'premium',
+    'en'
+  )
+ON CONFLICT (id) DO UPDATE SET
+  title = EXCLUDED.title,
+  author = EXCLUDED.author,
+  description = EXCLUDED.description,
+  category = EXCLUDED.category,
+  total_pages = EXCLUDED.total_pages,
+  epub_url = EXCLUDED.epub_url,
+  is_premium = EXCLUDED.is_premium,
+  access_tier = EXCLUDED.access_tier,
+  language = EXCLUDED.language;

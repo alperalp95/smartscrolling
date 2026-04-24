@@ -1,0 +1,9 @@
+**/.expo
+**/.expo/**
+apps/mobile/.expo
+apps/mobile/.expo/**
+apps/mobile/.expo/types
+apps/mobile/.expo/types/**
+supabase/.temp
+supabase/.temp/**
+apps/mobile/expo-env.d.ts

@@ -1,0 +1,33 @@
+node_modules/
+apps/*/node_modules/
+packages/*/node_modules/
+
+.expo/
+.expo-shared/
+.turbo/
+dist/
+build/
+web-build/
+
+*.log
+expo-web*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+.DS_Store
+Thumbs.db
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+apps/*/.env
+packages/*/.env
+
+# Local Git metadata from nested repos
+apps/*/.git/
+
+# Supabase local machine state
+supabase/.temp/
+supabase/.branches/

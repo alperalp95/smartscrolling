@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1.01",
+    "title": "İngiltere'de trafik niçin soldan akar?",
+    "category": "history",
+    "pages": "6-7",
+    "extract": "Bir zamanlar herkes İngilizler gibi yolun solundan gidiyordu. Bunun için de çok geçerli bir sebep vardı. Yüzyıllarca önce yolun karşısından gelenin dost mu, yoksa düşman mı olduğunu kestirmek mümkün değildi. İnsanların çoğu sağ ellerini kullandıkları için, yolun solundan giderek sağ ellerini kılıçlarını hemen çekecek şekilde hazır bekletirlerdi. Yolun solundan seyahat, papanın Roma'ya gelecek hacıların yolda karmaşaya sebep vermemeleri için yolun solundan gitmelerini söylemesiyle resmileşti ve yüzyıllar boyu devam etti. ABD'de çok atlı posta arabalarında sürücü en arkada ve soldaki atın üstünde oturuyordu; bu da yolun solundan gidildiğinde karşıdan geleni ve yolu kontrol etmeyi zorlaştırıyordu. Çok geçmeden ABD'de trafik sağdan işlemeye başladı. Fransız İhtilali sırasında Robespierre Parislilerden yolların sağından gitmelerini istedi. Napolyon da ordularına yolların sağından gitme emri verdi ve zaptettiği ülkelerde bunu yaydı. İngiltere hiçbir zaman Napolyon tarafından zapt edilemediğinden bu alışkanlığından vazgeçmedi; Avustralya ve Hindistan gibi eski sömürgelerinde de aynı usul devam etti. Modern otomobil teknolojisinin öncüsü olan ABD'de sürücü koltuğu ve direksiyon sağdan gidişe uygun olarak sola yerleştirildi ve bu model dünyanın birçok bölgesine yayıldı."
+  },
+  {
+    "id": "1.02",
+    "title": "Niçin trafik lambaları kırmızı, sarı ve yeşildir?",
+    "category": "technology",
+    "pages": "7-8",
+    "extract": "Trafik ışıkları uygulaması, önceleri demiryollarının trenleri kontrol için kullandığı sinyaller örnek alınarak başladı. Demiryolları idaresi kırmızı rengi dur sinyali olarak seçmişti; çünkü kırmızı yüzyıllardır tehlikenin ve ölümün simgesi olmuştur. İlk dönemlerde ikaz ışığı yeşil, geç ışığı ise beyazdı. Ancak beyaz sinyal sokak lambaları ile karıştırılabiliyor, ayrıca dur işaretlerindeki kırmızı mercekler düşünce ışık beyazlaşıyor ve geç sinyali sanılarak kazalara yol açıyordu. Sonunda kırmızı dur, yeşil geç, sarı ise ikaz sinyali olarak kullanılmaya başlandı. Karayollarında ilk trafik lambası otomobillerden önce, 1868'de Londra'da gazla çalışan bir sistem olarak denendi; fakat patlayıp polisi yaralayınca kaldırıldı. Otomobillerin çoğalmasıyla şehirlerde trafik daha büyük sorun haline geldi. Günümüzdekilere benzeyen ilk elektrikli otomatik trafik lambasını Garrett Morgan geliştirdi; 1914'te denemelere başladı ve 1923'te patentini aldı. Çok geçmeden sarı lamba da eklendi ve sistem bütün dünyaya yayıldı."
+  }
+]
