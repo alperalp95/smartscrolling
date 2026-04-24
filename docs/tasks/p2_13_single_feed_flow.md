@@ -113,6 +113,12 @@ Dokumantasyon uyumu gerekirse:
   - Butona basildiginda mevcut refresh/rotation davranisini tetikle.
   - Kart genis moddayken butonu gizle.
 
+- [x] **P2-13j - Anon overlay ve expanded okuma cakismalarini duzelt**
+  - Anon login hint'i varken yukari donus butonunu hint'in altinda konumlandir.
+  - Dev review hotspot'unu yukari donus butonuyla cakismayacak konuma al.
+  - Expanded okuma modunda sag aksiyon kolonunu gizle.
+  - Expanded metin alanini ekranin orta-ust bolgesinde ayri scroll alani gibi ac.
+
 ## Uygulama Sirasi
 
 1. `P2-13a`
@@ -124,6 +130,7 @@ Dokumantasyon uyumu gerekirse:
 7. `P2-13g`
 8. `P2-13h`
 9. `P2-13i`
+10. `P2-13j`
 
 ## Kabul Kriterleri
 
@@ -143,6 +150,7 @@ Dokumantasyon uyumu gerekirse:
 - Bookmark auth prompt ve premium upsell davranisi korunur.
 - Kart uzerindeki kaynak, tag ve kategori metadatasi veri olarak korunur.
 - Akis basi donus butonu sadece feed icinde yeterince asagi inildikten sonra gorunur.
+- Anon login hint'i, yukari donus butonu ve expanded okuma metni birbirinin uzerine binmez.
 
 ## Riskler
 

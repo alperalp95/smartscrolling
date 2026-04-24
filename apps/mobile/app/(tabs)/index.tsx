@@ -467,6 +467,7 @@ function FullScreenFactCard({
   const duration = (item.read_time_sq || 15) * 1000;
   const cardBottomOffset = tabBarHeight + Math.max(bottomInset, Platform.OS === 'ios' ? 12 : 8);
   const cardTopOffset = Math.max(topInset + 72, 96);
+  const expandedCardTopOffset = Math.max(topInset + 120, Math.round(height * 0.24));
   const remoteMediaUrl = resolveRemoteMediaUrl(item.media_url);
   const remoteRetryMediaUrl = resolveRemoteRetryMediaUrl(item.media_url);
   const isRemoteUrlBlocked = remoteMediaUrl ? failedRemoteImageUrls.has(remoteMediaUrl) : false;
@@ -656,7 +657,7 @@ function FullScreenFactCard({
           s.infoContainer,
           isExpanded ? s.infoContainerExpanded : null,
           isExpanded
-            ? { top: cardTopOffset, bottom: cardBottomOffset + 20 }
+            ? { top: expandedCardTopOffset, bottom: cardBottomOffset + 24 }
             : { bottom: cardBottomOffset + 20 },
         ]}
       >
@@ -767,22 +768,24 @@ function FullScreenFactCard({
         )}
       </View>
 
-      <View style={[s.actionContainer, { bottom: cardBottomOffset + 20 }]}>
-        <TouchableOpacity style={s.actionBtnVertical} onPress={() => toggleLike(item.id)}>
-          <Text style={s.actionEmoji}>{isLiked ? '❤️' : '🤍'}</Text>
-          <Text style={s.actionLabel}>{(item.likes || 0) + (isLiked ? 1 : 0)}</Text>
-        </TouchableOpacity>
+      {!isExpanded ? (
+        <View style={[s.actionContainer, { bottom: cardBottomOffset + 20 }]}>
+          <TouchableOpacity style={s.actionBtnVertical} onPress={() => toggleLike(item.id)}>
+            <Text style={s.actionEmoji}>{isLiked ? '❤️' : '🤍'}</Text>
+            <Text style={s.actionLabel}>{(item.likes || 0) + (isLiked ? 1 : 0)}</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={s.actionBtnVertical} onPress={() => toggleSave(item.id)}>
-          <Text style={s.actionEmoji}>{isSaved ? '🔖' : '📑'}</Text>
-          <Text style={s.actionLabel}>Kaydet</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={s.actionBtnVertical} onPress={() => toggleSave(item.id)}>
+            <Text style={s.actionEmoji}>{isSaved ? '🔖' : '📑'}</Text>
+            <Text style={s.actionLabel}>Kaydet</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={s.actionBtnVertical}>
-          <Text style={s.actionEmoji}>↗</Text>
-          <Text style={s.actionLabel}>Paylas</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={s.actionBtnVertical}>
+            <Text style={s.actionEmoji}>↗</Text>
+            <Text style={s.actionLabel}>Paylas</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
       <View style={[s.progressBarBg, { bottom: cardBottomOffset }]}>
         <Animated.View
@@ -926,6 +929,9 @@ export default function FeedScreen() {
     seenFactIds.length >= 12 &&
     !expandedCardId;
   const shouldShowBackToTop = activeFactIndex >= BACK_TO_TOP_VISIBLE_INDEX && !expandedCardId;
+  const backToTopButtonTop = !user
+    ? Math.max(insets.top + 92, Platform.OS === 'web' ? 88 : 104)
+    : Math.max(insets.top + 58, Platform.OS === 'web' ? 56 : 68);
 
   const openReviewForFact = (fact: FactType) => {
     const existingReview = reviewsByFactId[fact.id];
@@ -1153,10 +1159,7 @@ export default function FeedScreen() {
           accessibilityLabel="Akisin basina don ve yenile"
           activeOpacity={0.82}
           onPress={handleBackToTopRefresh}
-          style={[
-            s.backToTopButton,
-            { top: Math.max(insets.top + 14, Platform.OS === 'web' ? 18 : 28) },
-          ]}
+          style={[s.backToTopButton, { top: backToTopButtonTop }]}
         >
           <Text style={s.backToTopIcon}>↑</Text>
         </TouchableOpacity>
@@ -1523,8 +1526,8 @@ const s = StyleSheet.create({
   },
   reviewModeHotspot: {
     height: 44,
+    left: 8,
     position: 'absolute',
-    right: 8,
     top: 4,
     width: 44,
   },
