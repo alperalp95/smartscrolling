@@ -119,6 +119,10 @@ Dokumantasyon uyumu gerekirse:
   - Expanded okuma modunda sag aksiyon kolonunu gizle.
   - Expanded metin alanini ekranin orta-ust bolgesinde ayri scroll alani gibi ac.
 
+- [x] **P2-13k - Expanded okuma hizasi ve scroll sahipligini duzelt**
+  - Expanded okuma alanini tum kullanici tiplerinde ust overlay alaninin altina hizala.
+  - Expanded metin scroll'unun arka feed/card scroll'una karismasini engelle.
+
 ## Uygulama Sirasi
 
 1. `P2-13a`
@@ -131,6 +135,7 @@ Dokumantasyon uyumu gerekirse:
 8. `P2-13h`
 9. `P2-13i`
 10. `P2-13j`
+11. `P2-13k`
 
 ## Kabul Kriterleri
 
@@ -151,6 +156,7 @@ Dokumantasyon uyumu gerekirse:
 - Kart uzerindeki kaynak, tag ve kategori metadatasi veri olarak korunur.
 - Akis basi donus butonu sadece feed icinde yeterince asagi inildikten sonra gorunur.
 - Anon login hint'i, yukari donus butonu ve expanded okuma metni birbirinin uzerine binmez.
+- Expanded okuma metni scroll edilirken arka feed hareket etmez.
 
 ## Riskler
 

@@ -467,7 +467,7 @@ function FullScreenFactCard({
   const duration = (item.read_time_sq || 15) * 1000;
   const cardBottomOffset = tabBarHeight + Math.max(bottomInset, Platform.OS === 'ios' ? 12 : 8);
   const cardTopOffset = Math.max(topInset + 72, 96);
-  const expandedCardTopOffset = Math.max(topInset + 120, Math.round(height * 0.24));
+  const expandedCardTopOffset = Math.max(topInset + 112, 128);
   const remoteMediaUrl = resolveRemoteMediaUrl(item.media_url);
   const remoteRetryMediaUrl = resolveRemoteRetryMediaUrl(item.media_url);
   const isRemoteUrlBlocked = remoteMediaUrl ? failedRemoteImageUrls.has(remoteMediaUrl) : false;
@@ -703,6 +703,8 @@ function FullScreenFactCard({
             <ScrollView
               style={s.expandedScroll}
               nestedScrollEnabled
+              onMoveShouldSetResponder={() => true}
+              onStartShouldSetResponder={() => true}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={s.expandedScrollContent}
             >
