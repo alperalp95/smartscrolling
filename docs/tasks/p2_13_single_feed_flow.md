@@ -107,6 +107,12 @@ Dokumantasyon uyumu gerekirse:
     - Kart genisletme ve kapatma calisiyor.
     - Premium upsell trigger'i bozulmuyor.
 
+- [x] **P2-13i - Akis basi donus ve yenileme butonu**
+  - Belli bir karttan sonra sosyal medya benzeri yukari ok butonu goster.
+  - Butona basildiginda feed'i basa al.
+  - Butona basildiginda mevcut refresh/rotation davranisini tetikle.
+  - Kart genis moddayken butonu gizle.
+
 ## Uygulama Sirasi
 
 1. `P2-13a`
@@ -117,6 +123,7 @@ Dokumantasyon uyumu gerekirse:
 6. `P2-13f`
 7. `P2-13g`
 8. `P2-13h`
+9. `P2-13i`
 
 ## Kabul Kriterleri
 
@@ -135,6 +142,7 @@ Dokumantasyon uyumu gerekirse:
 - Kart genisletme, pause ve auto-advance davranisi korunur.
 - Bookmark auth prompt ve premium upsell davranisi korunur.
 - Kart uzerindeki kaynak, tag ve kategori metadatasi veri olarak korunur.
+- Akis basi donus butonu sadece feed icinde yeterince asagi inildikten sonra gorunur.
 
 ## Riskler
 

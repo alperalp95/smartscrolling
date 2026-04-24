@@ -216,6 +216,7 @@ const VISUAL_PRESETS: Record<
 };
 
 const failedRemoteImageUrls = new Set<string>();
+const BACK_TO_TOP_VISIBLE_INDEX = 3;
 
 function resolveMediaSource(mediaUrl: string | null | undefined): ImageSourcePropType | null {
   if (!mediaUrl) {
@@ -812,6 +813,7 @@ export default function FeedScreen() {
   const feedScreenOpenedAt = useRef(Date.now());
   const hasLoggedFirstCard = useRef(false);
   const [activeFactId, setActiveFactId] = useState<string | null>(null);
+  const [activeFactIndex, setActiveFactIndex] = useState(0);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [orderedFacts, setOrderedFacts] = useState<FactType[]>([]);
   const [seenFactIds, setSeenFactIds] = useState<string[]>([]);
@@ -872,10 +874,15 @@ export default function FeedScreen() {
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken<FactType>[] }) => {
-      const firstItem = viewableItems[0]?.item;
+      const firstViewableItem = viewableItems[0];
+      const firstItem = firstViewableItem?.item;
 
       if (firstItem?.id) {
         setActiveFactId(firstItem.id);
+      }
+
+      if (typeof firstViewableItem?.index === 'number') {
+        setActiveFactIndex(firstViewableItem.index);
       }
     },
   ).current;
@@ -918,6 +925,7 @@ export default function FeedScreen() {
     !dismissedFeedUpsell &&
     seenFactIds.length >= 12 &&
     !expandedCardId;
+  const shouldShowBackToTop = activeFactIndex >= BACK_TO_TOP_VISIBLE_INDEX && !expandedCardId;
 
   const openReviewForFact = (fact: FactType) => {
     const existingReview = reviewsByFactId[fact.id];
@@ -1007,6 +1015,15 @@ export default function FeedScreen() {
     if (index < orderedFacts.length - 1) {
       flatListRef.current?.scrollToIndex({ index: index + 1, animated: true });
     }
+  };
+
+  const handleBackToTopRefresh = () => {
+    setExpandedCardId(null);
+    setActiveFactIndex(0);
+    setActiveFactId(orderedFacts[0]?.id ?? null);
+    bumpFeedRotation();
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    void refreshFacts();
   };
 
   const handleExpandedChange = (cardId: string, expanded: boolean) => {
@@ -1129,6 +1146,20 @@ export default function FeedScreen() {
             }
           />
         </View>
+      ) : null}
+
+      {shouldShowBackToTop ? (
+        <TouchableOpacity
+          accessibilityLabel="Akisin basina don ve yenile"
+          activeOpacity={0.82}
+          onPress={handleBackToTopRefresh}
+          style={[
+            s.backToTopButton,
+            { top: Math.max(insets.top + 14, Platform.OS === 'web' ? 18 : 28) },
+          ]}
+        >
+          <Text style={s.backToTopIcon}>↑</Text>
+        </TouchableOpacity>
       ) : null}
 
       {!user || isReviewMode || __DEV__ ? (
@@ -1571,6 +1602,29 @@ const s = StyleSheet.create({
     color: '#cbd5e1',
     fontSize: 11,
     fontWeight: '700',
+  },
+  backToTopButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderColor: 'rgba(0,0,0,0.12)',
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    width: 44,
+    zIndex: 80,
+  },
+  backToTopIcon: {
+    color: '#111',
+    fontSize: 24,
+    fontWeight: '900',
+    lineHeight: 28,
   },
   webHiddenScreen: {
     display: 'none',
