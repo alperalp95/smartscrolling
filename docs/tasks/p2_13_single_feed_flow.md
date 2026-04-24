@@ -46,35 +46,35 @@ Dokumantasyon uyumu gerekirse:
 
 ## Alt Gorevler
 
-- [ ] **P2-13a - Kategori bagimliliklarini netlestir**
+- [x] **P2-13a - Kategori bagimliliklarini netlestir**
   - `apps/mobile/app/(tabs)/index.tsx` icinde `CATEGORIES`, `normalizeCategoryKey`, `activeCategory`, `setActiveCategory`, `ensureCategoryHasContent`, kategori chip render'i ve kategoriye bagli `orderedFacts` hesaplamasini son kez kontrol et.
   - `apps/mobile/src/store/feedStore.ts` icinde kategori state/action kullaniminin sadece feed filtresi icin var oldugunu dogrula.
   - Bu alt gorev kod davranisini degistirmez; sadece uygulama sirasini netlestirir.
 
-- [ ] **P2-13b - Feed ordering'i tek akisa indir**
+- [x] **P2-13b - Feed ordering'i tek akisa indir**
   - `orderedFacts` icin kaynak listeyi her zaman `facts` olarak kullan.
   - `orderingKey` icinden kategori bilgisini cikar.
   - `feedRotationSeed`, pull-to-refresh ve app active refresh davranisini koru.
   - Pagination append sirasini koruyan `buildStableFeedOrder` davranisini bozma.
 
-- [ ] **P2-13c - Ust kategori UI'ini kaldir**
+- [x] **P2-13c - Ust kategori UI'ini kaldir**
   - Ustteki yatay kategori chip listesini kaldir.
   - `SmartScrolling` logo chip'ini kategori secici olarak kullanma.
   - Misafir hint ve review topbar gibi kategori disi overlay'leri koru.
   - Safe area/top spacing davranisini kontrol et.
 
-- [ ] **P2-13d - Review mode tetigini koru**
+- [x] **P2-13d - Review mode tetigini koru**
   - Mevcut review mode logo chip long-press'e bagli oldugu icin kategori UI'i kalkarken kaybolma riskini ele al.
   - Review mode'u son kullaniciya acmadan, dev-only minimal bir tetikle koru.
   - Review modal, tag listesi ve JSON export akisina dokunma.
 
-- [ ] **P2-13e - Feed store kategori API'sini sadelestir**
+- [x] **P2-13e - Feed store kategori API'sini sadelestir**
   - `activeCategory` state'ini kaldir.
   - `setActiveCategory` action'ini kaldir.
   - `ensureCategoryHasContent` action'ini kaldir.
   - Feed fetch, pagination, refresh, save ve like davranislarini aynen koru.
 
-- [ ] **P2-13f - Dead code ve style temizligi yap**
+- [x] **P2-13f - Dead code ve style temizligi yap**
   - `CATEGORIES` ve `normalizeCategoryKey` artik kullanilmiyorsa kaldir.
   - Kategori chip'lerine ait stilleri kaldir:
     - `staticTopNavbar` sadece baska overlay icin gerekmiyorsa
@@ -88,14 +88,14 @@ Dokumantasyon uyumu gerekirse:
     - `chipTextActive`
   - Review modal/tag stillerine dokunma.
 
-- [ ] **P2-13g - Dokumantasyon uyumunu guncelle**
+- [x] **P2-13g - Dokumantasyon uyumunu guncelle**
   - Bu task dosyasinda tamamlanan alt gorevleri isaretle.
   - Gerekirse `docs/roadmap_todo.md` icinde Phase 2 listesine tek akis kararini ekle.
   - Gerekirse `docs/architecture.md` veya `docs/CHANGELOG.md` icinde "kategori filtresi aktif" gibi artik yanlis kalacak ifadeleri duzelt.
 
 - [ ] **P2-13h - Dogrulama**
-  - TypeScript kontrolu calistir: `npm run typecheck`
-  - Mumkunse lint/format kontrolu calistir: `npm run lint`
+  - [x] TypeScript kontrolu calistir: `npm run typecheck`
+  - [x] Mumkunse lint/format kontrolu calistir: `npm run lint`
   - Feed ekraninda manuel kontrol yap:
     - Feed aciliyor ve ilk kart geliyor.
     - Ustte kategori chip'leri yok.
