@@ -9,7 +9,12 @@
     "enabled": true
   },
   "files": {
-    "ignore": ["**/.expo/**", "supabase/.temp/**", "apps/mobile/expo-env.d.ts"]
+    "ignore": [
+      "**/.expo/**",
+      "supabase/.temp/**",
+      "apps/mobile/expo-env.d.ts",
+      "packages/pipeline/data/pdf-curated/**"
+    ]
   },
   "formatter": {
     "enabled": true,

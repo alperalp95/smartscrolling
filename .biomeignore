@@ -7,3 +7,4 @@ apps/mobile/.expo/types/**
 supabase/.temp
 supabase/.temp/**
 apps/mobile/expo-env.d.ts
+packages/pipeline/data/pdf-curated/**
