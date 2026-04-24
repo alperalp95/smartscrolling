@@ -10,18 +10,15 @@ interface FeedState {
   isLoading: boolean;
   isLoadingMore: boolean;
   hasMore: boolean;
-  activeCategory: string;
   feedRotationSeed: number;
   fetchFacts: (options?: { reset?: boolean }) => Promise<void>;
   loadMoreFacts: () => Promise<void>;
   refreshFacts: () => Promise<void>;
   bumpFeedRotation: () => void;
-  ensureCategoryHasContent: (matcher: (fact: FactType) => boolean) => Promise<void>;
   syncSavedFacts: () => Promise<void>;
   clearSavedFacts: () => void;
   toggleLike: (id: string) => void;
   toggleSave: (id: string) => void;
-  setActiveCategory: (cat: string) => void;
 }
 
 const INITIAL_PAGE_SIZE = 6;
@@ -87,7 +84,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   isLoading: false,
   isLoadingMore: false,
   hasMore: true,
-  activeCategory: 'logo',
   feedRotationSeed: Math.floor(Math.random() * 1_000_000),
 
   fetchFacts: async (options) => {
@@ -170,22 +166,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     set({ feedRotationSeed: Math.floor(Math.random() * 1_000_000) });
   },
 
-  ensureCategoryHasContent: async (matcher) => {
-    let safetyCounter = 0;
-
-    while (
-      get().facts.length > 0 &&
-      !get().facts.some(matcher) &&
-      get().hasMore &&
-      !get().isLoading &&
-      !get().isLoadingMore &&
-      safetyCounter < 3
-    ) {
-      safetyCounter += 1;
-      await get().loadMoreFacts();
-    }
-  },
-
   syncSavedFacts: async () => {
     const userId = await getCurrentUserId();
 
@@ -259,6 +239,4 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       return;
     }
   },
-
-  setActiveCategory: (cat: string) => set({ activeCategory: cat }),
 }));

@@ -105,6 +105,7 @@ Not:
 - [ ] **P2-12** Fact quality review loop: production disi editor feedback katmani ile `good / bad / unsure` ve ozellikle `bad` comment sinyali toplayip Groq prompt/pipeline tuning icin kullan
 - [ ] **P2-12c** Feed review mode UI: debug/internal modda fact kartlari icin hafif `good / bad / unsure` review paneli ve `bad` icin zorunlu comment akisi
 - [ ] **P2-12d** Fact review storage/export: review sinyallerini basit Supabase tablo veya JSON/CSV export modeliyle analiz edilebilir hale getir
+- [ ] **P2-13** Tek akis feed: kategori secme/filtreleme UI ve state'ini kaldir, mevcut feed'i tek kesintisiz akis olarak koru
 - [x] **P2-04** Kategori filtresi (Bilim, Tarih, Felsefe, Teknoloji, Saglik)
 - [x] **P2-05** Icerik veritabani semasi olustur (facts tablosu)
 - [x] **P2-06** Dogrulanmis kaynak etiketleme sistemi
@@ -256,7 +257,7 @@ Not:
 | Ozellik | MVP'de Var mi? | Faz |
 |---|---|---|
 | Gunluk bilgi akisi (scroll feed) | Evet | Phase 2 |
-| Kategori filtresi | Evet | Phase 2 |
+| Kategori filtresi | Kaldirilacak | Phase 2 / P2-13 |
 | Kitap listesi ve okuyucu | Kismen | Phase 3 |
 | Kelime popup (AI tanim) | Kismen | Phase 3 |
 | Yapay Zekaya Sor (sohbet) | Planlandi | Phase 3 |

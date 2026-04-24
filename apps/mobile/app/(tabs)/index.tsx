@@ -32,8 +32,6 @@ import { useAuthStore } from '../../src/store/authStore';
 import { useFeedStore } from '../../src/store/feedStore';
 import type { FactType } from '../../src/types';
 
-const CATEGORIES = ['logo', 'Bilim', 'Tarih', 'Felsefe', 'Teknoloji', 'Saglik'];
-
 const LOCAL_IMAGES: Record<string, ImageSourcePropType> = {
   bg_black_hole: require('../../assets/images/bg_black_hole.png'),
   bg_rome_ruins: require('../../assets/images/bg_rome_ruins.png'),
@@ -218,35 +216,7 @@ const VISUAL_PRESETS: Record<
 };
 
 const failedRemoteImageUrls = new Set<string>();
-
-function normalizeCategoryKey(value: string | null | undefined): string {
-  const normalized = (value ?? '')
-    .normalize('NFD')
-    .replaceAll(/\p{Diacritic}/gu, '')
-    .toLowerCase();
-
-  if (normalized.includes('bilim')) {
-    return 'bilim';
-  }
-
-  if (normalized.includes('tarih')) {
-    return 'tarih';
-  }
-
-  if (normalized.includes('felsefe')) {
-    return 'felsefe';
-  }
-
-  if (normalized.includes('teknoloji')) {
-    return 'teknoloji';
-  }
-
-  if (normalized.includes('saglik')) {
-    return 'saglik';
-  }
-
-  return normalized;
-}
+const BACK_TO_TOP_VISIBLE_INDEX = 3;
 
 function resolveMediaSource(mediaUrl: string | null | undefined): ImageSourcePropType | null {
   if (!mediaUrl) {
@@ -497,6 +467,7 @@ function FullScreenFactCard({
   const duration = (item.read_time_sq || 15) * 1000;
   const cardBottomOffset = tabBarHeight + Math.max(bottomInset, Platform.OS === 'ios' ? 12 : 8);
   const cardTopOffset = Math.max(topInset + 72, 96);
+  const expandedCardTopOffset = Math.max(topInset + 112, 128);
   const remoteMediaUrl = resolveRemoteMediaUrl(item.media_url);
   const remoteRetryMediaUrl = resolveRemoteRetryMediaUrl(item.media_url);
   const isRemoteUrlBlocked = remoteMediaUrl ? failedRemoteImageUrls.has(remoteMediaUrl) : false;
@@ -686,7 +657,7 @@ function FullScreenFactCard({
           s.infoContainer,
           isExpanded ? s.infoContainerExpanded : null,
           isExpanded
-            ? { top: cardTopOffset, bottom: cardBottomOffset + 20 }
+            ? { top: expandedCardTopOffset, bottom: cardBottomOffset + 24 }
             : { bottom: cardBottomOffset + 20 },
         ]}
       >
@@ -732,6 +703,8 @@ function FullScreenFactCard({
             <ScrollView
               style={s.expandedScroll}
               nestedScrollEnabled
+              onMoveShouldSetResponder={() => true}
+              onStartShouldSetResponder={() => true}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={s.expandedScrollContent}
             >
@@ -797,22 +770,24 @@ function FullScreenFactCard({
         )}
       </View>
 
-      <View style={[s.actionContainer, { bottom: cardBottomOffset + 20 }]}>
-        <TouchableOpacity style={s.actionBtnVertical} onPress={() => toggleLike(item.id)}>
-          <Text style={s.actionEmoji}>{isLiked ? '❤️' : '🤍'}</Text>
-          <Text style={s.actionLabel}>{(item.likes || 0) + (isLiked ? 1 : 0)}</Text>
-        </TouchableOpacity>
+      {!isExpanded ? (
+        <View style={[s.actionContainer, { bottom: cardBottomOffset + 20 }]}>
+          <TouchableOpacity style={s.actionBtnVertical} onPress={() => toggleLike(item.id)}>
+            <Text style={s.actionEmoji}>{isLiked ? '❤️' : '🤍'}</Text>
+            <Text style={s.actionLabel}>{(item.likes || 0) + (isLiked ? 1 : 0)}</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={s.actionBtnVertical} onPress={() => toggleSave(item.id)}>
-          <Text style={s.actionEmoji}>{isSaved ? '🔖' : '📑'}</Text>
-          <Text style={s.actionLabel}>Kaydet</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={s.actionBtnVertical} onPress={() => toggleSave(item.id)}>
+            <Text style={s.actionEmoji}>{isSaved ? '🔖' : '📑'}</Text>
+            <Text style={s.actionLabel}>Kaydet</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={s.actionBtnVertical}>
-          <Text style={s.actionEmoji}>↗</Text>
-          <Text style={s.actionLabel}>Paylas</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={s.actionBtnVertical}>
+            <Text style={s.actionEmoji}>↗</Text>
+            <Text style={s.actionLabel}>Paylas</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
       <View style={[s.progressBarBg, { bottom: cardBottomOffset }]}>
         <Animated.View
@@ -843,6 +818,7 @@ export default function FeedScreen() {
   const feedScreenOpenedAt = useRef(Date.now());
   const hasLoggedFirstCard = useRef(false);
   const [activeFactId, setActiveFactId] = useState<string | null>(null);
+  const [activeFactIndex, setActiveFactIndex] = useState(0);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [orderedFacts, setOrderedFacts] = useState<FactType[]>([]);
   const [seenFactIds, setSeenFactIds] = useState<string[]>([]);
@@ -869,15 +845,12 @@ export default function FeedScreen() {
     fetchFacts,
     loadMoreFacts,
     refreshFacts,
-    activeCategory,
-    setActiveCategory,
     likedIds,
     savedIds,
     toggleLike,
     toggleSave,
     feedRotationSeed,
     bumpFeedRotation,
-    ensureCategoryHasContent,
   } = useFeedStore();
   const user = useAuthStore((state) => state.user);
   const hasPremium = useAuthStore((state) => state.hasPremium);
@@ -904,45 +877,33 @@ export default function FeedScreen() {
     };
   }, [bumpFeedRotation, isFocused, refreshFacts]);
 
-  useEffect(() => {
-    if (activeCategory === 'logo') {
-      return;
-    }
-
-    const activeCategoryKey = normalizeCategoryKey(activeCategory);
-    void ensureCategoryHasContent(
-      (fact) => normalizeCategoryKey(fact.category) === activeCategoryKey,
-    );
-  }, [activeCategory, ensureCategoryHasContent]);
-
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken<FactType>[] }) => {
-      const firstItem = viewableItems[0]?.item;
+      const firstViewableItem = viewableItems[0];
+      const firstItem = firstViewableItem?.item;
 
       if (firstItem?.id) {
         setActiveFactId(firstItem.id);
+      }
+
+      if (typeof firstViewableItem?.index === 'number') {
+        setActiveFactIndex(firstViewableItem.index);
       }
     },
   ).current;
 
   useEffect(() => {
-    const baseFacts =
-      activeCategory === 'logo'
-        ? facts
-        : facts.filter(
-            (fact) => normalizeCategoryKey(fact.category) === normalizeCategoryKey(activeCategory),
-          );
-    const orderingKey = `${activeCategory}:${feedRotationSeed}`;
+    const orderingKey = `single:${feedRotationSeed}`;
 
     setOrderedFacts((previous) => {
       if (orderingKeyRef.current !== orderingKey) {
         orderingKeyRef.current = orderingKey;
-        return rotateFacts(baseFacts, feedRotationSeed);
+        return rotateFacts(facts, feedRotationSeed);
       }
 
-      return buildStableFeedOrder(baseFacts, previous, feedRotationSeed);
+      return buildStableFeedOrder(facts, previous, feedRotationSeed);
     });
-  }, [facts, activeCategory, feedRotationSeed]);
+  }, [facts, feedRotationSeed]);
 
   useEffect(() => {
     if (!hasLoggedFirstCard.current && orderedFacts.length > 0) {
@@ -969,6 +930,10 @@ export default function FeedScreen() {
     !dismissedFeedUpsell &&
     seenFactIds.length >= 12 &&
     !expandedCardId;
+  const shouldShowBackToTop = activeFactIndex >= BACK_TO_TOP_VISIBLE_INDEX && !expandedCardId;
+  const backToTopButtonTop = !user
+    ? Math.max(insets.top + 92, Platform.OS === 'web' ? 88 : 104)
+    : Math.max(insets.top + 58, Platform.OS === 'web' ? 56 : 68);
 
   const openReviewForFact = (fact: FactType) => {
     const existingReview = reviewsByFactId[fact.id];
@@ -1058,6 +1023,15 @@ export default function FeedScreen() {
     if (index < orderedFacts.length - 1) {
       flatListRef.current?.scrollToIndex({ index: index + 1, animated: true });
     }
+  };
+
+  const handleBackToTopRefresh = () => {
+    setExpandedCardId(null);
+    setActiveFactIndex(0);
+    setActiveFactId(orderedFacts[0]?.id ?? null);
+    bumpFeedRotation();
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    void refreshFacts();
   };
 
   const handleExpandedChange = (cardId: string, expanded: boolean) => {
@@ -1182,85 +1156,58 @@ export default function FeedScreen() {
         </View>
       ) : null}
 
-      <View style={s.staticTopNavbar} pointerEvents="box-none">
-        <SafeAreaView edges={['top']} pointerEvents="box-none">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[
-              s.catsRow,
-              { paddingTop: Platform.OS === 'web' ? 14 : Math.max(insets.top > 0 ? 10 : 14, 10) },
-            ]}
-          >
-            {CATEGORIES.map((cat) => {
-              if (cat === 'logo') {
-                return (
+      {shouldShowBackToTop ? (
+        <TouchableOpacity
+          accessibilityLabel="Akisin basina don ve yenile"
+          activeOpacity={0.82}
+          onPress={handleBackToTopRefresh}
+          style={[s.backToTopButton, { top: backToTopButtonTop }]}
+        >
+          <Text style={s.backToTopIcon}>↑</Text>
+        </TouchableOpacity>
+      ) : null}
+
+      {!user || isReviewMode || __DEV__ ? (
+        <View style={s.topOverlay} pointerEvents="box-none">
+          <SafeAreaView edges={['top']} pointerEvents="box-none">
+            <View style={s.topOverlayContent}>
+              {__DEV__ ? (
+                <Pressable
+                  accessibilityLabel="Toggle feed review mode"
+                  onLongPress={() => setIsReviewMode((current) => !current)}
+                  style={s.reviewModeHotspot}
+                />
+              ) : null}
+              {!user && (
+                <View style={s.guestHintWrap}>
+                  <Text style={s.guestHintText}>
+                    Misafir modunda kesfet. Kaydetme ve AI gecmisi icin giris yap.
+                  </Text>
                   <TouchableOpacity
-                    key={cat}
-                    onLongPress={() => {
-                      if (__DEV__) {
-                        setIsReviewMode((current) => !current);
-                      }
-                    }}
-                    onPress={() => {
-                      setActiveCategory(cat);
-                      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-                    }}
-                    style={[s.logoChip, isReviewMode ? s.logoChipReviewMode : null]}
+                    onPress={() => router.push('/profile')}
+                    style={s.guestHintButton}
                   >
-                    <Text style={s.logoText}>
-                      {isReviewMode ? 'Review Mode' : 'SmartScrolling'}
-                    </Text>
+                    <Text style={s.guestHintButtonText}>Hesap Ac</Text>
                   </TouchableOpacity>
-                );
-              }
-
-              return (
-                <TouchableOpacity
-                  key={cat}
-                  onPress={() => {
-                    if (activeCategory === cat) {
-                      setActiveCategory('logo');
-                    } else {
-                      setActiveCategory(cat);
-                    }
-                    bumpFeedRotation();
-                    setExpandedCardId(null);
-                    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-                  }}
-                  style={activeCategory === cat ? s.chipActive : s.chip}
-                >
-                  <Text style={activeCategory === cat ? s.chipTextActive : s.chipText}>{cat}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {!user && (
-            <View style={s.guestHintWrap}>
-              <Text style={s.guestHintText}>
-                Misafir modunda kesfet. Kaydetme ve AI gecmisi icin giris yap.
-              </Text>
-              <TouchableOpacity onPress={() => router.push('/profile')} style={s.guestHintButton}>
-                <Text style={s.guestHintButtonText}>Hesap Ac</Text>
-              </TouchableOpacity>
+                </View>
+              )}
+              {isReviewMode ? (
+                <View style={s.reviewModeTopbar}>
+                  <Text style={s.reviewModeTopbarText}>
+                    {Object.keys(reviewsByFactId).length} review hazir
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => void handleExportReviews()}
+                    style={s.reviewModeExportButton}
+                  >
+                    <Text style={s.reviewModeExportButtonText}>JSON Export</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
             </View>
-          )}
-          {isReviewMode ? (
-            <View style={s.reviewModeTopbar}>
-              <Text style={s.reviewModeTopbarText}>
-                {Object.keys(reviewsByFactId).length} review hazir
-              </Text>
-              <TouchableOpacity
-                onPress={() => void handleExportReviews()}
-                style={s.reviewModeExportButton}
-              >
-                <Text style={s.reviewModeExportButtonText}>JSON Export</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-        </SafeAreaView>
-      </View>
+          </SafeAreaView>
+        </View>
+      ) : null}
 
       <Modal
         animationType="slide"
@@ -1566,7 +1513,7 @@ const s = StyleSheet.create({
     zIndex: 10,
   },
   progressBarFill: { height: '100%', backgroundColor: '#fff', borderRadius: 2 },
-  staticTopNavbar: {
+  topOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -1574,11 +1521,17 @@ const s = StyleSheet.create({
     paddingBottom: 16,
     zIndex: 100,
   },
-  catsRow: {
-    paddingHorizontal: 16,
-    gap: 10,
-    flexDirection: 'row',
+  topOverlayContent: {
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+  reviewModeHotspot: {
+    height: 44,
+    left: 8,
+    position: 'absolute',
+    top: 4,
+    width: 44,
   },
   guestHintWrap: {
     alignItems: 'center',
@@ -1635,42 +1588,6 @@ const s = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
-  logoChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 24,
-    backgroundColor: '#8b5cf6',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.2)',
-    shadowColor: '#8b5cf6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  logoText: { fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: -0.2 },
-  logoChipReviewMode: {
-    backgroundColor: '#ef4444',
-    shadowColor: '#ef4444',
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  chipActive: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderWidth: 1,
-    borderColor: '#fff',
-  },
-  chipText: { fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.8)' },
-  chipTextActive: { fontSize: 14, fontWeight: '800', color: '#000' },
   feedUpsellWrap: {
     left: 0,
     position: 'absolute',
@@ -1690,6 +1607,29 @@ const s = StyleSheet.create({
     color: '#cbd5e1',
     fontSize: 11,
     fontWeight: '700',
+  },
+  backToTopButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderColor: 'rgba(0,0,0,0.12)',
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    width: 44,
+    zIndex: 80,
+  },
+  backToTopIcon: {
+    color: '#111',
+    fontSize: 24,
+    fontWeight: '900',
+    lineHeight: 28,
   },
   webHiddenScreen: {
     display: 'none',
