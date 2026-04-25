@@ -11,18 +11,11 @@ const DEFAULT_SAMPLE_PATH = path.resolve(
 );
 
 function cleanPdfExtract(text, sourceTitle) {
-  let cleaned = (text ?? '').trim();
+  const raw = (text ?? '').trim();
 
-  // Remove title repetition at start of extract
-  if (sourceTitle) {
-    const firstLine = cleaned.split('\n')[0].trim();
-    if (firstLine === sourceTitle.trim()) {
-      cleaned = cleaned.slice(cleaned.indexOf('\n') + 1).trim();
-    }
-  }
-
-  // Merge OCR-split characters line by line
-  const lines = cleaned.split('\n');
+  // Step 1: Merge OCR-split characters line by line FIRST
+  // (title itself is also OCR-broken, so merge before title check)
+  const lines = raw.split('\n');
   const merged = [];
 
   for (const line of lines) {
@@ -62,7 +55,24 @@ function cleanPdfExtract(text, sourceTitle) {
     merged.push(t);
   }
 
-  const full = merged.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  let full = merged.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+
+  // Step 2: Remove title repetition at start
+  // OCR splits the title itself across lines, so compare ignoring all whitespace.
+  if (sourceTitle) {
+    const titleNoWS = sourceTitle.trim().replace(/\s+/g, '');
+    const headNoWS = full.replace(/\s+/g, '').slice(0, titleNoWS.length + 5);
+    if (headNoWS.startsWith(titleNoWS)) {
+      // Walk full char-by-char, skip whitespace, count non-whitespace until title is consumed
+      let pos = 0;
+      let matched = 0;
+      while (pos < full.length && matched < titleNoWS.length) {
+        if (!/\s/.test(full[pos])) matched += 1;
+        pos += 1;
+      }
+      full = full.slice(pos).trimStart();
+    }
+  }
 
   if (full.length <= PDF_EXTRACT_MAX_CHARS) {
     return full;
