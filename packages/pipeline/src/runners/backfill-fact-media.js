@@ -117,11 +117,26 @@ async function resolveWikipediaImage(sourceUrl) {
     }
 
     const data = await res.json();
-    return data.originalimage?.source ?? data.thumbnail?.source ?? null;
+    const thumbnail = data.thumbnail?.source ?? null;
+    const original = data.originalimage?.source ?? null;
+
+    if (thumbnail) {
+      return thumbnail;
+    }
+
+    if (original && isSafeImageFormat(original)) {
+      return original;
+    }
+
+    return null;
   } catch (error) {
     console.error('[MediaBackfill] wikipedia fetch error:', error.message);
     return null;
   }
+}
+
+function isSafeImageFormat(url) {
+  return /\.(jpe?g|png|gif|webp)(\?|$)/i.test(url);
 }
 
 function extractWikipediaTitle(sourceUrl) {

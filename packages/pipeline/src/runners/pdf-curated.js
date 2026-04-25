@@ -9,6 +9,7 @@ function parseArgs(argv) {
   const config = {
     count: 10,
     filePath: undefined,
+    offset: 0,
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -26,6 +27,14 @@ function parseArgs(argv) {
     if (arg === '--file' && nextValue && !nextValue.startsWith('--')) {
       config.filePath = nextValue;
     }
+
+    if (arg === '--offset' && nextValue && !nextValue.startsWith('--')) {
+      const parsed = Number.parseInt(nextValue, 10);
+
+      if (!Number.isNaN(parsed) && parsed >= 0) {
+        config.offset = parsed;
+      }
+    }
   }
 
   return config;
@@ -38,6 +47,7 @@ async function main() {
   const items = await fetchPdfCuratedArticles({
     count: config.count,
     filePath: config.filePath,
+    offset: config.offset,
   });
 
   console.log(`${items.length} madde bulundu.`);
