@@ -1,5 +1,7 @@
 import { normalizeText } from './fact-visual-key.js';
 
+const UNSUPPORTED_IMAGE_FORMATS = ['.tif', '.tiff', '.bmp', '.psd', '.raw'];
+
 const BAD_MEDIA_KEYWORDS = [
   'logo',
   'seal',
@@ -44,17 +46,16 @@ export function evaluateFactMedia({ sourceLabel, mediaUrl }) {
     return { ok: false, reason: 'wikipedia_non_free_asset' };
   }
 
-  if (BAD_MEDIA_KEYWORDS.some((keyword) => normalizedMediaUrl.includes(keyword))) {
-    return { ok: false, reason: 'diagrammatic_or_brand_asset' };
+  if (UNSUPPORTED_IMAGE_FORMATS.some((ext) => normalizedMediaUrl.includes(ext))) {
+    return { ok: false, reason: 'unsupported_format' };
   }
 
-  if (
-    /\.svg(\.png)?($|\?)/i.test(normalizedMediaUrl) &&
-    /(flag|seal|crest|coat[_-]?of[_-]?arms|wordmark|icon|symbol|emblem|logo)/i.test(
-      normalizedMediaUrl,
-    )
-  ) {
-    return { ok: false, reason: 'vector_brand_asset' };
+  if (/\.svg(\.png)?($|\?)/i.test(normalizedMediaUrl)) {
+    return { ok: false, reason: 'svg_not_supported' };
+  }
+
+  if (BAD_MEDIA_KEYWORDS.some((keyword) => normalizedMediaUrl.includes(keyword))) {
+    return { ok: false, reason: 'diagrammatic_or_brand_asset' };
   }
 
   return { ok: true, reason: 'usable_media' };

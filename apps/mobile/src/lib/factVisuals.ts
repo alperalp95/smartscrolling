@@ -440,6 +440,10 @@ export function isBadFactMediaUrl(mediaUrl: string | null | undefined) {
     return true;
   }
 
+  if (/\.(tif|tiff|bmp|psd|raw)(\?|$)/i.test(normalizedMediaUrl)) {
+    return true;
+  }
+
   if (/\.svg(\.png)?($|\?)/i.test(normalizedMediaUrl)) {
     return true;
   }
