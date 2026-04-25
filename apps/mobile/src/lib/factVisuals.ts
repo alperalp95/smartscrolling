@@ -118,8 +118,8 @@ export function deriveFactVisualKey(input: {
     if (includesAny(topicText, [
       'space', 'galaxy', 'planet', 'orbit', 'moon', 'mars', 'asteroid', 'comet',
       'nebula', 'telescope', 'cosmic', 'star',
-      'uzay', 'gunes', 'yildiz', 'gezegen', 'ay', 'galaksi', 'kara delik',
-      'kuyrukluyildiz', 'evren', 'astronot', 'uydu', 'kuyruklu',
+      'uzay', 'gunes', 'yildiz', 'gezegen', 'galaksi', 'kara delik',
+      'kuyrukluyildiz', 'evren', 'astronot', 'uydu', 'kuyruklu yildiz',
     ])) {
       return 'science-cosmos';
     }
@@ -132,23 +132,23 @@ export function deriveFactVisualKey(input: {
     }
 
     if (includesAny(topicText, [
-      'vucut', 'deri', 'parmak', 'kemik', 'kas', 'organ', 'goz', 'kulak',
-      'el ', 'ayak', 'yuz', 'kan', 'hormon', 'gozyas', 'termometre',
-      'atardamar', 'damar', 'nabiz', 'gozalt',
+      'vucut', 'parmak', 'kemik', 'kaslar', 'organ', 'goz', 'kulak',
+      'ayak', 'hormon', 'gozyas', 'termometre',
+      'atardamar', 'damar', 'nabiz', 'derisi', 'kandaki',
     ])) {
       return 'science-human-body';
     }
 
     if (includesAny(topicText, [
-      'bocek', 'ari', 'karinca', 'kelebek', 'sinek', 'kene', 'cicek', 'bal',
-      'petekler', 'petek', 'kovani',
+      'bocek', 'arisi', 'karinca', 'kelebek', 'sinek', 'cicek',
+      'petekler', 'petek', 'kovani', 'ari kovani', 'bal arisi',
     ])) {
       return 'science-insects';
     }
 
     if (includesAny(topicText, [
-      'hayvan', 'kus', 'balik', 'kedi', 'kopek', 'memeli', 'surungen',
-      'devekusu', 'at', 'fil', 'deve', 'kaplumbaga', 'domuz', 'tavsan',
+      'hayvan', 'kuslar', 'baliklar', 'kedi', 'kopek', 'memeli', 'surungen',
+      'devekusu', 'atlar', 'filler', 'deve ', 'kaplumbaga', 'domuz', 'tavsan',
       'aslan', 'kaplan', 'koyun', 'inek', 'kurbaga', 'yunus', 'balina',
       'animal', 'bird', 'fish',
     ])) {
@@ -156,7 +156,7 @@ export function deriveFactVisualKey(input: {
     }
 
     if (includesAny(topicText, [
-      'evrim', 'dogal secim', 'mutasyon', 'tur', 'evolution', 'natural selection',
+      'evrim', 'dogal secim', 'mutasyon', 'evolution', 'natural selection',
       'darwin', 'atalarimiz', 'fosil', 'fossil',
     ])) {
       return 'science-evolution';
