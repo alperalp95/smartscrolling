@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const DEFAULT_SOURCE_LABEL = 'Luzumsuz Bilgiler Ansiklopedisi';
-const PDF_EXTRACT_MAX_CHARS = 1500;
+const PDF_EXTRACT_MAX_CHARS = 1800;
 const DEFAULT_SAMPLE_PATH = path.resolve(
   process.cwd(),
   'data',
@@ -62,11 +62,28 @@ function cleanPdfExtract(text, sourceTitle) {
     merged.push(t);
   }
 
-  return merged
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-    .slice(0, PDF_EXTRACT_MAX_CHARS);
+  const full = merged.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+
+  if (full.length <= PDF_EXTRACT_MAX_CHARS) {
+    return full;
+  }
+
+  // Cut at last sentence boundary within the limit
+  const candidate = full.slice(0, PDF_EXTRACT_MAX_CHARS);
+  const lastSentenceEnd = Math.max(
+    candidate.lastIndexOf('. '),
+    candidate.lastIndexOf('! '),
+    candidate.lastIndexOf('? '),
+    candidate.lastIndexOf('.\n'),
+    candidate.lastIndexOf('!\n'),
+    candidate.lastIndexOf('?\n'),
+  );
+
+  if (lastSentenceEnd > PDF_EXTRACT_MAX_CHARS * 0.6) {
+    return candidate.slice(0, lastSentenceEnd + 1).trim();
+  }
+
+  return candidate.trim();
 }
 
 function normalizeCategory(category) {
