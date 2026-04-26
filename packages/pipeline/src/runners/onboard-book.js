@@ -24,6 +24,7 @@ function parseArgs(argv) {
     category: 'Genel',
     description: null,
     cover: null,
+    maxWords: 280,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -38,9 +39,79 @@ function parseArgs(argv) {
     if (token === '--category'    && next) { args.category    = next; i += 1; continue; }
     if (token === '--description' && next) { args.description = next; i += 1; continue; }
     if (token === '--cover'       && next) { args.cover       = next; i += 1; continue; }
+    if (token === '--max-words'   && next) {
+      const parsed = Number.parseInt(next, 10);
+      if (Number.isFinite(parsed) && parsed > 0) args.maxWords = parsed;
+      i += 1; continue;
+    }
   }
 
   return args;
+}
+
+function isHeadingLine(line) {
+  if (!line || line.length > 90) return false;
+  const words = line.split(/\s+/).filter(Boolean);
+  if (words.length > 10) return false;
+
+  if (/^\*+\s*\*+/.test(line)) return true;
+
+  const lettersOnly = line.replace(/[^A-Za-z\u00C0-\u024F]/g, '');
+  if (lettersOnly.length >= 3 && line === line.toUpperCase()) return true;
+
+  if (/^[IVXLCDM]+$/i.test(line.trim())) return true;
+
+  if (/^(bölüm|bolum|kısım|kisim|giriş|giris|önsöz|onsoz|sonuç|sonuc|fasıl|fasil)\b/i.test(line)) return true;
+
+  return words.length <= 6 && /^[A-ZÇĞİÖŞÜ"']/.test(line) && !/[.!?,;:]$/.test(line);
+}
+
+function fixSpacedOcrChars(text) {
+  return text.replace(/\b([A-ZÇĞİÖŞÜa-zçğışöşü](\s[A-ZÇĞİÖŞÜa-zçğışöşü]){3,})\b/g, (match) =>
+    match.replace(/\s/g, ''),
+  );
+}
+
+function preprocessBookText(rawText) {
+  const lines = rawText
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const cleaned = lines
+    .map(fixSpacedOcrChars)
+    .filter((line) => !/^(G[\s]?[öo][\s]?rsel|Görsel|Resim|Şekil|Tablo|Figure)\s*\d/i.test(line));
+
+  const paragraphs = [];
+  let current = [];
+
+  for (const line of cleaned) {
+    if (isHeadingLine(line)) {
+      if (current.length > 0) {
+        paragraphs.push(current.join(' '));
+        current = [];
+      }
+      paragraphs.push(line);
+      continue;
+    }
+
+    const lastLine = current.at(-1) ?? '';
+    const prevEndsSentence = /[.!?…»"')\]]$/.test(lastLine);
+    const currStartsCap = /^[A-ZÇĞİÖŞÜ"']/.test(line);
+
+    if (current.length > 0 && prevEndsSentence && currStartsCap) {
+      paragraphs.push(current.join(' '));
+      current = [line];
+    } else {
+      current.push(line);
+    }
+  }
+
+  if (current.length > 0) paragraphs.push(current.join(' '));
+
+  return paragraphs.join('\n\n');
 }
 
 function slugify(text) {
@@ -77,22 +148,27 @@ async function main() {
   const slug = slugify(args.title);
   const storagePath = `${FOLDER}/${slug}.txt`;
 
-  const sections = parseBookSectionsFromText(rawText, { maxWordsPerSection: 900 });
+  console.log('Metin on isleme yapiliyor...');
+  const processedText = preprocessBookText(rawText);
+
+  const sections = parseBookSectionsFromText(processedText, { maxWordsPerSection: args.maxWords });
   const totalPages = estimateTotalPages(sections);
 
   console.log('=== ONBOARD-BOOK PREVIEW ===');
-  console.log(`  Baslik  : ${args.title}`);
-  console.log(`  Yazar   : ${args.author}`);
-  console.log(`  Tier    : ${args.tier}`);
-  console.log(`  Kategori: ${args.category}`);
-  console.log(`  Bolumler: ${sections.length}`);
+  console.log(`  Baslik   : ${args.title}`);
+  console.log(`  Yazar    : ${args.author}`);
+  console.log(`  Tier     : ${args.tier}`);
+  console.log(`  Kategori : ${args.category}`);
+  console.log(`  Max kelime/bolum: ${args.maxWords}`);
+  console.log(`  Bolumler : ${sections.length}`);
   console.log(`  Sayfa est: ${totalPages}`);
-  console.log(`  Storage : ${BUCKET}/${storagePath}`);
-  console.log(`  apply   : ${args.apply}`);
+  console.log(`  Storage  : ${BUCKET}/${storagePath}`);
+  console.log(`  apply    : ${args.apply}`);
 
-  console.log('\n--- Ilk 3 bolum ---');
-  sections.slice(0, 3).forEach((s) => {
+  console.log('\n--- Ilk 5 bolum ---');
+  sections.slice(0, 5).forEach((s) => {
     console.log(`  [${s.sectionOrder}] ${s.title ?? '(basliksiz)'} — ${s.wordCount} kelime`);
+    console.log(`         ${s.plainText.slice(0, 80).replace(/\n/g, ' ')}...`);
   });
 
   if (!args.apply) {
