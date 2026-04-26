@@ -12,7 +12,9 @@ export type BookAccessState = {
   needsPremium: boolean;
 };
 
-export const FALLBACK_BOOKS: BookType[] = [
+export const FALLBACK_BOOKS: BookType[] = [];
+
+const _UNUSED_LEGACY_BOOKS: BookType[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',
     title: 'Kendime Dusunceler',
@@ -154,6 +156,8 @@ export const FALLBACK_BOOKS: BookType[] = [
     language: 'en',
   },
 ];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+void _UNUSED_LEGACY_BOOKS;
 
 type BooksListResult = {
   data: BookRow[] | null;
