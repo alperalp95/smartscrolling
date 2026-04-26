@@ -455,49 +455,8 @@ function resolveRemoteMediaUrl(mediaUrl: string | null | undefined): string | nu
     return null;
   }
 
-  return normalized;
-}
-
-function resolveRemoteRetryMediaUrl(mediaUrl: string | null | undefined): string | null {
-  const normalized = resolveRemoteMediaUrl(mediaUrl);
-
-  if (!normalized) {
-    return null;
-  }
-
-  if (normalized.startsWith('https://upload.wikimedia.org/wikipedia/commons/')) {
-    try {
-      const url = new URL(normalized);
-      const marker = '/wikipedia/commons/';
-      const commonsIndex = url.pathname.indexOf(marker);
-
-      if (commonsIndex === -1) {
-        return normalized;
-      }
-
-      const commonsPath = url.pathname.slice(commonsIndex + marker.length);
-      let filename = commonsPath.split('/').at(-1) ?? '';
-
-      if (!filename) {
-        return normalized;
-      }
-
-      const thumbMatch = filename.match(/^\d+px-(.+)$/);
-
-      if (thumbMatch?.[1]) {
-        filename = thumbMatch[1];
-      }
-
-      try {
-        filename = decodeURIComponent(filename);
-      } catch {
-        // keep raw filename
-      }
-
-      return `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(filename)}?width=640`;
-    } catch {
-      return normalized;
-    }
+  if (normalized.includes('upload.wikimedia.org/')) {
+    return normalized.replaceAll(/%2c/gi, ',');
   }
 
   return normalized;
@@ -677,7 +636,6 @@ function FullScreenFactCard({
   const cardTopOffset = Math.max(topInset + 72, 96);
   const expandedCardTopOffset = Math.max(topInset + 112, 128);
   const remoteMediaUrl = resolveRemoteMediaUrl(item.media_url);
-  const remoteRetryMediaUrl = resolveRemoteRetryMediaUrl(item.media_url);
   const isRemoteUrlBlocked = remoteMediaUrl ? failedRemoteImageUrls.has(remoteMediaUrl) : false;
   const visualPreset = getVisualPreset(item);
   const [imageSource, setImageSource] = useState<ImageSourcePropType | null>(
@@ -783,7 +741,7 @@ function FullScreenFactCard({
             imageLoadState === 'retry-native' ? (
               <Image
                 key={`${item.id}-native`}
-                source={{ uri: remoteRetryMediaUrl ?? remoteMediaUrl }}
+                source={{ uri: remoteMediaUrl }}
                 style={[s.backgroundImage, !isImageReady ? s.backgroundImageHidden : null]}
                 resizeMode="cover"
                 onLoad={() => {
@@ -801,7 +759,7 @@ function FullScreenFactCard({
                   setImageLoadState('error');
                   failedRemoteImageUrls.add(remoteMediaUrl);
                   console.log(
-                    `[Perf][FeedImage] fact=${item.id} title="${item.title}" failed=remote-native url="${remoteRetryMediaUrl ?? remoteMediaUrl}"`,
+                    `[Perf][FeedImage] fact=${item.id} title="${item.title}" failed=remote-native url="${remoteMediaUrl}"`,
                   );
                 }}
               />
