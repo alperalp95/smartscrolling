@@ -156,6 +156,19 @@ export function useReaderProgress(params: UseReaderProgressParams) {
     };
   }, [bookId, currentPage, progressHydrated, totalPages]);
 
+  const updateFromSectionIndex = useCallback(
+    (index: number) => {
+      const newIndex = Math.max(0, Math.min(index, textSections.length - 1));
+      let page = 1;
+      for (let i = 0; i < newIndex; i += 1) {
+        page += Math.max(textSections[i]?.estimated_pages ?? 1, 1);
+      }
+      setActiveSectionIndex(newIndex);
+      setCurrentPage(Math.min(page, totalPages));
+    },
+    [textSections, totalPages],
+  );
+
   return {
     activeSectionIndex,
     completionPercent,
@@ -166,5 +179,6 @@ export function useReaderProgress(params: UseReaderProgressParams) {
     registerSectionOffset,
     setActiveSectionIndex,
     syncActiveSectionFromScroll,
+    updateFromSectionIndex,
   };
 }
