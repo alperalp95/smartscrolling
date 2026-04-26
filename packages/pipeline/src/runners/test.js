@@ -40,6 +40,7 @@ for (const article of articles) {
     article.category,
     article.imageUrl,
     article.title,
+    { wikiContext: article.wikiContext ?? null },
   );
 
   if (!fact) {
