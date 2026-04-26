@@ -14,6 +14,28 @@ const LOW_QUALITY_TITLE_PATTERNS = [
   /\bneresidir\b/i,
   /\bne var\b/i,
   /\bgorur musunuz\b/i,
+  /(?:'nın|'nin|'nun|'nün|in|ın|un|ün)\s+tarihi$/i,
+  /\bözellikleri$/i,
+  /\bozellikleri$/i,
+];
+
+const LOW_QUALITY_LANGUAGE_PATTERNS = [
+  /\böne sürten\b/i,
+  /\bone surten\b/i,
+  /\bkatkılari\b/i,
+  /\bkatkilari\b/i,
+  /\bözelliklerı\b/i,
+  /\bozelliklerı\b/i,
+];
+
+const ADVICE_TONE_PATTERNS = [
+  /\buzak durmamız\b/i,
+  /\buzak durmamiz\b/i,
+  /\buzak durmalıyız\b/i,
+  /\buzak durmaliyiz\b/i,
+  /\bdokunmadan uzak\b/i,
+  /\byapmamız önemlidir\b/i,
+  /\byapmamiz onemlidir\b/i,
 ];
 
 const LOW_VALUE_SOURCE_TITLE_PATTERNS = [
@@ -34,8 +56,32 @@ const LOW_VALUE_SOURCE_TITLE_PATTERNS = [
   /\bactor\b/i,
   /\bactress\b/i,
   /\bsinger\b/i,
+  /\bmusician\b/i,
+  /\bcomposer\b/i,
+  /\bbesteci\b/i,
+  /\bmüzisyen\b/i,
+  /\bmuzisyen\b/i,
   /\bpolitician\b/i,
   /\bshopping mall\b/i,
+  /\banlaşmazlık\b/i,
+  /\banlasmazlik\b/i,
+  /\bdispute\b/i,
+  /\bdoğalgaz\b/i,
+  /\bdogalgaz\b/i,
+  /\bnatural gas\b/i,
+  /\bphone model\b/i,
+  /\bsmartphone model\b/i,
+  /\bcep telefonu\b/i,
+  /\bakilli telefon\b/i,
+  /\bakıllı telefon\b/i,
+  /\bandroid cihaz\b/i,
+  /\btaslak/i,
+  /\baircraft model\b/i,
+  /\bfighter aircraft\b/i,
+  /\bavcı uçağı\b/i,
+  /\bavci ucagi\b/i,
+  /\bsavaş uçağı\b/i,
+  /\bsavas ucagi\b/i,
   /\bilce\b/i,
   /\bköy\b/i,
   /\bkoy\b/i,
@@ -70,7 +116,28 @@ const LOW_VALUE_SOURCE_EXCERPT_PATTERNS = [
   /\bis an actor\b/i,
   /\bis an actress\b/i,
   /\bis a singer\b/i,
+  /\bis a musician\b/i,
+  /\bis a composer\b/i,
   /\bis a shopping mall\b/i,
+  /\banlaşmazlık\b/i,
+  /\banlasmazlik\b/i,
+  /\bdispute\b/i,
+  /\bdoğalgaz\b/i,
+  /\bdogalgaz\b/i,
+  /\bnatural gas\b/i,
+  /\bphone model\b/i,
+  /\bsmartphone model\b/i,
+  /\bcep telefonu\b/i,
+  /\bakilli telefon\b/i,
+  /\bakıllı telefon\b/i,
+  /\bandroid cihaz\b/i,
+  /\btaslak/i,
+  /\bis a fighter aircraft\b/i,
+  /\bair superiority fighter\b/i,
+  /\bavcı uçağı\b/i,
+  /\bavci ucagi\b/i,
+  /\bsavaş uçağı\b/i,
+  /\bsavas ucagi\b/i,
   /\bbir köydür\b/i,
   /\bbir koydur\b/i,
   /\bbir ilçedir\b/i,
@@ -299,6 +366,10 @@ export function evaluateFactQuality(fact) {
     return { ok: false, reason: 'low_quality_title' };
   }
 
+  if (LOW_QUALITY_LANGUAGE_PATTERNS.some((pattern) => pattern.test(`${title} ${content}`))) {
+    return { ok: false, reason: 'low_quality_language' };
+  }
+
   if (!content) {
     return { ok: false, reason: 'content_too_short' };
   }
@@ -320,6 +391,10 @@ export function evaluateFactQuality(fact) {
 
   if (!isPdfCurated && hasExcessiveSentenceRepetition(content)) {
     return { ok: false, reason: 'content_repetition' };
+  }
+
+  if (sourceKind === 'wikipedia' && ADVICE_TONE_PATTERNS.some((pattern) => pattern.test(content))) {
+    return { ok: false, reason: 'advice_tone' };
   }
 
   if (!sourceUrl) {

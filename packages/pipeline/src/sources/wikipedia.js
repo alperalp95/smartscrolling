@@ -1,5 +1,14 @@
 // src/sources/wikipedia.js
 // Wikipedia summary endpoint'inden kalite filtreli makale ozeti ceker.
+import {
+  buildWikipediaSeedQueue,
+  isLowValueWikipediaArticle as isLowValueWikipediaArticlePolicy,
+  scoreWikipediaCuriositySignals,
+} from '../lib/wiki-source-policy.js';
+import { resolveWikipediaEntity } from '../lib/wiki-entity-resolver.js';
+import { enrichWikipediaEntity } from '../lib/wiki-enrichment.js';
+import { evaluateWikipediaTaxonomyDecision } from '../lib/wiki-quality-guard.js';
+import { normalizeWikipediaEnrichmentToTaxonomy } from '../lib/wiki-taxonomy-normalizer.js';
 
 const LOW_VALUE_TITLE_PATTERNS = [
   /\binstitutions?\b/i,
@@ -479,6 +488,49 @@ const SOURCE_EDITORIAL_WEIGHTS = {
   health: 38,
 };
 
+function scoreWikipediaDiscoveryCandidate({
+  title,
+  extract,
+  targetCategory,
+  taxonomy,
+  relaxedCategoryTarget,
+  isRelaxedPass,
+}) {
+  const normalizedTitle = (title ?? '').trim();
+  const normalizedExtract = (extract ?? '').trim();
+  let score = 28;
+
+  if (taxonomy?.category === targetCategory) {
+    score += 10;
+  } else if (relaxedCategoryTarget) {
+    score += 2;
+  } else {
+    score -= 6;
+  }
+
+  score += Math.min(Math.floor(normalizedExtract.length / 80), 8);
+  score += Math.round(Math.min(taxonomy?.confidence ?? 0, 1) * 12);
+  score += scoreWikipediaCuriositySignals(normalizedTitle, normalizedExtract);
+
+  if ((taxonomy?.signals?.length ?? 0) >= 4) {
+    score += 4;
+  }
+
+  if (/(system|process|concept|field|movement|history of|importance of)/i.test(normalizedTitle)) {
+    score -= 5;
+  }
+
+  if (/(^|\s)(is|was|bir)\s/.test(normalizedExtract) && normalizedExtract.length < 320) {
+    score -= 4;
+  }
+
+  if (isRelaxedPass) {
+    score -= 3;
+  }
+
+  return score;
+}
+
 /**
  * Wikipedia'nin random summary havuzundan filtrelenmis makaleler ceker.
  * @param {string} lang
@@ -659,42 +711,48 @@ async function parseWikipediaSummary(
     return null;
   }
 
-  const category = guessCategory(
-    `${preferredData.title ?? ''} ${preferredData.extract ?? ''} ${data.title ?? ''} ${data.extract ?? ''}`,
-  );
-
-  if (!category) {
+  if (isLowValueWikipediaArticlePolicy(preferredData.title, preferredData.extract, preferredData.description)) {
     return null;
   }
 
-  if (!relaxedCategoryTarget && category !== targetCategory) {
-    return null;
-  }
-
-  if (isLowValueWikipediaArticle(preferredData.title, preferredData.extract)) {
-    return null;
-  }
-
-  const hasThemeMatch = matchesThemePool(
-    `${preferredData.title ?? ''} ${data.title ?? ''}`,
-    `${preferredData.extract ?? ''} ${data.extract ?? ''}`,
-    category,
-  );
-  const categoryConfidence = estimateCategoryConfidence(
-    `${preferredData.title ?? ''} ${preferredData.extract ?? ''}`,
-    category,
-  );
-  const discoveryScore = scoreWikipediaCandidate({
-    title: preferredData.title,
-    extract: preferredData.extract,
-    category,
+  const entity = resolveWikipediaEntity({
+    lang: preferredData._preferred_lang ?? lang,
+    summaryData: preferredData,
+    fallbackUrl: pageUrl,
+  });
+  const enrichment = await enrichWikipediaEntity({
+    lang: preferredData._preferred_lang ?? lang,
+    entity,
+    summaryData: preferredData,
+  });
+  const taxonomy = normalizeWikipediaEnrichmentToTaxonomy({
+    entity,
+    enrichment,
+  });
+  const curiosityScore = scoreWikipediaCuriositySignals(preferredData.title, preferredData.extract);
+  const decision = evaluateWikipediaTaxonomyDecision({
+    preferredData,
+    entity,
+    enrichment,
+    taxonomy,
     targetCategory,
-    hasThemeMatch,
     relaxedCategoryTarget,
-    isRelaxedPass,
-    categoryConfidence,
+    curiosityScore,
   });
 
+  if (!decision.accepted) {
+    return null;
+  }
+
+  const category = taxonomy.category;
+  const discoveryScore = scoreWikipediaDiscoveryCandidate({
+    title: preferredData.title,
+    extract: preferredData.extract,
+    targetCategory,
+    taxonomy,
+    relaxedCategoryTarget,
+    isRelaxedPass,
+  });
   const minimumScore = isRelaxedPass ? 36 : 44;
 
   if (discoveryScore < minimumScore) {
@@ -702,8 +760,8 @@ async function parseWikipediaSummary(
   }
 
   const imageUrl =
-    preferredData.originalimage?.source ??
     preferredData.thumbnail?.source ??
+    preferredData.originalimage?.source ??
     buildUnsplashUrl(preferredData.title, category);
 
   seenUrls.add(pageUrl);
@@ -714,6 +772,13 @@ async function parseWikipediaSummary(
     category,
     imageUrl,
     discoveryScore,
+    wikiContext: {
+      canonicalTitle: entity.canonicalTitle,
+      normalizedCategory: taxonomy.category,
+      summary: enrichment.summary,
+      description: enrichment.infoboxLikeFields?.description ?? '',
+      categories: enrichment.categories.slice(0, 6),
+    },
   };
 }
 
@@ -991,41 +1056,7 @@ function scoreWikipediaCandidate({
 }
 
 function buildSeedQueue(limit) {
-  const shuffledByCategory = Object.fromEntries(
-    CATEGORY_SEQUENCE.map((category) => [
-      category,
-      shuffleArray(CATEGORY_SEED_TOPICS[category] ?? []),
-    ]),
-  );
-  const pointers = Object.fromEntries(CATEGORY_SEQUENCE.map((category) => [category, 0]));
-  const queue = [];
-
-  while (queue.length < limit) {
-    let addedInRound = false;
-
-    for (const category of CATEGORY_SEQUENCE) {
-      const pool = shuffledByCategory[category];
-      const index = pointers[category];
-
-      if (!pool?.length || index >= pool.length) {
-        continue;
-      }
-
-      queue.push({ category, title: pool[index] });
-      pointers[category] += 1;
-      addedInRound = true;
-
-      if (queue.length >= limit) {
-        break;
-      }
-    }
-
-    if (!addedInRound) {
-      break;
-    }
-  }
-
-  return queue;
+  return buildWikipediaSeedQueue(limit);
 }
 
 function shuffleArray(items) {

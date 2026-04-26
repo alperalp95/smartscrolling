@@ -41,7 +41,7 @@ export function evaluateFactMedia({ sourceLabel, mediaUrl }) {
 
   if (
     normalizedSourceLabel.includes('wikipedia') &&
-    normalizedMediaUrl.includes('upload.wikimedia.org/wikipedia/en/')
+    /upload\.wikimedia\.org\/wikipedia\/(?!commons\/)/i.test(normalizedMediaUrl)
   ) {
     return { ok: false, reason: 'wikipedia_non_free_asset' };
   }
@@ -59,4 +59,14 @@ export function evaluateFactMedia({ sourceLabel, mediaUrl }) {
   }
 
   return { ok: true, reason: 'usable_media' };
+}
+
+export function normalizeFactMediaUrl(mediaUrl) {
+  const normalizedMediaUrl = (mediaUrl ?? '').trim();
+
+  if (normalizedMediaUrl.includes('upload.wikimedia.org/')) {
+    return normalizedMediaUrl.replaceAll(/%2c/gi, ',');
+  }
+
+  return normalizedMediaUrl;
 }

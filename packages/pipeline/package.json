@@ -16,7 +16,11 @@
     "backfill:visual-key": "node src/runners/backfill-fact-visual-keys.js",
     "cleanup:media": "node src/runners/cleanup-fact-media.js",
     "cleanup:facts": "node src/runners/cleanup-facts.js",
-    "report:facts": "node src/runners/report-facts.js"
+    "report:facts": "node src/runners/report-facts.js",
+    "test:wikipedia-shadow": "node src/runners/test-wikipedia-shadow.js",
+    "test:wikipedia-source": "node src/runners/test-wikipedia-source.js",
+    "review:wikipedia-candidates": "node src/runners/review-wikipedia-candidates.js",
+    "test:wikipedia-groq": "node src/runners/test-wikipedia-groq-dry-run.js"
   },
   "dependencies": {
     "groq-sdk": "^0.7.0",

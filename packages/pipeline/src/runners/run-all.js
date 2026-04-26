@@ -32,6 +32,16 @@ function parseArgs(argv) {
       continue;
     }
 
+    if (arg === '--wikipedia-lang') {
+      overrides.wikipedia = { ...(overrides.wikipedia ?? {}), lang: nextValue };
+      continue;
+    }
+
+    if (arg === '--pdf-curated-file') {
+      overrides.pdfCurated = { ...(overrides.pdfCurated ?? {}), filePath: nextValue };
+      continue;
+    }
+
     const parsed = Number.parseInt(nextValue, 10);
 
     if (Number.isNaN(parsed) || parsed < 0) {
@@ -58,9 +68,6 @@ function parseArgs(argv) {
       overrides.pdfCurated = { ...(overrides.pdfCurated ?? {}), count: parsed };
     }
 
-    if (arg === '--pdf-curated-file') {
-      overrides.pdfCurated = { ...(overrides.pdfCurated ?? {}), filePath: nextValue };
-    }
   }
 
   return {
@@ -123,6 +130,10 @@ function logSourceSummary(label, stats) {
   console.log(`   verified_true: ${stats.verified_true}`);
 }
 
+function isConversionRateLimited(fact) {
+  return fact?._conversion_failed && fact?._conversion_reason === 'rate_limit';
+}
+
 function mergeStats(total, partial) {
   for (const key of Object.keys(total)) {
     total[key] += partial[key] ?? 0;
@@ -143,7 +154,10 @@ async function main() {
   const pdfCuratedStats = createRunStats();
 
   console.log(`\nWikipedia'dan ${CONFIG.wikipedia.count} makale cekiliyor...`);
-  const wikiArticles = await fetchWikipediaArticles(CONFIG.wikipedia.lang, CONFIG.wikipedia.count);
+  const wikiArticles =
+    CONFIG.wikipedia.count > 0
+      ? await fetchWikipediaArticles(CONFIG.wikipedia.lang, CONFIG.wikipedia.count)
+      : [];
   console.log(`   ${wikiArticles.length} makale alindi, Groq ile isleniyor...`);
   const existingWikiUrls = await getExistingSourceUrls(wikiArticles.map((article) => article.url));
 
@@ -174,7 +188,13 @@ async function main() {
       article.category,
       article.imageUrl,
       article.title,
+      { wikiContext: article.wikiContext ?? null },
     );
+
+    if (isConversionRateLimited(fact)) {
+      console.warn('[RunAll] Groq rate limit goruldu; Wikipedia dongusu erken durduruluyor.');
+      break;
+    }
 
     if (!fact) {
       wikipediaStats.groq_failed += 1;
@@ -190,7 +210,8 @@ async function main() {
   mergeStats(totalStats, wikipediaStats);
 
   console.log(`\nStanford Encyclopedia'dan ${CONFIG.stanford.count} makale cekiliyor...`);
-  const stanfordArticles = await fetchStanfordPhilosophy(CONFIG.stanford.count);
+  const stanfordArticles =
+    CONFIG.stanford.count > 0 ? await fetchStanfordPhilosophy(CONFIG.stanford.count) : [];
   console.log(`   ${stanfordArticles.length} felsefe verisi alindi, Groq ile isleniyor...`);
   const existingStanfordUrls = await getExistingSourceUrls(
     stanfordArticles.map((article) => article.url),
@@ -239,7 +260,10 @@ async function main() {
   mergeStats(totalStats, stanfordStats);
 
   console.log(`\nMedlinePlus'tan ${CONFIG.medlineplus.count} makale cekiliyor...`);
-  const medlinePlusArticles = await fetchMedlinePlusArticles(CONFIG.medlineplus.count);
+  const medlinePlusArticles =
+    CONFIG.medlineplus.count > 0
+      ? await fetchMedlinePlusArticles(CONFIG.medlineplus.count)
+      : [];
   console.log(`   ${medlinePlusArticles.length} saglik verisi alindi, Groq ile isleniyor...`);
   const existingMedlineUrls = await getExistingSourceUrls(
     medlinePlusArticles.map((article) => article.url),
@@ -288,7 +312,7 @@ async function main() {
   mergeStats(totalStats, medlinePlusStats);
 
   console.log(`\nNASA APOD'dan son ${CONFIG.nasa.count} gun cekiliyor...`);
-  const nasaItems = await fetchNasaApod(CONFIG.nasa.count);
+  const nasaItems = CONFIG.nasa.count > 0 ? await fetchNasaApod(CONFIG.nasa.count) : [];
   console.log(`   ${nasaItems.length} astronomi verisi alindi, Groq ile isleniyor...`);
   const existingNasaUrls = await getExistingSourceUrls(nasaItems.map((item) => item.url));
 

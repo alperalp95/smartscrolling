@@ -436,7 +436,7 @@ export function isBadFactMediaUrl(mediaUrl: string | null | undefined) {
     return false;
   }
 
-  if (normalizedMediaUrl.includes('upload.wikimedia.org/wikipedia/en/')) {
+  if (/upload\.wikimedia\.org\/wikipedia\/(?!commons\/)/i.test(normalizedMediaUrl)) {
     return true;
   }
 
