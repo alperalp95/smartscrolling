@@ -158,6 +158,41 @@ export async function insertFact(fact) {
   };
 }
 
+export async function insertBook({
+  title,
+  author,
+  description,
+  category,
+  language = 'tr',
+  accessTier = 'premium',
+  coverUrl = null,
+  totalPages = null,
+}) {
+  const payload = {
+    title,
+    author,
+    description: description ?? null,
+    category: category ?? null,
+    language,
+    access_tier: accessTier,
+    is_premium: accessTier === 'premium',
+    cover_url: coverUrl,
+    total_pages: totalPages,
+  };
+
+  const { data, error } = await supabase
+    .from('books')
+    .insert(payload)
+    .select('id')
+    .single();
+
+  if (error) {
+    throw new Error(`[Supabase] insertBook failed: ${error.message}`);
+  }
+
+  return data.id;
+}
+
 export async function fetchBooksForSectionIngest({ bookId } = {}) {
   let query = supabase
     .from('books')

@@ -42,14 +42,25 @@ export function buildHighlightedSectionParts(
     let nextIndex = -1;
 
     for (const term of terms) {
-      const foundIndex = lowerText.indexOf(term.toLowerCase(), cursor);
+      const lowerTerm = term.toLowerCase();
+      let searchFrom = cursor;
+      let boundaryIndex = -1;
 
-      if (foundIndex === -1) {
-        continue;
+      while (true) {
+        const idx = lowerText.indexOf(lowerTerm, searchFrom);
+        if (idx === -1) break;
+        const prevChar = idx > 0 ? plainText[idx - 1] : '';
+        if (!/[\w\u00C0-\u024F]/.test(prevChar)) {
+          boundaryIndex = idx;
+          break;
+        }
+        searchFrom = idx + 1;
       }
 
-      if (nextIndex === -1 || foundIndex < nextIndex) {
-        nextIndex = foundIndex;
+      if (boundaryIndex === -1) continue;
+
+      if (nextIndex === -1 || boundaryIndex < nextIndex) {
+        nextIndex = boundaryIndex;
         nextTerm = term;
       }
     }

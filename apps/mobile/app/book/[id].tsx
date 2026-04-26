@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  FlatList,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AiChatMessage } from '../../src/lib/aiChat';
@@ -19,7 +21,7 @@ import {
   getSectionScopedDefinitions,
 } from '../../src/lib/bookHighlights';
 import { buildSectionScopedContext, getNeighborSections } from '../../src/lib/bookSectionContext';
-import { type ReaderTextSection, fetchBookSections } from '../../src/lib/bookSections';
+import { type ReaderSectionPart, type ReaderTextSection, fetchBookSections } from '../../src/lib/bookSections';
 import { fetchBookById, resolveBookAccess } from '../../src/lib/books';
 import { fetchLatestChatSession, saveChatSession } from '../../src/lib/chatSessions';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
@@ -51,6 +53,18 @@ export default function BookReaderScreen() {
   const allDefinitions =
     Object.keys(highlightDefinitions).length > 0 ? highlightDefinitions : readerSlice.definitions;
   const hasSectionContent = textSections.length > 0;
+  const { width: _w, height: _wh } = useWindowDimensions();
+  const [readerHeight, setReaderHeight] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+  const updateFromSectionIndexRef = useRef<(index: number) => void>(() => {});
+  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 });
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
+    const index = viewableItems[0]?.index;
+    if (typeof index === 'number') {
+      updateFromSectionIndexRef.current(index);
+    }
+  });
+
   const {
     activeSectionIndex,
     completionPercent,
@@ -61,12 +75,26 @@ export default function BookReaderScreen() {
     registerSectionOffset,
     setActiveSectionIndex,
     syncActiveSectionFromScroll,
+    updateFromSectionIndex,
   } = useReaderProgress({
     bookId,
     hasSectionContent,
     textSections,
     totalPages,
   });
+  useEffect(() => {
+    updateFromSectionIndexRef.current = updateFromSectionIndex;
+  }, [updateFromSectionIndex]);
+
+  useEffect(() => {
+    if (progressHydrated && readerHeight > 0 && activeSectionIndex > 0) {
+      flatListRef.current?.scrollToIndex({
+        index: activeSectionIndex,
+        animated: false,
+      });
+    }
+  }, [progressHydrated, readerHeight]);
+
   const { activeSection, nextSection, previousSection } = getNeighborSections(
     textSections,
     activeSectionIndex,
@@ -377,83 +405,86 @@ export default function BookReaderScreen() {
           </View>
         </View>
       ) : hasSectionContent ? (
-        <ScrollView
-          contentContainerStyle={[
-            s.sectionScrollContent,
-            { paddingBottom: Math.max(insets.bottom + 96, 120) },
-          ]}
-          onScroll={({ nativeEvent }) => {
-            handleReaderScroll(
-              nativeEvent.contentOffset.y,
-              nativeEvent.contentSize.height,
-              nativeEvent.layoutMeasurement.height,
-            );
-            syncActiveSectionFromScroll(
-              nativeEvent.contentOffset.y,
-              nativeEvent.layoutMeasurement.height,
-            );
-          }}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
+        <View
+          style={s.sectionPagerWrap}
+          onLayout={({ nativeEvent }) => setReaderHeight(nativeEvent.layout.height)}
         >
-          {textSections.map((item, sectionIndex) => (
-            <View
-              key={item.id}
-              style={s.sectionScreen}
-              onLayout={({ nativeEvent }) => {
-                registerSectionOffset(sectionIndex, nativeEvent.layout.y);
-              }}
-            >
-              <View style={s.sectionScreenHeader}>
-                <Text style={s.sectionKicker}>
-                  Bolum {item.sectionOrder} / {textSections.length}
-                </Text>
-                {item.title ? <Text style={s.sectionTitle}>{item.title}</Text> : null}
-                {item.summary ? <Text style={s.sectionSummary}>{item.summary}</Text> : null}
-              </View>
+          {readerHeight > 0 && (
+            <FlatList
+              ref={flatListRef}
+              data={textSections}
+              keyExtractor={(item) => item.id}
+              pagingEnabled
+              showsVerticalScrollIndicator={false}
+              onViewableItemsChanged={onViewableItemsChanged.current}
+              viewabilityConfig={viewabilityConfig.current}
+              getItemLayout={(_, index) => ({
+                length: readerHeight,
+                offset: readerHeight * index,
+                index,
+              })}
+              windowSize={3}
+              maxToRenderPerBatch={2}
+              initialNumToRender={1}
+              onScrollToIndexFailed={() => {}}
+              renderItem={({ item, index: sectionIndex }) => (
+                <View
+                  style={[
+                    s.sectionPage,
+                    { height: readerHeight, paddingBottom: Math.max(insets.bottom + 80, 100) },
+                  ]}
+                >
+                  {(item.title || item.summary) ? (
+                    <View style={s.sectionScreenHeader}>
+                      {item.title ? <Text style={s.sectionTitle}>{item.title}</Text> : null}
+                      {item.summary ? <Text style={s.sectionSummary}>{item.summary}</Text> : null}
+                    </View>
+                  ) : null}
 
-              <Text style={s.sectionBodyText}>
-                {(item.parts ?? []).map((part, index) => {
-                  const partKey = `${item.id}-${part.type}-${part.word ?? part.text}-${index}`;
+                  <Text style={s.sectionBodyText}>
+                    {(item.parts ?? []).map((part: ReaderSectionPart, index: number) => {
+                      const partKey = `${item.id}-${part.type}-${part.word ?? part.text}-${index}`;
 
-                  if (part.type === 'keyword') {
-                    if (!part.word) {
+                      if (part.type === 'keyword') {
+                        if (!part.word) {
+                          return <Text key={partKey}>{part.text}</Text>;
+                        }
+
+                        return (
+                          <Text
+                            key={partKey}
+                            style={s.hlKey}
+                            onPress={() => openPopup(part.word ?? '', sectionIndex)}
+                          >
+                            {part.text}
+                          </Text>
+                        );
+                      }
+
+                      if (part.type === 'reference') {
+                        if (!part.word) {
+                          return <Text key={partKey}>{part.text}</Text>;
+                        }
+
+                        return (
+                          <Text
+                            key={partKey}
+                            style={s.hlRef}
+                            onPress={() => openPopup(part.word ?? '', sectionIndex)}
+                          >
+                            {part.text}
+                          </Text>
+                        );
+                      }
+
                       return <Text key={partKey}>{part.text}</Text>;
-                    }
-
-                    return (
-                      <Text
-                        key={partKey}
-                        style={s.hlKey}
-                        onPress={() => openPopup(part.word ?? '', sectionIndex)}
-                      >
-                        {part.text}
-                      </Text>
-                    );
-                  }
-
-                  if (part.type === 'reference') {
-                    if (!part.word) {
-                      return <Text key={partKey}>{part.text}</Text>;
-                    }
-
-                    return (
-                      <Text
-                        key={partKey}
-                        style={s.hlRef}
-                        onPress={() => openPopup(part.word ?? '', sectionIndex)}
-                      >
-                        {part.text}
-                      </Text>
-                    );
-                  }
-
-                  return <Text key={partKey}>{part.text}</Text>;
-                })}
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
+                    })}
+                  </Text>
+                </View>
+              )}
+            />
+          )}
+        </View>
       ) : (
         <ScrollView
           contentContainerStyle={s.content}
@@ -668,7 +699,13 @@ const s = StyleSheet.create({
     flex: 1,
   },
   sectionScrollContent: {
-    paddingTop: 12,
+    paddingTop: 28,
+    paddingHorizontal: 24,
+  },
+  sectionPage: {
+    paddingHorizontal: 22,
+    paddingTop: 24,
+    overflow: 'hidden',
   },
   sectionScreen: {
     paddingHorizontal: 24,
@@ -696,10 +733,10 @@ const s = StyleSheet.create({
   },
   sectionBodyText: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 21,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '400',
     letterSpacing: 0.1,
-    lineHeight: 38,
+    lineHeight: 28,
   },
   para: { fontSize: 16, color: 'rgba(255,255,255,0.85)', lineHeight: 30, marginBottom: 22 },
   hlKey: { color: '#ffd60a', backgroundColor: 'rgba(255,214,10,0.18)', borderRadius: 3 },

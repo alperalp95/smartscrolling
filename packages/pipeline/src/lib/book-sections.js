@@ -50,6 +50,10 @@ function isLikelyHeading(paragraph) {
     return true;
   }
 
+  if (/^(bölüm|bolum|kısım|kisim|giriş|giris|önsöz|onsoz|sonuç|sonuc|ek\s+\d|fasıl|fasil)\b/i.test(compact)) {
+    return true;
+  }
+
   if (isRomanNumeral(compact)) {
     return true;
   }
