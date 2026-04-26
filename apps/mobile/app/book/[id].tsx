@@ -423,6 +423,9 @@ export default function BookReaderScreen() {
                 offset: readerHeight * index,
                 index,
               })}
+              windowSize={3}
+              maxToRenderPerBatch={2}
+              initialNumToRender={1}
               onScrollToIndexFailed={() => {}}
               renderItem={({ item, index: sectionIndex }) => (
                 <View
