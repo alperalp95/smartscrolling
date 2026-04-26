@@ -1,0 +1,127 @@
+[
+  {
+    "word": "Bilişsel Devrim",
+    "type": "Kavram",
+    "definition": "Yaklaşık 70.000 yıl önce Homo sapiens'in dil, soyut düşünme ve sosyal örgütlenme kapasitesinde gerçekleşen köklü değişim. Bu devrimle insanlar var olmayan şeyler hakkında konuşabilir, ortak mitler yaratabilir hale geldi."
+  },
+  {
+    "word": "Tarım Devrimi",
+    "type": "Kavram",
+    "definition": "Yaklaşık 12.000 yıl önce başlayan, insanlığın avcı-toplayıcı yaşam biçiminden yerleşik tarıma geçiş süreci. Buğday, pirinç ve mısır gibi bitkilerin evcilleştirilmesiyle nüfus patlaması yaşandı; ancak Harari bunu bir 'tuzak' olarak değerlendirir."
+  },
+  {
+    "word": "Bilimsel Devrim",
+    "type": "Kavram",
+    "definition": "Yaklaşık 500 yıl önce Avrupa'da başlayan, bilgisizliğin kabulü ve gözleme dayalı yöntemlerin yükselişiyle şekillenen düşünce devrimi. Modern teknoloji, sömürgecilik ve kapitalizmin temelini oluşturdu."
+  },
+  {
+    "word": "Homo sapiens",
+    "type": "Referans",
+    "definition": "Latince 'akıllı insan' anlamına gelen modern insan türünün bilimsel adı. Yaklaşık 300.000 yıl önce Afrika'da ortaya çıktı; bugün Dünya'daki tek insan türüdür."
+  },
+  {
+    "word": "Homo erectus",
+    "type": "Referans",
+    "definition": "'Dik duran insan' anlamına gelen insan türü. Yaklaşık 2 milyon yıl önce Afrika'da ortaya çıkıp Asya'ya yayıldı; ateşi kontrol eden ilk insan türlerinden biridir. Yaklaşık 100.000 yıl önce soyu tükendi."
+  },
+  {
+    "word": "Neandertaller",
+    "type": "Referans",
+    "definition": "Avrupa ve Batı Asya'da yaşamış, Homo sapiens'e göre daha güçlü yapılı insan türü (Homo neandertalensis). Yaklaşık 40.000 yıl önce soyu tükendi. Günümüz insanlarının DNA'sında Neandertal izleri bulunmaktadır."
+  },
+  {
+    "word": "Homo floresiensis",
+    "type": "Referans",
+    "definition": "Endonezya'nın Flores adasında yaşamış, ada cüceleşmesi sonucu yaklaşık 1 metre boya küçülmüş insan türü. 'Hobbit' olarak da bilinir; taş alet kullanır, cüce filleri avlardı."
+  },
+  {
+    "word": "Homo denisova",
+    "type": "Referans",
+    "definition": "2010'da Sibirya'daki Denisova mağarasında bulunan fosil parmak kemiğinden genetik analizle tespit edilen, daha önce bilinmeyen insan türü. Güneydoğu Asya'ya yayıldığı düşünülmektedir."
+  },
+  {
+    "word": "Australopithecus",
+    "type": "Referans",
+    "definition": "Latince 'güney maymunu' anlamına gelen ve yaklaşık 4 milyon yıl önce yaşamış insan atası cins. Homo cinsinin evrileceği ilk iki ayaklı varlıklardandır."
+  },
+  {
+    "word": "doğal seçilim",
+    "type": "Kavram",
+    "definition": "Darwin'in evrim teorisinin temel mekanizması: Çevreye daha iyi uyum sağlayan bireyler hayatta kalır ve özelliklerini sonraki nesillere aktarır. Kasıtlı bir plan yoktur; süreç tamamen rastlantısal mutasyonlara dayanır."
+  },
+  {
+    "word": "DNA",
+    "type": "Kavram",
+    "definition": "Deoksiribonükleik asit; canlıların genetik bilgisini taşıyan çift sarmal molekül. Tüm organizmaların gelişim, işleyiş ve üreme talimatları DNA'da kodlanmıştır."
+  },
+  {
+    "word": "Big Bang",
+    "type": "Kavram",
+    "definition": "Yaklaşık 13,8 milyar yıl önce gerçekleştiği düşünülen ve evrenin tüm madde, enerji, zaman ve uzayının tek bir noktadan genişlemeye başladığı olgu. Modern kozmolojinin temel başlangıç noktasıdır."
+  },
+  {
+    "word": "Buzul Çağı",
+    "type": "Kavram",
+    "definition": "Dünya'nın büyük bölümünün kalın buzullarla kaplandığı jeolojik dönem. Son büyük buzul çağı yaklaşık 10.000 yıl önce sona erdi; bu süreç insan göç yollarını ve türlerin dağılımını doğrudan etkiledi."
+  },
+  {
+    "word": "avcı-toplayıcı",
+    "type": "Kavram",
+    "definition": "Tarım öncesi insanların av ve yabani bitki toplayarak geçindikleri yaşam biçimi. Harari'ye göre bu dönemde insanlar daha sağlıklı ve daha çeşitli besleniyordu; Tarım Devrimi bu durumu kötüleştirdi."
+  },
+  {
+    "word": "hayali gerçeklik",
+    "type": "Kavram",
+    "definition": "Harari'nin kullandığı kavram: milyonlarca insanın ortak olarak inandığı, fiziksel gerçeklikte var olmayan ama güçlü toplumsal etkiler yaratan şeyler. Şirketler, uluslar, para ve insan hakları buna örnektir."
+  },
+  {
+    "word": "ortak mit",
+    "type": "Kavram",
+    "definition": "Büyük insan topluluklarını bir arada tutan paylaşılan inanç ve hikayeler. Harari'ye göre Homo sapiens'i diğer hayvanlardan ayıran en kritik özellik, bu ortak mitleri yaratabilme ve onlara inanabilme kapasitesidir."
+  },
+  {
+    "word": "evrim",
+    "type": "Kavram",
+    "definition": "Canlı türlerinin nesiller boyunca genetik değişimlerle dönüşüm geçirdiği süreç. Darwin tarafından sistematik biçimde açıklanan bu süreç; mutasyon, doğal seçilim ve üreme başarısına dayanır."
+  },
+  {
+    "word": "Mezopotamya",
+    "type": "Referans",
+    "definition": "Yunanca 'iki nehir arası' anlamına gelen, Dicle ve Fırat nehirleri arasındaki bölge (bugünkü Irak). Tarihte ilk yazılı uygarlıkların, şehirlerin ve devletlerin ortaya çıktığı coğrafya."
+  },
+  {
+    "word": "Sümer",
+    "type": "Referans",
+    "definition": "MÖ 4000-2000 yılları arasında Mezopotamya'da yaşamış ve yazıyı icat eden uygarlık. İlk şehir devletlerini, ilk bürokrasiyi ve ilk yazılı yasaları oluşturdular."
+  },
+  {
+    "word": "Neolitik",
+    "type": "Kavram",
+    "definition": "'Yeni taş' anlamına gelen, insanlığın tarım ve yerleşik hayata geçtiği dönem (yaklaşık MÖ 10.000-3.000). Bu çağda taş aletler gelişti, çanak çömlek icat edildi ve ilk köyler kuruldu."
+  },
+  {
+    "word": "gen",
+    "type": "Kavram",
+    "definition": "DNA üzerinde belirli bir protein üretimini yönlendiren ve kalıtsal özellikleri taşıyan temel birim. Her insan yaklaşık 20.000-25.000 gen taşır; bu genler evrimsel geçmişimizin kaydıdır."
+  },
+  {
+    "word": "kabile",
+    "type": "Kavram",
+    "definition": "Ortak ataya, dile veya kültüre dayanan küçük insan topluluğu. Avcı-toplayıcı dönemde insanlar genellikle 150 kişiyi geçmeyen kabileler halinde yaşadı; bu sayı 'Dunbar sayısı' olarak da bilinir."
+  },
+  {
+    "word": "fotosintez",
+    "type": "Kavram",
+    "definition": "Bitkilerin güneş ışığını, suyu ve karbondioksiti kullanarak kimyasal enerji (glikoz) ürettiği biyolojik süreç. Dünya'daki neredeyse tüm besin zincirinin temelidir."
+  },
+  {
+    "word": "Homo rudolfensis",
+    "type": "Referans",
+    "definition": "Yaklaşık 1,9-1,8 milyon yıl önce Doğu Afrika'da yaşamış insan türü. 'Rudolf Gölü İnsanı' olarak da anılır; büyük beyin hacmiyle dikkat çeker."
+  },
+  {
+    "word": "Homo ergaster",
+    "type": "Referans",
+    "definition": "'Çalışkan insan' anlamına gelen, yaklaşık 1,9-1,4 milyon yıl önce Afrika'da yaşamış insan türü. Ateşi kontrol eden ve Afrika'dan ilk çıkan insan türlerinden biri olduğu düşünülmektedir."
+  }
+]
