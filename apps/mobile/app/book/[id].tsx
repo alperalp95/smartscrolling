@@ -425,22 +425,18 @@ export default function BookReaderScreen() {
               })}
               onScrollToIndexFailed={() => {}}
               renderItem={({ item, index: sectionIndex }) => (
-                <ScrollView
-                  style={{ height: readerHeight }}
-                  contentContainerStyle={[
-                    s.sectionScrollContent,
-                    { paddingBottom: Math.max(insets.bottom + 96, 120) },
+                <View
+                  style={[
+                    s.sectionPage,
+                    { height: readerHeight, paddingBottom: Math.max(insets.bottom + 80, 100) },
                   ]}
-                  nestedScrollEnabled
-                  showsVerticalScrollIndicator={false}
                 >
-                  <View style={s.sectionScreenHeader}>
-                    <Text style={s.sectionKicker}>
-                      Bolum {item.sectionOrder} / {textSections.length}
-                    </Text>
-                    {item.title ? <Text style={s.sectionTitle}>{item.title}</Text> : null}
-                    {item.summary ? <Text style={s.sectionSummary}>{item.summary}</Text> : null}
-                  </View>
+                  {(item.title || item.summary) ? (
+                    <View style={s.sectionScreenHeader}>
+                      {item.title ? <Text style={s.sectionTitle}>{item.title}</Text> : null}
+                      {item.summary ? <Text style={s.sectionSummary}>{item.summary}</Text> : null}
+                    </View>
+                  ) : null}
 
                   <Text style={s.sectionBodyText}>
                     {(item.parts ?? []).map((part: ReaderSectionPart, index: number) => {
@@ -481,7 +477,7 @@ export default function BookReaderScreen() {
                       return <Text key={partKey}>{part.text}</Text>;
                     })}
                   </Text>
-                </ScrollView>
+                </View>
               )}
             />
           )}
@@ -703,6 +699,11 @@ const s = StyleSheet.create({
     paddingTop: 28,
     paddingHorizontal: 24,
   },
+  sectionPage: {
+    paddingHorizontal: 22,
+    paddingTop: 24,
+    overflow: 'hidden',
+  },
   sectionScreen: {
     paddingHorizontal: 24,
     paddingBottom: 36,
@@ -729,10 +730,10 @@ const s = StyleSheet.create({
   },
   sectionBodyText: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 21,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '400',
     letterSpacing: 0.1,
-    lineHeight: 38,
+    lineHeight: 28,
   },
   para: { fontSize: 16, color: 'rgba(255,255,255,0.85)', lineHeight: 30, marginBottom: 22 },
   hlKey: { color: '#ffd60a', backgroundColor: 'rgba(255,214,10,0.18)', borderRadius: 3 },
