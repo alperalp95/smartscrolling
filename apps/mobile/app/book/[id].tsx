@@ -181,7 +181,7 @@ export default function BookReaderScreen() {
 
       const nextAccess = nextBook
         ? resolveBookAccess(nextBook, {
-            hasPremium: false,
+            hasPremium,
             isAuthenticated: Boolean(user),
           })
         : null;
