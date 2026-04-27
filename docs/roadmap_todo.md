@@ -26,7 +26,7 @@
 - [x] **P1-00b** Veri sozlesmesini hizala: Supabase semasi, frontend tipleri ve UI alan adlarini tekillestir
 - [x] **P1-00c** Dokuman gerceklik guncellemesi: roadmap, architecture ve README dosyalarini mevcut duruma gore duzelt
 - [x] **P1-00d** CI guvence katmani: GitHub Actions icine `typecheck` ve mumkunse Supabase function check adimlarini ekle
-- [ ] **P1-00e** Soft FTUE (First Time User Experience) yeniden tasarim: ilk deneme web preview stabilitesini bozdugu icin kontrollu rollback yapildi; ikinci deneme arastirma notlarina gore web-safe, route-level ve progressive sekilde yeniden ele alinacak
+- [x] **P1-00e** Soft FTUE (First Time User Experience) yeniden tasarim: `ftue-modal.tsx` bileseni ve `ftueStore.ts` ile `hasSeenFtue` / `isFtueVisible` akisi tamamlandi; web-safe, once-per-session modal olarak hayata gecirildi
 
 ### 1.1 Proje Kurulumu
 - [x] **P1-01** Monorepo yapisini kur (Turborepo)
@@ -47,11 +47,11 @@
 - [x] **P1-11b** Auth prompting: save/chat gibi korunan aksiyonlarda login yonlendirmesi ve profile CTA ekle
 - [x] **P1-11c** Post-auth redirect: save/chat kaynakli login yonlendirmesinde kullaniciyi basarili auth sonrasinda geldigi ekrana geri dondur
 - [x] **P1-11d** Value-first auth urun akisi: kullaniciyi feed ve demo kitap deneyimine anon al, auth'i save/sync/chat gibi niyet anlarinda iste
-- [ ] **P1-11e** Progressive profiling: ilgi alani secimi UI'i eklendi; sonraki adim olarak preference persistence, gunluk hedef ve kullanicinin profilden bilinclli sekilde acabilecegi bildirim tercihi dilimlerini tamamla
+- [x] **P1-11e** Progressive profiling: ilgi alani secimi, gunluk hedef ve bildirim tercihi UI'lari `profile.tsx`'e eklendi; `userPreferences.ts` ile Supabase'e persist ediliyor; migration'lar `p1_11e_daily_goal_preference` ve `p1_11e_notification_preference` uygulandı
 - [x] **P1-11f** Guest mode mesajlasmasi: misafir kullanicinin neleri yapabilecegini ve login ile hangi degerleri kazanacagini UI seviyesinde netlestir
 - [x] **P1-12** Veritabani guvenligi: Yeni kullanicilarda `public.users` tablosunu otomatik dolduran Postgres Trigger
 - [ ] **P1-13** Google OAuth ve Apple Sign-In yapilandirmasi (Dashboard provider config + Expo redirect URI + production callback allowlist)
-- [ ] **P1-14** RLS guvenligi: `auth.uid() = user_id` sarti ile korunan ozel tablolarin (bookmarks, progress) guncellenmesi
+- [x] **P1-14** RLS guvenligi: `20260415174141_p1_14_rls_hardening.sql` migration'i ile `reading_progress`, `bookmarks`, `chat_sessions`, `user_activity` tablolarina granular SELECT/INSERT/UPDATE/DELETE politikalari eklendi
 
 Not:
 - `P1-13` icin gap audit cikartildi.
@@ -79,8 +79,8 @@ Not:
 - [x] **P1-15j** Duplicate / freshness memory ilk slice'i: son 60 gunde ayni kategoride benzer topic'leri hafif fingerprint ile Groq oncesi skip et, `duplicate_recent_topic` metriğini `run-all` ozetine ekle
 - [x] **P1-15k** PDF curated source lane ilk slice'i: `Luzumsuz Bilgiler Ansiklopedisi` gibi Turkce kitap/PDF kaynaklarini mevcut discovery hattini bozmadan JSON tabanli ayri source lane olarak Groq + quality gate + insert zincirine bagla
 - [ ] **P1-16** NASA APOD aktif hattini koru; ArXiv / PubMed backlog'unun yanina Turkce kaynak genislemesi icin `Khan Academy Turkce`, `TUBITAK Bilim Genc`, `TDV Islam Ansiklopedisi` ve uygun olursa `Saglik Bakanligi / Saglikli Bilgi` adaylarini degerlendir
-- [ ] **P1-17** Public domain / acik lisansli 3-5 kitaplik ilk gercek katalogu Supabase `books` tablosuna yukle
-- [ ] **P1-18** Telifli (Sapiens, Cosmos) kitaplarin "Demo Chapter" olarak kullanim sinirlarini ayarla
+- [x] **P1-17** Public domain / acik lisansli kitaplik ilk gercek katalogu Supabase `books` tablosuna yuklendi; `p3_05b_real_books_catalog`, `p3_27_learning_library_shortlist`, `p3_10c_full_readable_sections_phase1` migration'lari uygulandı; 10 kitaplik katalog aktif
+- [x] **P1-18** Kitap erisim katmani `access_tier` alani (`free_anchor` / `premium`) ve `resolveBookAccess()` fonksiyonu ile runtime'a tasindi; `p3_26_book_access_policy` migration'i uygulandı
 - [ ] **P1-19** Icerik yasam dongusu ekle: `draft/review/approved/published` status modeli (MVP sonrasi operasyon olgunlastirma; otomatik pipeline yeterli gelmezse devreye alinacak)
 - [ ] **P1-19b** Gutenberg kitap akisi: `Storage`ta raw EN source, `book_sections` icinde TR reader edition stratejisini ilk kitapta apply et
 
@@ -103,9 +103,9 @@ Not:
 - [x] **P2-03e** Feed performance measurement: veri sorgusu, ilk kart gorunumu ve ilk gorsel yuklenmesini ayri loglarla olc
 - [ ] **P2-03f** Feed query strategy backlog'u: server-side freshness / weighted ranking / kategoriye ozel ilk sayfa stratejisini daha sonra degerlendir
 - [ ] **P2-12** Fact quality review loop: production disi editor feedback katmani ile `good / bad / unsure` ve ozellikle `bad` comment sinyali toplayip Groq prompt/pipeline tuning icin kullan
-- [ ] **P2-12c** Feed review mode UI: debug/internal modda fact kartlari icin hafif `good / bad / unsure` review paneli ve `bad` icin zorunlu comment akisi
-- [ ] **P2-12d** Fact review storage/export: review sinyallerini basit Supabase tablo veya JSON/CSV export modeliyle analiz edilebilir hale getir
-- [ ] **P2-13** Tek akis feed: kategori secme/filtreleme UI ve state'ini kaldir, mevcut feed'i tek kesintisiz akis olarak koru
+- [x] **P2-12c** Feed review mode UI: `index.tsx` icinde `good / bad / unsure` verdict secimi, issue tag chipleri, zorunlu comment ve modal sheet olarak tamamlandi; `isReviewMode` flag ile internal modda aktif
+- [x] **P2-12d** Fact review storage/export: `handleExportReviews()` ile in-memory review map'i JSON formatinda `Share` API uzerinden export ediliyor; `reviewsByFactId` state'i her session icin tutuluyor
+- [x] **P2-13** Tek akis feed: `feedStore.ts`'de kategori filtre state'i yok; `index.tsx`'de kategori filtre UI bulunmuyor; feed tek kesintisiz akis olarak calisıyor
 - [x] **P2-04** Kategori filtresi (Bilim, Tarih, Felsefe, Teknoloji, Saglik)
 - [x] **P2-05** Icerik veritabani semasi olustur (facts tablosu)
 - [x] **P2-06** Dogrulanmis kaynak etiketleme sistemi
@@ -139,7 +139,7 @@ Not:
 - [x] **P3-10** Okuma ilerleme senkronizasyonu: Her 1000ms debounce ile scroll pozisyonunu Supabase `reading_progress` tablosuna UPSERT etme
 - [x] **P3-10b** Reader veri kaynagini sabit slice'lardan `book_sections` tablosuna tasi ve section bazli fetch yap
 - [x] **P3-10c** Ilk iki kitapta tam okunabilir phase-1 akis: `Kendime Dusunceler` ve `The Problems of Philosophy` icin daha uzun section seti, yenilenmis highlight verisi ve remote migration kapanisini tamamla
-- [ ] **P3-10d** Reader rollout sirasi: Groq kotasi beklenirken `book_highlights` + AI context hizasi, reader performans checklist'i ve shortlist metadata cleanup islerini bitir
+- [x] **P3-10d** Reader rollout: 10 kitabin tamami icin `book_highlights` eklendi (free kitaplar ~25, premium kitaplar ~32-48 highlight); AI context `bookSectionContext.ts` uzerinden aktif bolum scope'una cekildi; section-based fetch ve highlight render aktif
 - [ ] **P3-11** Sayfa gecis animasyonu (Reanimated)
 
 ### 3.3 Kelime ve Referans Sistemi
@@ -165,8 +165,8 @@ Not:
 - [x] **S4** Groq ceviri maliyeti optimizasyonu: translate modunda daha kucuk section chunk'i varsayilani ve karar notu `P3-10i` altinda hazirlandi
 
 ### 3.5 Monetizasyon ve Paywall (Gelir Modeli)
-- [ ] **P3-23** RevenueCat entegrasyonu ve Premium kullanici yetkilendirme (Entitlement) kontrollerinin kodlanmasi; `premium` kullanici tipi library, AI custom soru ve chat history runtime gate'lerine baglanacak
-- [ ] **P3-24** Paywall (Odeme Duvari) ekraninin ve monetization policy'sinin implementasyonu; guest/free/premium akisi, reklam sonrasi yumusak upsell ve AI premium gecisleri bu baslikta tamamlanacak
+- [x] **P3-23** RevenueCat entegrasyonu tamamlandi: `purchases.ts` icinde `ensurePurchasesConfigured`, `getPremiumEntitlementStatus`, `purchasePackageSafe`, `restorePurchasesSafe`, `presentSmartScrollPaywall`, `presentCustomerCenterSafe` fonksiyonlari aktif; `premiumEntitlements.ts` ile `authStore`'a baglandı
+- [x] **P3-24** Paywall ekrani `premium.tsx` olarak tamamlandi: RevenueCat offering'lerinden dinamik paket listeleme, satin alma ve restore akisi, benefit listesi ve loading state mevcut; `promptForPremium` ile uygulama icinden tetikleniyor
 - [ ] **P3-24b** Reklam operasyon checklist'i: AdMob test/production ad unit'leri, Play Console `contains ads` beyanı ve consent/backoffice adimlarini release oncesi tamamla
 
 ### 3.6 Icerik Stratejisi Kararlari (Yeni Oncelik)
