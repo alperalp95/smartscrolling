@@ -425,14 +425,36 @@ export default function LibraryScreen() {
               >
                 <View>
                   <BookCover book={book} size="lg" />
-                  <View style={[s.premiumBadge, access.isFreeAnchor ? s.freeBadge : s.lockedBadge]}>
+                  <View
+                    style={[
+                      s.premiumBadge,
+                      access.isFreeAnchor
+                        ? s.freeBadge
+                        : access.canRead
+                          ? s.unlockedBadge
+                          : s.lockedBadge,
+                    ]}
+                  >
                     <Ionicons
-                      color={access.isFreeAnchor ? '#0a0a0a' : '#fff'}
-                      name={access.isFreeAnchor ? 'sparkles' : 'lock-closed'}
+                      color={
+                        access.isFreeAnchor ? '#0a0a0a' : access.canRead ? '#f5b942' : '#c4b5fd'
+                      }
+                      name={
+                        access.isFreeAnchor ? 'sparkles' : access.canRead ? 'star' : 'lock-closed'
+                      }
                       size={10}
                     />
-                    <Text style={[s.premiumText, access.isFreeAnchor ? s.freeBadgeText : null]}>
-                      {access.badgeLabel}
+                    <Text
+                      style={[
+                        s.premiumText,
+                        access.isFreeAnchor
+                          ? s.freeBadgeText
+                          : access.canRead
+                            ? s.unlockedBadgeText
+                            : s.lockedBadgeText,
+                      ]}
+                    >
+                      {access.isFreeAnchor ? 'FREE' : access.canRead ? 'PREMIUM' : 'PREMIUM'}
                     </Text>
                   </View>
                 </View>
@@ -440,9 +462,6 @@ export default function LibraryScreen() {
                   {book.title}
                 </Text>
                 <Text style={s.bookAuthorGrid}>{book.author}</Text>
-                <Text numberOfLines={2} style={s.accessHint}>
-                  {access.helperText}
-                </Text>
               </TouchableOpacity>
             );
           })}
@@ -762,19 +781,27 @@ const s = StyleSheet.create({
     gap: 3,
   },
   freeBadge: {
-    backgroundColor: 'rgba(255,214,10,0.92)',
+    backgroundColor: 'rgba(255,214,10,0.95)',
+    borderRadius: 8,
   },
   lockedBadge: {
-    backgroundColor: 'rgba(17,24,39,0.92)',
-    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(139,92,246,0.18)',
+    borderColor: 'rgba(196,181,253,0.35)',
     borderRadius: 8,
     borderWidth: 0.5,
   },
-  premiumText: { color: '#000', fontSize: 10, fontWeight: '700' },
+  unlockedBadge: {
+    backgroundColor: 'rgba(245,185,66,0.12)',
+    borderColor: 'rgba(245,185,66,0.35)',
+    borderRadius: 8,
+    borderWidth: 0.5,
+  },
+  premiumText: { fontSize: 10, fontWeight: '700' },
   freeBadgeText: { color: '#0a0a0a' },
+  lockedBadgeText: { color: '#c4b5fd' },
+  unlockedBadgeText: { color: '#f5b942' },
   bookTitleGrid: { color: '#fff', fontSize: 14, fontWeight: '600' },
   bookAuthorGrid: { color: '#8e8e93', fontSize: 12, marginTop: 2 },
-  accessHint: { color: '#8e8e93', fontSize: 11, lineHeight: 16, marginTop: 6 },
   webHiddenScreen: {
     display: 'none',
   },
