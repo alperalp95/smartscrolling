@@ -9,7 +9,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -258,15 +257,6 @@ export default function LibraryScreen() {
         contentContainerStyle={[s.scroll, { paddingBottom: tabBarHeight + 16 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={s.searchBar}>
-          <Ionicons name="search" size={16} color="#48484a" />
-          <TextInput
-            placeholder="Kitap veya yazar ara..."
-            placeholderTextColor="#48484a"
-            style={s.searchInput}
-          />
-        </View>
-
         {!user && (
           <View style={s.guestBanner}>
             <View style={{ flex: 1 }}>
@@ -298,16 +288,9 @@ export default function LibraryScreen() {
         ) : null}
 
         {user && hasPremium ? (
-          <View style={s.premiumActiveBanner}>
-            <View style={s.premiumActiveIcon}>
-              <Ionicons name="star" size={16} color="#f5b942" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.premiumActiveTitle}>Premium kutuphane acik</Text>
-              <Text style={s.premiumActiveText}>
-                Tum kitaplara, serbest AI sorularina ve reklamsiz deneyime erisimin var.
-              </Text>
-            </View>
+          <View style={s.premiumChip}>
+            <Ionicons name="star" size={12} color="#f5b942" />
+            <Text style={s.premiumChipText}>Premium aktif</Text>
           </View>
         ) : null}
 
@@ -390,41 +373,35 @@ export default function LibraryScreen() {
           </View>
         )}
 
-        {user && continueBooks.length > 0 && (
-          <>
-            <View style={s.sectionHeader}>
-              <Text style={s.sectionTitle}>Devam Et</Text>
-              <TouchableOpacity>
-                <Text style={s.sectionMore}>Tumu</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              contentContainerStyle={s.hRow}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-            >
-              {continueBooks.map((book) => (
-                <TouchableOpacity
-                  key={book.id}
-                  onPress={() => openBook(book)}
-                  style={s.continueCard}
-                  activeOpacity={0.8}
-                >
-                  <BookCover book={book} size="sm" />
+        {user && continueBooks.length > 0 && (() => {
+          const last = continueBooks[0];
+          return (
+            <>
+              <View style={s.sectionHeader}>
+                <Text style={s.sectionTitle}>Devam Et</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => openBook(last)}
+                style={s.continueFeatureCard}
+                activeOpacity={0.8}
+              >
+                <BookCover book={last} size="sm" />
+                <View style={s.continueFeatureInfo}>
+                  <Text style={s.continueFeatureTitle} numberOfLines={2}>{last.title}</Text>
+                  <Text style={s.continueFeatureAuthor}>{last.author}</Text>
                   <View style={s.progressBarBg}>
-                    <View style={[s.progressBarFill, { width: `${book.progress}%` }]} />
+                    <View style={[s.progressBarFill, { width: `${last.progress}%` }]} />
                   </View>
-                  <Text style={s.bookTitleSm} numberOfLines={1}>
-                    {book.title}
-                  </Text>
-                  <Text style={s.bookAuthorSm}>
-                    {book.author} · %{book.progress}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </>
-        )}
+                  <Text style={s.continueFeatureProgress}>%{last.progress} tamamlandi</Text>
+                  <View style={s.continueFeatureBtn}>
+                    <Ionicons name="play" size={12} color="#fff" />
+                    <Text style={s.continueFeatureBtnText}>Devam Et</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </>
+          );
+        })()}
 
         <View style={[s.sectionHeader, { marginTop: 24 }]}>
           <Text style={s.sectionTitle}>10 Kitaplik Ogrenme Kutuphanesi</Text>
@@ -484,20 +461,21 @@ const s = StyleSheet.create({
   },
   title: { color: '#fff', fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
   scroll: { paddingTop: 8 },
-  searchBar: {
-    alignItems: 'center',
-    backgroundColor: '#1c1c1e',
-    borderRadius: 14,
+  premiumChip: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-    marginHorizontal: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(245,185,66,0.1)',
+    borderColor: 'rgba(245,185,66,0.3)',
     borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginHorizontal: 16,
+    marginBottom: 18,
   },
-  searchInput: { color: '#fff', flex: 1, fontSize: 15 },
+  premiumChipText: { color: '#f5b942', fontSize: 12, fontWeight: '700' },
   guestBanner: {
     alignItems: 'flex-start',
     backgroundColor: 'rgba(139,92,246,0.1)',
@@ -521,28 +499,6 @@ const s = StyleSheet.create({
     paddingVertical: 10,
   },
   guestBannerButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  premiumActiveBanner: {
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(245,185,66,0.08)',
-    borderColor: 'rgba(245,185,66,0.24)',
-    borderRadius: 16,
-    borderWidth: 0.5,
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 22,
-    marginHorizontal: 16,
-    padding: 14,
-  },
-  premiumActiveIcon: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(245,185,66,0.12)',
-    borderRadius: 12,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
-  premiumActiveTitle: { color: '#fff', fontSize: 14, fontWeight: '700', marginBottom: 4 },
-  premiumActiveText: { color: '#f8e6b3', fontSize: 12, lineHeight: 18 },
   savedGuestCard: {
     alignItems: 'flex-start',
     backgroundColor: '#141416',
@@ -651,7 +607,32 @@ const s = StyleSheet.create({
   },
   savedEmptyTitle: { color: '#fff', fontSize: 14, fontWeight: '700', marginBottom: 4 },
   savedEmptyText: { color: '#8e8e93', fontSize: 12, lineHeight: 18 },
-  continueCard: { width: 140 },
+  continueFeatureCard: {
+    flexDirection: 'row',
+    gap: 14,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    backgroundColor: '#111214',
+    borderColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 0.5,
+    borderRadius: 18,
+    padding: 14,
+  },
+  continueFeatureInfo: { flex: 1, justifyContent: 'center' },
+  continueFeatureTitle: { color: '#fff', fontSize: 15, fontWeight: '700', marginBottom: 3 },
+  continueFeatureAuthor: { color: '#8e8e93', fontSize: 12, marginBottom: 10 },
+  continueFeatureProgress: { color: '#8e8e93', fontSize: 11, marginTop: 5, marginBottom: 10 },
+  continueFeatureBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    backgroundColor: '#a78bfa',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  continueFeatureBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   bookCoverSm: {
     borderRadius: 14,
     height: 196,
