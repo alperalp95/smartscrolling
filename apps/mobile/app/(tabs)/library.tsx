@@ -161,7 +161,7 @@ export default function LibraryScreen() {
     void (async () => {
       const [nextBooks, nextContinueBooks] = await Promise.all([
         fetchLibraryBooks(),
-        fetchContinueBooks(user?.id, false),
+        fetchContinueBooks(user?.id, hasPremium),
       ]);
 
       if (cancelled) {
@@ -175,7 +175,7 @@ export default function LibraryScreen() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, hasPremium, isFocused]);
 
   useEffect(() => {
     if (!isFocused && !savedIdsVersion) {
