@@ -41,6 +41,7 @@ export default function BookReaderScreen() {
     Record<string, ReaderDefinition>
   >({});
   const [textSections, setTextSections] = useState<ReaderTextSection[]>([]);
+  const [sectionsLoading, setSectionsLoading] = useState(true);
   const chatScrollRef = useRef<ScrollView | null>(null);
   const lastSyncedChatRef = useRef('');
   const bookId = typeof id === 'string' ? id : Array.isArray(id) ? (id[0] ?? '') : '';
@@ -170,14 +171,17 @@ export default function BookReaderScreen() {
   useEffect(() => {
     let cancelled = false;
 
-    void (async () => {
-      setActiveSectionIndex(0);
+    setBookMeta(null);
+    setTextSections([]);
+    setHighlightDefinitions({});
+    setActiveSectionIndex(0);
+    setSectionsLoading(true);
 
+    void (async () => {
       const nextBook = await fetchBookById(bookId);
 
-      if (!cancelled) {
-        setBookMeta(nextBook);
-      }
+      if (cancelled) return;
+      setBookMeta(nextBook);
 
       const nextAccess = nextBook
         ? resolveBookAccess(nextBook, {
@@ -187,20 +191,17 @@ export default function BookReaderScreen() {
         : null;
 
       if (!nextBook || !nextAccess?.canRead) {
-        if (!cancelled) {
-          setHighlightDefinitions({});
-          setTextSections([]);
-        }
+        setSectionsLoading(false);
         return;
       }
 
       const nextDefinitions = await fetchBookHighlightDefinitions(bookId);
       const nextSections = await fetchBookSections(bookId, nextDefinitions);
 
-      if (!cancelled) {
-        setHighlightDefinitions(nextDefinitions);
-        setTextSections(nextSections);
-      }
+      if (cancelled) return;
+      setHighlightDefinitions(nextDefinitions);
+      setTextSections(nextSections);
+      setSectionsLoading(false);
     })();
 
     return () => {
@@ -404,6 +405,8 @@ export default function BookReaderScreen() {
             </TouchableOpacity>
           </View>
         </View>
+      ) : sectionsLoading ? (
+        <View style={s.sectionPagerWrap} />
       ) : hasSectionContent ? (
         <View
           style={s.sectionPagerWrap}
@@ -423,9 +426,9 @@ export default function BookReaderScreen() {
                 offset: readerHeight * index,
                 index,
               })}
-              windowSize={3}
-              maxToRenderPerBatch={2}
-              initialNumToRender={1}
+              windowSize={5}
+              maxToRenderPerBatch={3}
+              initialNumToRender={2}
               onScrollToIndexFailed={() => {}}
               renderItem={({ item, index: sectionIndex }) => (
                 <View
