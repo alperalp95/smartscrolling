@@ -3,7 +3,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -593,6 +593,9 @@ const RING_SIZE = 46;
 const RING_TICK_COUNT = 18;
 const RING_TICK_SIZE = 4;
 const RING_TICK_IDS = Array.from({ length: RING_TICK_COUNT }, (_, index) => `ring-tick-${index}`);
+const READ_QUALIFICATION_RATIO = 0.35;
+const READ_QUALIFICATION_MIN_MS = 2000;
+const READ_QUALIFICATION_MAX_MS = 5000;
 
 function getRingTickPosition(index: number) {
   const angle = (Math.PI * 2 * index) / RING_TICK_COUNT - Math.PI / 2;
@@ -618,6 +621,15 @@ function getProgressColor(progress: number) {
   }
 
   return '#9ca3af';
+}
+
+function getReadQualificationProgress(durationMs: number) {
+  const qualifiedMs = Math.min(
+    READ_QUALIFICATION_MAX_MS,
+    Math.max(READ_QUALIFICATION_MIN_MS, durationMs * READ_QUALIFICATION_RATIO),
+  );
+
+  return Math.min(qualifiedMs / durationMs, 1);
 }
 
 function ActivityRing({ progress }: { progress: number }) {
@@ -741,6 +753,7 @@ type FullScreenFactCardProps = {
   isActive: boolean;
   height: number;
   onFinish: () => void;
+  onReadQualified: (factId: string) => void;
   toggleLike: (id: string) => void;
   toggleSave: (id: string) => void;
   isLiked: boolean;
@@ -759,6 +772,7 @@ function FullScreenFactCard({
   isActive,
   height,
   onFinish,
+  onReadQualified,
   toggleLike,
   toggleSave,
   isLiked,
@@ -773,7 +787,9 @@ function FullScreenFactCard({
 }: FullScreenFactCardProps) {
   const progress = useRef(new Animated.Value(0)).current;
   const progressValue = useRef(0);
+  const qualifiedReadFactId = useRef<string | null>(null);
   const duration = (item.read_time_sq || 15) * 1000;
+  const readQualificationProgress = getReadQualificationProgress(duration);
   const cardBottomOffset = tabBarHeight + Math.max(bottomInset, Platform.OS === 'ios' ? 12 : 8);
   const cardTopOffset = Math.max(topInset + 72, 96);
   const expandedCardTopOffset = Math.max(topInset + 112, 128);
@@ -820,12 +836,21 @@ function FullScreenFactCard({
   useEffect(() => {
     const listenerId = progress.addListener(({ value }) => {
       progressValue.current = value;
+
+      if (
+        isActive &&
+        qualifiedReadFactId.current !== item.id &&
+        value >= readQualificationProgress
+      ) {
+        qualifiedReadFactId.current = item.id;
+        onReadQualified(item.id);
+      }
     });
 
     return () => {
       progress.removeListener(listenerId);
     };
-  }, [progress]);
+  }, [isActive, item.id, onReadQualified, progress, readQualificationProgress]);
 
   useEffect(() => {
     if (!isActive) {
@@ -1266,19 +1291,24 @@ export default function FeedScreen() {
     setSeenFactIds((current) =>
       current.includes(activeFactId) ? current : [...current, activeFactId],
     );
-
-    if (!activityTrackedFactIdsRef.current.has(activeFactId)) {
-      activityTrackedFactIdsRef.current.add(activeFactId);
-      void (async () => {
-        const result = await incrementDailyActivity({ factsRead: 1 });
-
-        if (result.synced) {
-          setFeedStreakDays((current) => Math.max(current, 1));
-          setTodayFactsRead((current) => current + 1);
-        }
-      })();
-    }
   }, [activeFactId]);
+
+  const handleReadQualified = useCallback((factId: string) => {
+    if (activityTrackedFactIdsRef.current.has(factId)) {
+      return;
+    }
+
+    activityTrackedFactIdsRef.current.add(factId);
+
+    void (async () => {
+      const result = await incrementDailyActivity({ factsRead: 1 });
+
+      if (result.synced) {
+        setFeedStreakDays((current) => Math.max(current, 1));
+        setTodayFactsRead((current) => current + 1);
+      }
+    })();
+  }, []);
 
   const factDailyGoal = dailyGoal?.type === 'facts' ? dailyGoal.value : null;
   const todayProgressPercent = factDailyGoal
@@ -1487,6 +1517,7 @@ export default function FeedScreen() {
                   isActive={activeFactId === item.id}
                   height={listHeight}
                   onFinish={() => handleFinish(index, feedItems.length)}
+                  onReadQualified={handleReadQualified}
                   toggleLike={toggleLike}
                   toggleSave={handleToggleSave}
                   isLiked={likedIds.includes(item.id)}

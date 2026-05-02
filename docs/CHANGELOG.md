@@ -6,6 +6,15 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.26] - 2026-05-02
+
+#### P35-06c Feed Read Qualification Threshold
+- `docs/tasks/p35_06c_feed_read_qualification_threshold.md` ile hizli kaydirma kaynakli kart sayaci sismesi icin kucuk duzeltme task'i acildi.
+- Feed'de `facts_read` artik kart aktif olur olmaz degil, kart progress'i okundu esigini gecince artiyor.
+- Okundu esigi kart suresinin %35'i olarak ayarlandi; minimum 2 saniye, maksimum 5 saniye.
+- Pause sirasinda progress durdugu icin okundu esigi de ilerlemiyor; ayni kart session icinde bir kez sayilmaya devam ediyor.
+- Verification: `npm run typecheck`, `npx biome lint 'apps/mobile/app/(tabs)/index.tsx'` ve formatter disi hedefli Biome check gecti.
+
 ### [v1.25] - 2026-05-02
 
 #### P35-08 Activity Ring Animasyonu
