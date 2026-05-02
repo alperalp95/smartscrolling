@@ -32,6 +32,7 @@ const LOW_QUALITY_TITLE_PATTERNS = [
   /farklılığı/i,
   /\bfarkliligi\b/i,
   /tarihsel baglam[ıi]/i,
+  /kariyeri$/i,
   /\bgizli maceras[ıi]\b/i,
   /(?:'nın|'nin|'nun|'nün|in|ın|un|ün)\s+tarihi$/i,
   /özellikleri$/i,
@@ -284,6 +285,36 @@ const LOW_VALUE_SOURCE_EXCERPT_PATTERNS = [
   /\bbir sarkicidir\b/i,
 ];
 
+const HIGH_IMPACT_BIOGRAPHY_SOURCE_PATTERNS = [
+  /\bnikola tesla\b/i,
+  /\bthomas edison\b/i,
+  /\balbert einstein\b/i,
+  /\bmarie curie\b/i,
+  /\bleonardo da vinci\b/i,
+  /\blionel messi\b/i,
+  /\brafael nadal\b/i,
+  /\bmichael jackson\b/i,
+  /\bmartin luther king\b/i,
+  /\bnelson mandela\b/i,
+  /\bkatherine johnson\b/i,
+  /\bmustafa kemal atatürk\b/i,
+  /\bmustafa kemal ataturk\b/i,
+  /\bserena williams\b/i,
+  /\bisaac newton\b/i,
+  /\bcharles darwin\b/i,
+  /\balan turing\b/i,
+  /\bnobel\b/i,
+  /\bgrammy\b/i,
+  /\bballon d'?or\b/i,
+  /\bgrand slam\b/i,
+  /\bworld record\b/i,
+  /\bdünya rekoru\b/i,
+  /\bsivil haklar\b/i,
+  /\bcivil rights\b/i,
+  /\bapartheid\b/i,
+  /\bnasa\b/i,
+];
+
 function wordCount(text) {
   return (text ?? '').trim().split(/\s+/).filter(Boolean).length;
 }
@@ -484,6 +515,7 @@ export function evaluateFactQuality(fact) {
   const sourceExcerpt = (fact._source_excerpt ?? '').trim();
   const tags = Array.isArray(fact.tags) ? fact.tags.filter(Boolean) : [];
   const isPdfCurated = sourceKind === 'pdf_curated';
+  const isBiography = fact.category === '👤 BİYOGRAFİ';
 
   if (!title || title.length < 12 || title.length > 80) {
     return { ok: false, reason: 'invalid_title_length' };
@@ -540,10 +572,15 @@ export function evaluateFactQuality(fact) {
     return { ok: false, reason: 'insufficient_tags' };
   }
 
-  if (
+  const sourceTopicText = `${sourceTitle} ${sourceExcerpt} ${title} ${content} ${tags.join(' ')}`;
+  const hasLowValueSourceTopic =
     LOW_VALUE_SOURCE_TITLE_PATTERNS.some((pattern) => pattern.test(sourceTitle)) ||
-    LOW_VALUE_SOURCE_EXCERPT_PATTERNS.some((pattern) => pattern.test(sourceExcerpt))
-  ) {
+    LOW_VALUE_SOURCE_EXCERPT_PATTERNS.some((pattern) => pattern.test(sourceExcerpt));
+  const hasHighImpactBiographySignal = HIGH_IMPACT_BIOGRAPHY_SOURCE_PATTERNS.some((pattern) =>
+    pattern.test(sourceTopicText),
+  );
+
+  if (hasLowValueSourceTopic && !(isBiography && hasHighImpactBiographySignal)) {
     return { ok: false, reason: 'low_value_source_topic' };
   }
 
