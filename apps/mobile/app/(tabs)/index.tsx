@@ -8,6 +8,7 @@ import {
   Alert,
   Animated,
   AppState,
+  Easing,
   Image,
   Linking,
   Modal,
@@ -621,8 +622,31 @@ function getProgressColor(progress: number) {
 
 function ActivityRing({ progress }: { progress: number }) {
   const normalizedProgress = Math.max(0, Math.min(progress, 1));
-  const activeTicks = Math.round(normalizedProgress * RING_TICK_COUNT);
-  const activeColor = getProgressColor(normalizedProgress);
+  const animatedProgress = useRef(new Animated.Value(0)).current;
+  const [displayedProgress, setDisplayedProgress] = useState(0);
+  const activeTicks = Math.round(displayedProgress * RING_TICK_COUNT);
+  const activeColor = getProgressColor(displayedProgress);
+
+  useEffect(() => {
+    const listenerId = animatedProgress.addListener(({ value }) => {
+      setDisplayedProgress(Math.max(0, Math.min(value, 1)));
+    });
+
+    return () => {
+      animatedProgress.removeListener(listenerId);
+    };
+  }, [animatedProgress]);
+
+  useEffect(() => {
+    animatedProgress.stopAnimation();
+
+    Animated.timing(animatedProgress, {
+      toValue: normalizedProgress,
+      duration: 460,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [animatedProgress, normalizedProgress]);
 
   return (
     <View style={s.activityRing}>

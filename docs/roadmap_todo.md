@@ -197,7 +197,7 @@ Not:
 ### Ilerleme Gostergesi
 - [x] **P35-06** Ana ekranda "Bugun X kart okudun" ozet widget'i - feed overlay bugunku `facts_read` sayisini ve varsa kart hedefini kompakt activity ring olarak gosteriyor; basa don butonu activity ring ile hizalandi (`docs/tasks/p35_06_today_cards_widget.md`, `docs/tasks/p35_06a_compact_feed_activity_ring.md`, `docs/tasks/p35_06b_align_feed_activity_controls.md`)
 - [x] **P35-07** Gunluk hedef belirleme (orn: 3 kart / 5 kart) - profile UI + Supabase `users.daily_goal_type/value` persistence tamamlandi; dakika hedefi gercek zaman olcumu gelene kadar kaldirildi; profil yuzeyi ozet + `Duzenle` davranisina alindi (`docs/tasks/p35_07b_card_only_daily_goal.md`, `docs/tasks/p35_07c_daily_goal_summary_edit.md`)
-- [ ] **P35-08** Dairesel ilerleme cubugu animasyonu
+- [x] **P35-08** Dairesel ilerleme cubugu animasyonu - feed activity ring mevcut progress'e kisa React Native `Animated` gecisiyle doluyor; yeni dependency eklenmedi (`docs/tasks/p35_08_activity_ring_animation.md`)
 - [x] **P35-09** Haftalik aktivite grafigi - profil ozetindeki 7 gunluk nokta satiri, `facts_read` degerini gosteren kompakt haftalik bar grafige donusturuldu (`docs/tasks/p35_09_weekly_activity_graph.md`)
 
 ### Push Notification

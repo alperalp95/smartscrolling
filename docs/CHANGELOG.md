@@ -6,6 +6,14 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.25] - 2026-05-02
+
+#### P35-08 Activity Ring Animasyonu
+- `docs/tasks/p35_08_activity_ring_animation.md` ile feed activity ring animasyonu kucuk ve dependency'siz task olarak acildi.
+- Feed activity ring, ekrana geldiginde mevcut gunluk kart progress'ine kisa React Native `Animated` gecisiyle dolacak sekilde guncellendi.
+- Kart sayisi arttiginda ring mevcut durumdan yeni yuzdeye yumuşak geciyor; profil grafigi ve activity veri modeli degistirilmedi.
+- Verification: `npm run typecheck`, `npx biome lint 'apps/mobile/app/(tabs)/index.tsx'` ve formatter disi hedefli Biome check gecti; tam `biome check` mevcut CRLF formatter farki nedeniyle dosyanin tamamini yeniden yazmak istiyor.
+
 ### [v1.24] - 2026-05-02
 
 #### P35-09 Haftalik Aktivite Grafigi
