@@ -1,15 +1,9 @@
 import { create } from 'zustand';
 
-export type DailyGoalPreference =
-  | {
-      type: 'facts';
-      value: 3 | 5;
-    }
-  | {
-      type: 'minutes';
-      value: 10;
-    }
-  | null;
+export type DailyGoalPreference = {
+  type: 'facts';
+  value: 3 | 5;
+} | null;
 
 type OnboardingState = {
   dailyGoal: DailyGoalPreference;

@@ -6,6 +6,16 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.21] - 2026-05-02
+
+#### Feed Activity Ring ve Profil Tercihleri Sadelestirildi
+- Feed'deki buyuk gunluk kart widget'i kompakt sol taraf activity ring'e donusturuldu; kart hedefi ve gunluk seri ayni kucuk overlay icinde gosteriliyor.
+- Activity ring yeni dependency eklemeden gri tick'lerden hedefe yaklasinca yesile donen basit bir progress gostergesi olarak kuruldu.
+- Gunluk hedef secenekleri MVP icin sadece kart hedeflerine indirildi; dakika hedefi mobil tip/UI katmanindan kaldirildi ve eski `minutes` degerleri aktif hedef gibi gosterilmeyecek.
+- Profilde ilgi alanlari secildikten sonra chip listesi acik kalmak yerine ozet + `Duzenle` davranisina alindi.
+- Backlog task'lari kapatildi: `p35_06a_compact_feed_activity_ring`, `p35_07b_card_only_daily_goal`, `p4_01b_interest_summary_edit`.
+- Verification: `npm run typecheck` ve hedefli Biome check (`userPreferences`, `onboardingStore`, `profile`) gecti.
+
 ### [v1.20] - 2026-05-02
 
 #### P35-01/P35-06 Retention Activity Slice Kapandi

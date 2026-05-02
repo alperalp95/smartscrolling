@@ -35,7 +35,6 @@ const INTEREST_OPTIONS = ['Bilim', 'Tarih', 'Felsefe', 'Teknoloji', 'Saglik', 'P
 const DAILY_GOAL_OPTIONS: Exclude<DailyGoalPreference, null>[] = [
   { type: 'facts', value: 3 },
   { type: 'facts', value: 5 },
-  { type: 'minutes', value: 10 },
 ];
 
 type AuthFeedback = {
@@ -91,6 +90,7 @@ export default function ProfileScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authFeedback, setAuthFeedback] = useState<AuthFeedback>(null);
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
+  const [isEditingInterests, setIsEditingInterests] = useState(false);
 
   const isLoggedIn = Boolean(user);
   const userEmail = user?.email?.trim() || 'Misafir Kullanici';
@@ -103,13 +103,10 @@ export default function ProfileScreen() {
       : authProvider === 'email'
         ? 'E-posta ile bagli'
         : 'Hesap baglandi';
-  const dailyGoalSummary = dailyGoal
-    ? dailyGoal.type === 'facts'
-      ? `Her gun ${dailyGoal.value} kart`
-      : `Her gun ${dailyGoal.value} dakika`
-    : 'Henuz hedef secilmedi';
+  const dailyGoalSummary = dailyGoal ? `Her gun ${dailyGoal.value} kart` : 'Henuz hedef secilmedi';
   const todayKey = getTodayKey();
   const streakDays = activitySummary?.streakDays ?? 0;
+  const shouldShowInterestEditor = isEditingInterests || selectedInterests.length === 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -296,6 +293,7 @@ export default function ProfileScreen() {
     try {
       await updateUserInterests(user.id, selectedInterests);
       completeInterestPicker();
+      setIsEditingInterests(false);
       Alert.alert('Harika', 'Ilgi alanlarin kaydedildi.');
     } catch (error) {
       const message =
@@ -556,36 +554,59 @@ export default function ProfileScreen() {
             </Text>
 
             <View style={s.preferenceSection}>
-              <Text style={s.preferenceTitle}>Ilgi Alanlari</Text>
-              <Text style={s.preferenceHelp}>En fazla 3 alan sec.</Text>
-              <View style={s.chipWrap}>
-                {INTEREST_OPTIONS.map((interest) => {
-                  const isSelected = selectedInterests.includes(interest);
-                  return (
-                    <TouchableOpacity
-                      key={interest}
-                      style={[s.chip, isSelected && s.chipSelected]}
-                      onPress={() => toggleInterest(interest)}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={[s.chipText, isSelected && s.chipTextSelected]}>{interest}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
+              <View style={s.preferenceHeaderRow}>
+                <View style={s.preferenceHeaderCopy}>
+                  <Text style={s.preferenceTitle}>Ilgi Alanlari</Text>
+                  <Text style={s.preferenceHelp}>
+                    {shouldShowInterestEditor
+                      ? 'En fazla 3 alan sec.'
+                      : selectedInterests.join(', ')}
+                  </Text>
+                </View>
+                {!shouldShowInterestEditor ? (
+                  <TouchableOpacity
+                    onPress={() => setIsEditingInterests(true)}
+                    style={s.smallEditButton}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={s.smallEditButtonText}>Duzenle</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
-              <TouchableOpacity
-                style={[
-                  s.primaryButton,
-                  (!selectedInterests.length || isSavingInterests) && s.buttonDisabled,
-                ]}
-                onPress={() => void handleSaveInterests()}
-                activeOpacity={0.85}
-                disabled={!selectedInterests.length || isSavingInterests}
-              >
-                <Text style={s.primaryButtonText}>
-                  {isSavingInterests ? 'Kaydediliyor...' : 'Ilgi Alanlarini Kaydet'}
-                </Text>
-              </TouchableOpacity>
+              {shouldShowInterestEditor ? (
+                <>
+                  <View style={s.chipWrap}>
+                    {INTEREST_OPTIONS.map((interest) => {
+                      const isSelected = selectedInterests.includes(interest);
+                      return (
+                        <TouchableOpacity
+                          key={interest}
+                          style={[s.chip, isSelected && s.chipSelected]}
+                          onPress={() => toggleInterest(interest)}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
+                            {interest}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      s.primaryButton,
+                      (!selectedInterests.length || isSavingInterests) && s.buttonDisabled,
+                    ]}
+                    onPress={() => void handleSaveInterests()}
+                    activeOpacity={0.85}
+                    disabled={!selectedInterests.length || isSavingInterests}
+                  >
+                    <Text style={s.primaryButtonText}>
+                      {isSavingInterests ? 'Kaydediliyor...' : 'Ilgi Alanlarini Kaydet'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : null}
             </View>
 
             <View style={s.preferenceDivider} />
@@ -595,8 +616,7 @@ export default function ProfileScreen() {
               <Text style={s.preferenceHelp}>{dailyGoalSummary}</Text>
               <View style={s.chipWrap}>
                 {DAILY_GOAL_OPTIONS.map((option) => {
-                  const label =
-                    option.type === 'facts' ? `${option.value} kart` : `${option.value} dakika`;
+                  const label = `${option.value} kart`;
                   const isSelected = isDailyGoalSelected(option);
 
                   return (
@@ -861,6 +881,16 @@ const s = StyleSheet.create({
   buttonDisabled: { opacity: 0.55 },
 
   preferenceSection: { gap: 12 },
+  preferenceHeaderRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  preferenceHeaderCopy: {
+    flex: 1,
+    gap: 4,
+  },
   preferenceDivider: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.06)',
@@ -899,6 +929,19 @@ const s = StyleSheet.create({
   statusPillText: { fontSize: 12, fontWeight: '700' },
   statusPillTextOn: { color: '#30d158' },
   statusPillTextOff: { color: '#8e8e93' },
+  smallEditButton: {
+    backgroundColor: '#111827',
+    borderColor: 'rgba(167,139,250,0.28)',
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  smallEditButtonText: {
+    color: '#c4b5fd',
+    fontSize: 12,
+    fontWeight: '800',
+  },
 
   managementRow: {
     flexDirection: 'row',

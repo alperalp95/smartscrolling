@@ -1,15 +1,9 @@
 import { supabase } from './supabase';
 
-export type DailyGoalPreference =
-  | {
-      type: 'facts';
-      value: 3 | 5;
-    }
-  | {
-      type: 'minutes';
-      value: 10;
-    }
-  | null;
+export type DailyGoalPreference = {
+  type: 'facts';
+  value: 3 | 5;
+} | null;
 
 export type UserPreferences = {
   dailyGoal: DailyGoalPreference;
@@ -30,10 +24,6 @@ function normalizeDailyGoal(
   value: number | null | undefined,
 ): DailyGoalPreference {
   if (type === 'facts' && (value === 3 || value === 5)) {
-    return { type, value };
-  }
-
-  if (type === 'minutes' && value === 10) {
     return { type, value };
   }
 

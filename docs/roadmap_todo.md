@@ -195,8 +195,8 @@ Not:
 - [x] **P35-05** `user_activity` tablosu ile gunluk kayit tut - feed kart goruntuleme, reader sayfa ilerlemesi ve basarili AI soru sayisi `incrementDailyActivity()` ile gunluk kayda yaziliyor
 
 ### Ilerleme Gostergesi
-- [x] **P35-06** Ana ekranda "Bugun X kart okudun" ozet widget'i - feed overlay bugunku `facts_read` sayisini ve varsa kart hedefini gosteriyor (`docs/tasks/p35_06_today_cards_widget.md`)
-- [x] **P35-07** Gunluk hedef belirleme (orn: 3 kart / 5 sayfa) - profile UI + Supabase `users.daily_goal_type/value` persistence tamamlandi
+- [x] **P35-06** Ana ekranda "Bugun X kart okudun" ozet widget'i - feed overlay bugunku `facts_read` sayisini ve varsa kart hedefini kompakt activity ring olarak gosteriyor (`docs/tasks/p35_06_today_cards_widget.md`, `docs/tasks/p35_06a_compact_feed_activity_ring.md`)
+- [x] **P35-07** Gunluk hedef belirleme (orn: 3 kart / 5 kart) - profile UI + Supabase `users.daily_goal_type/value` persistence tamamlandi; dakika hedefi gercek zaman olcumu gelene kadar kaldirildi (`docs/tasks/p35_07b_card_only_daily_goal.md`)
 - [ ] **P35-08** Dairesel ilerleme cubugu animasyonu
 - [ ] **P35-09** Haftalik aktivite grafigi
 
@@ -213,7 +213,7 @@ Not:
 
 > Bu asama MVP sonrasi 2. surum icin planlanmistir.
 
-- [x] **P4-01** Kullanici ilgi alani secimi ilk slice'i profile ekraninda devreye alindi; kapsam feed siralama/onboarding etkisiyle genisletilecek
+- [x] **P4-01** Kullanici ilgi alani secimi ilk slice'i profile ekraninda devreye alindi; kayit sonrasi profil UI'i ozet + `Duzenle` davranisina alindi; kapsam feed siralama/onboarding etkisiyle genisletilecek (`docs/tasks/p4_01b_interest_summary_edit.md`)
 - [ ] **P4-02** Kisilestirilmis bilgi onerileri (oneri motoru)
 - [ ] **P4-03** Rozet ve basarim sistemi
 - [ ] **P4-04** Detayli istatistik ekrani

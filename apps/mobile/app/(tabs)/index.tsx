@@ -33,7 +33,7 @@ import {
 import { promptForAuth } from '../../src/lib/authPrompt';
 import { isBadFactMediaUrl } from '../../src/lib/factVisuals';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
-import { fetchTodayActivity, incrementDailyActivity } from '../../src/lib/userActivity';
+import { fetchActivitySummary, incrementDailyActivity } from '../../src/lib/userActivity';
 import { useAuthStore } from '../../src/store/authStore';
 import { useFeedStore } from '../../src/store/feedStore';
 import { useOnboardingStore } from '../../src/store/onboardingStore';
@@ -588,6 +588,61 @@ type FactReviewExportEntry = FactReviewDraft & {
   visualKey: string | null;
 };
 
+const RING_SIZE = 46;
+const RING_TICK_COUNT = 18;
+const RING_TICK_SIZE = 4;
+const RING_TICK_IDS = Array.from({ length: RING_TICK_COUNT }, (_, index) => `ring-tick-${index}`);
+
+function getRingTickPosition(index: number) {
+  const angle = (Math.PI * 2 * index) / RING_TICK_COUNT - Math.PI / 2;
+  const radius = RING_SIZE / 2 - 5;
+
+  return {
+    left: RING_SIZE / 2 + Math.cos(angle) * radius - RING_TICK_SIZE / 2,
+    top: RING_SIZE / 2 + Math.sin(angle) * radius - RING_TICK_SIZE / 2,
+  };
+}
+
+function getProgressColor(progress: number) {
+  if (progress >= 0.9) {
+    return '#22c55e';
+  }
+
+  if (progress >= 0.65) {
+    return '#65a30d';
+  }
+
+  if (progress >= 0.35) {
+    return '#84cc16';
+  }
+
+  return '#9ca3af';
+}
+
+function ActivityRing({ progress }: { progress: number }) {
+  const normalizedProgress = Math.max(0, Math.min(progress, 1));
+  const activeTicks = Math.round(normalizedProgress * RING_TICK_COUNT);
+  const activeColor = getProgressColor(normalizedProgress);
+
+  return (
+    <View style={s.activityRing}>
+      {RING_TICK_IDS.map((tickId, index) => {
+        const isActive = index < activeTicks;
+        return (
+          <View
+            key={tickId}
+            style={[
+              s.activityRingTick,
+              getRingTickPosition(index),
+              { backgroundColor: isActive ? activeColor : 'rgba(148,163,184,0.34)' },
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
 type FeedListItem = FactType | FeedAdSlot;
 
 function isFeedAdSlot(item: FeedListItem): item is FeedAdSlot {
@@ -1066,6 +1121,7 @@ export default function FeedScreen() {
   });
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewsByFactId, setReviewsByFactId] = useState<Record<string, FactReviewDraft>>({});
+  const [feedStreakDays, setFeedStreakDays] = useState(0);
   const [todayFactsRead, setTodayFactsRead] = useState(0);
   const orderingKeyRef = useRef<string>('');
 
@@ -1103,15 +1159,17 @@ export default function FeedScreen() {
     let cancelled = false;
 
     if (!isFocused || !user?.id) {
+      setFeedStreakDays(0);
       setTodayFactsRead(0);
       return;
     }
 
     void (async () => {
-      const todayActivity = await fetchTodayActivity();
+      const activitySummary = await fetchActivitySummary();
 
       if (!cancelled) {
-        setTodayFactsRead(todayActivity.factsRead);
+        setFeedStreakDays(activitySummary.streakDays);
+        setTodayFactsRead(activitySummary.today.factsRead);
       }
     })();
 
@@ -1191,6 +1249,7 @@ export default function FeedScreen() {
         const result = await incrementDailyActivity({ factsRead: 1 });
 
         if (result.synced) {
+          setFeedStreakDays((current) => Math.max(current, 1));
           setTodayFactsRead((current) => current + 1);
         }
       })();
@@ -1201,6 +1260,7 @@ export default function FeedScreen() {
   const todayProgressPercent = factDailyGoal
     ? Math.min(Math.round((todayFactsRead / factDailyGoal) * 100), 100)
     : 0;
+  const todayProgressRatio = factDailyGoal ? todayProgressPercent / 100 : 0;
   const shouldShowFeedUpsell =
     Boolean(user) &&
     !hasPremium &&
@@ -1483,23 +1543,13 @@ export default function FeedScreen() {
             )}
             {user ? (
               <View style={s.dailyProgressWrap}>
-                <View style={s.dailyProgressTextRow}>
+                <ActivityRing progress={todayProgressRatio} />
+                <View style={s.dailyProgressCopy}>
                   <Text style={s.dailyProgressTitle}>
-                    {factDailyGoal
-                      ? `Bugun ${todayFactsRead}/${factDailyGoal} kart`
-                      : `Bugun ${todayFactsRead} kart okudun`}
+                    {factDailyGoal ? `${todayFactsRead}/${factDailyGoal} kart` : 'Hedef sec'}
                   </Text>
-                  {factDailyGoal ? (
-                    <Text style={s.dailyProgressMeta}>%{todayProgressPercent}</Text>
-                  ) : null}
+                  <Text style={s.dailyProgressMeta}>{feedStreakDays} gun seri</Text>
                 </View>
-                {factDailyGoal ? (
-                  <View style={s.dailyProgressBarBg}>
-                    <View
-                      style={[s.dailyProgressBarFill, { width: `${todayProgressPercent}%` }]}
-                    />
-                  </View>
-                ) : null}
               </View>
             ) : null}
             {isReviewMode ? (
@@ -1939,45 +1989,42 @@ const s = StyleSheet.create({
   },
   guestHintButtonText: { color: '#fff', fontSize: 11, fontWeight: '800' },
   dailyProgressWrap: {
-    alignSelf: 'center',
+    alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.62)',
     borderColor: 'rgba(255,255,255,0.14)',
-    borderRadius: 16,
+    borderRadius: 999,
     borderWidth: 1,
-    marginTop: 10,
-    maxWidth: 280,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    width: '82%',
-  },
-  dailyProgressTextRow: {
-    alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+    gap: 9,
+    marginLeft: 12,
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    alignSelf: 'flex-start',
+  },
+  dailyProgressCopy: {
+    gap: 2,
+    paddingRight: 3,
   },
   dailyProgressTitle: {
     color: '#fff',
-    flex: 1,
     fontSize: 12,
     fontWeight: '800',
   },
   dailyProgressMeta: {
-    color: '#c4b5fd',
+    color: '#bbf7d0',
     fontSize: 11,
     fontWeight: '800',
   },
-  dailyProgressBarBg: {
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderRadius: 999,
-    height: 4,
-    marginTop: 8,
-    overflow: 'hidden',
+  activityRing: {
+    height: RING_SIZE,
+    width: RING_SIZE,
   },
-  dailyProgressBarFill: {
-    backgroundColor: '#8b5cf6',
+  activityRingTick: {
     borderRadius: 999,
-    height: '100%',
+    height: RING_TICK_SIZE,
+    position: 'absolute',
+    width: RING_TICK_SIZE,
   },
   reviewModeTopbar: {
     alignItems: 'center',
