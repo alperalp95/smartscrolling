@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { AiChatRequestError, type AiChatMessage, fetchAiChat } from './aiChat';
+import { type AiChatMessage, AiChatRequestError, fetchAiChat } from './aiChat';
+import { incrementDailyActivity } from './userActivity';
 
 type UseBookChatParams = {
   bookTitle: string;
@@ -170,6 +171,7 @@ export function useBookChat(params: UseBookChatParams) {
         createdAt: Date.now(),
       });
       failureCooldownRef.current.delete(requestKey);
+      void incrementDailyActivity({ aiQueries: 1 });
 
       return { sent: true as const };
     } catch (error) {

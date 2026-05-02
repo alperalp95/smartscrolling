@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,6 +20,7 @@ import { promptForPremium } from '../../src/lib/premiumPrompt';
 import { presentCustomerCenterSafe } from '../../src/lib/purchases';
 import { signInWithGoogle } from '../../src/lib/socialAuth';
 import { supabase } from '../../src/lib/supabase';
+import { type ActivitySummary, fetchActivitySummary } from '../../src/lib/userActivity';
 import type { DailyGoalPreference } from '../../src/lib/userPreferences';
 import {
   updateNotificationPreference,
@@ -30,7 +31,6 @@ import { useAuthStore } from '../../src/store/authStore';
 import { useOnboardingStore } from '../../src/store/onboardingStore';
 
 const WEEK_DAYS = ['Pzt', 'Sal', 'Car', 'Per', 'Cum', 'Cmt', 'Paz'];
-const DONE_DAYS = [0, 1, 2, 3, 4, 5, 6];
 const INTEREST_OPTIONS = ['Bilim', 'Tarih', 'Felsefe', 'Teknoloji', 'Saglik', 'Psikoloji'];
 const DAILY_GOAL_OPTIONS: Exclude<DailyGoalPreference, null>[] = [
   { type: 'facts', value: 3 },
@@ -53,6 +53,15 @@ const BASE_MANAGEMENT_ITEMS: ManagementItem[] = [
   { label: 'Gorunum', icon: 'moon-outline' },
   { label: 'Dil', icon: 'language-outline' },
 ];
+
+function getTodayKey() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
 
 export default function ProfileScreen() {
   const isFocused = useIsFocused();
@@ -81,6 +90,7 @@ export default function ProfileScreen() {
   const [isSavingInterests, setIsSavingInterests] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authFeedback, setAuthFeedback] = useState<AuthFeedback>(null);
+  const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
 
   const isLoggedIn = Boolean(user);
   const userEmail = user?.email?.trim() || 'Misafir Kullanici';
@@ -98,6 +108,29 @@ export default function ProfileScreen() {
       ? `Her gun ${dailyGoal.value} kart`
       : `Her gun ${dailyGoal.value} dakika`
     : 'Henuz hedef secilmedi';
+  const todayKey = getTodayKey();
+  const streakDays = activitySummary?.streakDays ?? 0;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isFocused || !user?.id) {
+      setActivitySummary(null);
+      return;
+    }
+
+    void (async () => {
+      const summary = await fetchActivitySummary();
+
+      if (!cancelled) {
+        setActivitySummary(summary);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isFocused, user?.id]);
 
   function clearErrorFeedback() {
     setAuthFeedback((current) => (current?.tone === 'error' ? null : current));
@@ -383,7 +416,7 @@ export default function ProfileScreen() {
 
           <View style={s.summaryRow}>
             <View style={s.summaryBlock}>
-              <Text style={s.summaryValue}>7</Text>
+              <Text style={s.summaryValue}>{streakDays}</Text>
               <Text style={s.summaryLabel}>Gunluk seri</Text>
             </View>
             <View style={s.summaryDivider} />
@@ -400,11 +433,12 @@ export default function ProfileScreen() {
 
           <View style={s.weekRow}>
             {WEEK_DAYS.map((day, i) => (
-              <View key={day} style={s.dayCol}>
+              <View key={`${day}-${activitySummary?.week[i]?.date ?? i}`} style={s.dayCol}>
                 <View
                   style={[
                     s.dayDot,
-                    DONE_DAYS.includes(i) && (i === 6 ? s.dayDotToday : s.dayDotDone),
+                    activitySummary?.week[i]?.isActive ? s.dayDotDone : null,
+                    activitySummary?.week[i]?.date === todayKey ? s.dayDotToday : null,
                   ]}
                 />
                 <Text style={s.dayLabel}>{day}</Text>
@@ -732,7 +766,8 @@ const s = StyleSheet.create({
   dayDot: { width: 26, height: 26, borderRadius: 9, backgroundColor: '#2a2a2c' },
   dayDotDone: { backgroundColor: '#ff9f0a' },
   dayDotToday: {
-    backgroundColor: '#ff9f0a',
+    borderColor: '#ff9f0a',
+    borderWidth: 2,
     shadowColor: '#ff9f0a',
     shadowOpacity: 0.5,
     shadowRadius: 8,

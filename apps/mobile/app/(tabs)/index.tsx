@@ -33,8 +33,10 @@ import {
 import { promptForAuth } from '../../src/lib/authPrompt';
 import { isBadFactMediaUrl } from '../../src/lib/factVisuals';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
+import { fetchTodayActivity, incrementDailyActivity } from '../../src/lib/userActivity';
 import { useAuthStore } from '../../src/store/authStore';
 import { useFeedStore } from '../../src/store/feedStore';
+import { useOnboardingStore } from '../../src/store/onboardingStore';
 import type { FactType } from '../../src/types';
 
 const LOCAL_IMAGES: Record<string, ImageSourcePropType> = {
@@ -1044,6 +1046,7 @@ export default function FeedScreen() {
   const appStateRef = useRef(AppState.currentState);
   const feedScreenOpenedAt = useRef(Date.now());
   const hasLoggedFirstCard = useRef(false);
+  const activityTrackedFactIdsRef = useRef<Set<string>>(new Set());
   const [activeFactId, setActiveFactId] = useState<string | null>(null);
   const [activeFactIndex, setActiveFactIndex] = useState(0);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
@@ -1063,6 +1066,7 @@ export default function FeedScreen() {
   });
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewsByFactId, setReviewsByFactId] = useState<Record<string, FactReviewDraft>>({});
+  const [todayFactsRead, setTodayFactsRead] = useState(0);
   const orderingKeyRef = useRef<string>('');
 
   const {
@@ -1082,6 +1086,7 @@ export default function FeedScreen() {
   const user = useAuthStore((state) => state.user);
   const hasPremium = useAuthStore((state) => state.hasPremium);
   const setPostAuthRedirectPath = useAuthStore((state) => state.setPostAuthRedirectPath);
+  const dailyGoal = useOnboardingStore((state) => state.dailyGoal);
   const feedItems = insertFeedAdSlots(
     orderedFacts,
     getAdAudience({
@@ -1093,6 +1098,27 @@ export default function FeedScreen() {
   useEffect(() => {
     void fetchFacts({ reset: true });
   }, [fetchFacts]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isFocused || !user?.id) {
+      setTodayFactsRead(0);
+      return;
+    }
+
+    void (async () => {
+      const todayActivity = await fetchTodayActivity();
+
+      if (!cancelled) {
+        setTodayFactsRead(todayActivity.factsRead);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isFocused, user?.id]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
@@ -1158,8 +1184,23 @@ export default function FeedScreen() {
     setSeenFactIds((current) =>
       current.includes(activeFactId) ? current : [...current, activeFactId],
     );
+
+    if (!activityTrackedFactIdsRef.current.has(activeFactId)) {
+      activityTrackedFactIdsRef.current.add(activeFactId);
+      void (async () => {
+        const result = await incrementDailyActivity({ factsRead: 1 });
+
+        if (result.synced) {
+          setTodayFactsRead((current) => current + 1);
+        }
+      })();
+    }
   }, [activeFactId]);
 
+  const factDailyGoal = dailyGoal?.type === 'facts' ? dailyGoal.value : null;
+  const todayProgressPercent = factDailyGoal
+    ? Math.min(Math.round((todayFactsRead / factDailyGoal) * 100), 100)
+    : 0;
   const shouldShowFeedUpsell =
     Boolean(user) &&
     !hasPremium &&
@@ -1417,47 +1458,66 @@ export default function FeedScreen() {
         </TouchableOpacity>
       ) : null}
 
-      {!user || isReviewMode || __DEV__ ? (
-        <View style={s.topOverlay} pointerEvents="box-none">
-          <SafeAreaView edges={['top']} pointerEvents="box-none">
-            <View style={s.topOverlayContent}>
-              {__DEV__ ? (
-                <Pressable
-                  accessibilityLabel="Toggle feed review mode"
-                  onLongPress={() => setIsReviewMode((current) => !current)}
-                  style={s.reviewModeHotspot}
-                />
-              ) : null}
-              {!user && (
-                <View style={s.guestHintWrap}>
-                  <Text style={s.guestHintText}>
-                    Misafir modunda kesfet. Kaydetme ve AI gecmisi icin giris yap.
+      <View style={s.topOverlay} pointerEvents="box-none">
+        <SafeAreaView edges={['top']} pointerEvents="box-none">
+          <View style={s.topOverlayContent}>
+            {__DEV__ ? (
+              <Pressable
+                accessibilityLabel="Toggle feed review mode"
+                onLongPress={() => setIsReviewMode((current) => !current)}
+                style={s.reviewModeHotspot}
+              />
+            ) : null}
+            {!user && (
+              <View style={s.guestHintWrap}>
+                <Text style={s.guestHintText}>
+                  Misafir modunda kesfet. Kaydetme ve AI gecmisi icin giris yap.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push('/profile')}
+                  style={s.guestHintButton}
+                >
+                  <Text style={s.guestHintButtonText}>Hesap Ac</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {user ? (
+              <View style={s.dailyProgressWrap}>
+                <View style={s.dailyProgressTextRow}>
+                  <Text style={s.dailyProgressTitle}>
+                    {factDailyGoal
+                      ? `Bugun ${todayFactsRead}/${factDailyGoal} kart`
+                      : `Bugun ${todayFactsRead} kart okudun`}
                   </Text>
-                  <TouchableOpacity
-                    onPress={() => router.push('/profile')}
-                    style={s.guestHintButton}
-                  >
-                    <Text style={s.guestHintButtonText}>Hesap Ac</Text>
-                  </TouchableOpacity>
+                  {factDailyGoal ? (
+                    <Text style={s.dailyProgressMeta}>%{todayProgressPercent}</Text>
+                  ) : null}
                 </View>
-              )}
-              {isReviewMode ? (
-                <View style={s.reviewModeTopbar}>
-                  <Text style={s.reviewModeTopbarText}>
-                    {Object.keys(reviewsByFactId).length} review hazir
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => void handleExportReviews()}
-                    style={s.reviewModeExportButton}
-                  >
-                    <Text style={s.reviewModeExportButtonText}>JSON Export</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
-            </View>
-          </SafeAreaView>
-        </View>
-      ) : null}
+                {factDailyGoal ? (
+                  <View style={s.dailyProgressBarBg}>
+                    <View
+                      style={[s.dailyProgressBarFill, { width: `${todayProgressPercent}%` }]}
+                    />
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+            {isReviewMode ? (
+              <View style={s.reviewModeTopbar}>
+                <Text style={s.reviewModeTopbarText}>
+                  {Object.keys(reviewsByFactId).length} review hazir
+                </Text>
+                <TouchableOpacity
+                  onPress={() => void handleExportReviews()}
+                  style={s.reviewModeExportButton}
+                >
+                  <Text style={s.reviewModeExportButtonText}>JSON Export</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
+        </SafeAreaView>
+      </View>
 
       <Modal
         animationType="slide"
@@ -1878,6 +1938,47 @@ const s = StyleSheet.create({
     paddingVertical: 8,
   },
   guestHintButtonText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  dailyProgressWrap: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.62)',
+    borderColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 10,
+    maxWidth: 280,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    width: '82%',
+  },
+  dailyProgressTextRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  dailyProgressTitle: {
+    color: '#fff',
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  dailyProgressMeta: {
+    color: '#c4b5fd',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  dailyProgressBarBg: {
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 999,
+    height: 4,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  dailyProgressBarFill: {
+    backgroundColor: '#8b5cf6',
+    borderRadius: 999,
+    height: '100%',
+  },
   reviewModeTopbar: {
     alignItems: 'center',
     alignSelf: 'center',

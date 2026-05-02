@@ -6,6 +6,16 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.20] - 2026-05-02
+
+#### P35-01/P35-06 Retention Activity Slice Kapandi
+- `docs/tasks/p35_01_real_streak_counter.md` ve `docs/tasks/p35_06_today_cards_widget.md` altinda streak sayaci ve bugunku kart widget'i kucuk, uygulanabilir backlog task'larina bolundu.
+- `apps/mobile/src/lib/userActivity.ts` helper'i bugunku aktivite ve 90 gunluk activity summary okuyacak sekilde genisletildi.
+- Profildeki hardcoded `7` gunluk seri degeri `user_activity` uzerinden hesaplanan gercek streak ile degistirildi; haftalik nokta satiri aktivite kayitlarina baglandi.
+- Feed ekranina authenticated kullanici icin kompakt `Bugun X kart okudun` / `Bugun X/Y kart` widget'i eklendi.
+- `P35-05`, `P35-01` ve `P35-06` roadmap maddeleri ilk retention veri-gosterim dikeyi olarak kapatildi.
+- Verification: `npm run typecheck` gecti; hedefli Biome check yeni activity helper ve chat importlari icin gecti. Repo genelindeki `npm run lint` mevcut format/exhaustive-deps borclari nedeniyle halen temiz degil.
+
 ### [v1.19] - 2026-04-29
 
 #### AI Chat Rate Limit Backlog'u Acildi

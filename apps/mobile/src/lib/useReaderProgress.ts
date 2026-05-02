@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReaderTextSection } from './bookSections';
 import { fetchReadingProgress, upsertReadingProgress } from './readingProgress';
+import { incrementDailyActivity } from './userActivity';
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -19,6 +20,7 @@ export function useReaderProgress(params: UseReaderProgressParams) {
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [progressHydrated, setProgressHydrated] = useState(false);
   const lastSyncedPageRef = useRef(0);
+  const lastActivityPageRef = useRef(1);
   const hasAppliedInitialSectionRef = useRef(false);
   const sectionOffsetsRef = useRef<Array<{ index: number; y: number }>>([]);
 
@@ -114,8 +116,10 @@ export function useReaderProgress(params: UseReaderProgressParams) {
         const normalizedPage = clamp(progress.current_page, 1, totalPages);
         setCurrentPage(normalizedPage);
         lastSyncedPageRef.current = normalizedPage;
+        lastActivityPageRef.current = normalizedPage;
       } else {
         setCurrentPage(1);
+        lastActivityPageRef.current = 1;
       }
 
       setProgressHydrated(true);
@@ -146,6 +150,13 @@ export function useReaderProgress(params: UseReaderProgressParams) {
         });
 
         if (result.synced) {
+          const pagesRead = Math.max(currentPage - lastActivityPageRef.current, 0);
+
+          if (pagesRead > 0) {
+            void incrementDailyActivity({ pagesRead });
+          }
+
+          lastActivityPageRef.current = currentPage;
           lastSyncedPageRef.current = currentPage;
         }
       })();

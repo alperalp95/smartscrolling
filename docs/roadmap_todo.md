@@ -8,7 +8,7 @@
 
 ## PHASE 0 - Urun Stratejisi ve Planlama
 
-- [ ] **P0-01** Hedef kitle arastirmasi yap (18-35 yas, bilgi dostu kullanicilar)
+- [x] **P0-01** Hedef kitle arastirmasi yap (18-35 yas, bilgi dostu kullanicilar) - `docs/ROADMAP.md`, `docs/ftue_research.md` ve mevcut value-first FTUE/auth kararlarinda hedef kitle/persona varsayimlari dokumante edildi
 - [x] **P0-02** Rakip analizi yap (Blinkist, Headway, Refind, ReadWise)
 - [x] **P0-03** MVP kapsamini netlestir (hangi ozellikler ilk surumde olacak?)
 - [x] **P0-04** Monetizasyon modelini belirle (Freemium + RevenueCat)
@@ -117,7 +117,7 @@ Not:
 - [x] **P2-06** Dogrulanmis kaynak etiketleme sistemi
 - [x] **P2-07** Icerik kuratorluk sureci tanimla
 - [x] **P2-08** "Begen / Kaydet / Paylas" aksiyonlarini UI seviyesinde ekle
-- [x] **P2-08b** UI Begen/Kaydet state'lerini Supabase DB'ye gercek zamanli bagla (Optimistik UI)
+- [x] **P2-08b** UI Kaydet state'ini Supabase `bookmarks` tablosuna optimistik olarak bagla; Begen state'i su an yalnizca local UI, kalici like/RPC isi Senior Backend Adim 4 altinda acik tutuluyor
 - [x] **P2-08c** `Kutuphane` icinde `Kaydettiklerim` yuzeyi ekle; auth kullanicida saved fact kartlarini, misafirde giris yonlendirmeli placeholder'i goster
 - [x] **P2-08d** Bookmark sync ilk optimizasyonu: `syncSavedFacts()` cagrisini feed fetch zincirinden cikar, hydration'i auth/session listener'a birak
 - [x] **P2-09** Infinite scroll + pagination implementasyonu
@@ -188,14 +188,14 @@ Not:
 > Bu ozellikler MVP'ye dahil edilmezse ilk haftada kullanici kaybi yuksek olur.
 
 ### Streak Sistemi
-- [ ] **P35-01** Gunluk giris / okuma serisi (streak) sayaci
+- [x] **P35-01** Gunluk giris / okuma serisi (streak) sayaci - `user_activity` uzerinden gercek streak hesaplama profile summary'ye baglandi (`docs/tasks/p35_01_real_streak_counter.md`)
 - [ ] **P35-02** Streak kirilma uyarisi
 - [ ] **P35-03** Streak rekoru kaydetme ve goruntuleme
 - [ ] **P35-04** Streak korumasi (1 gunluk grace period veya freeze)
-- [ ] **P35-05** `user_activity` tablosu ile gunluk kayit tut
+- [x] **P35-05** `user_activity` tablosu ile gunluk kayit tut - feed kart goruntuleme, reader sayfa ilerlemesi ve basarili AI soru sayisi `incrementDailyActivity()` ile gunluk kayda yaziliyor
 
 ### Ilerleme Gostergesi
-- [ ] **P35-06** Ana ekranda "Bugun X kart okudun" ozet widget'i
+- [x] **P35-06** Ana ekranda "Bugun X kart okudun" ozet widget'i - feed overlay bugunku `facts_read` sayisini ve varsa kart hedefini gosteriyor (`docs/tasks/p35_06_today_cards_widget.md`)
 - [x] **P35-07** Gunluk hedef belirleme (orn: 3 kart / 5 sayfa) - profile UI + Supabase `users.daily_goal_type/value` persistence tamamlandi
 - [ ] **P35-08** Dairesel ilerleme cubugu animasyonu
 - [ ] **P35-09** Haftalik aktivite grafigi
@@ -310,4 +310,25 @@ Not:
 
 ---
 
-*Son guncellenme: 2026-04-13 - v0.5*
+## Kod Denetimi Ozeti - 2026-05-02
+
+### Yapilip isaretlenmemis / yanlis anlatilan alanlar
+- `P0-01` tamamlandi olarak isaretlendi; hedef kitle ve persona varsayimlari roadmap/FTUE dokumanlarinda mevcut.
+- `P2-08b` metni duzeltildi: Supabase persistence su an `bookmarks`/Kaydet icin var; `toggleLike` kalici degil ve ayri backend isi olarak duruyor.
+- `P2-09`, `P3-15`, `P3-17`-`P3-22`, `P35-07`, `P35-14` zaten kod/migration seviyesinde isaretli ve mevcut durumla uyumlu gorundu.
+
+### Kodda mevcut ama urun olarak tamam sayilmamasi gereken alanlar
+- `P35-05`, `P35-01` ve `P35-06` ilk retention dikeyi olarak kapandi; sonraki adim uyarilar/rekor/grace-period veya daha genis hedef UI'i.
+- Profilde gercek seri sayaci baglandi; rekor, kirilma uyarisi ve grace/freeze davranislari henuz yok. `P35-02`-`P35-04` acik kalmali.
+- Google OAuth icin mobil helper, callback route ve profil butonu var; Dashboard/provider allowlist smoke ve Apple native akis tamam olmadigi icin `P1-13` acik kalmali.
+- RevenueCat/paywall kodu var; reklam tarafinda production AdMob render, consent ve store beyan smoke bekledigi icin `P3-24b` acik kalmali.
+- Supabase Edge Function dosyalari ve CI sanity check var; schema/function prod deploy workflow'u yok. `P6-11` ve Backend Deployment adimlari acik kalmali.
+
+### Devam icin onerilen sira
+1. `P1-13`: Google OAuth production callback/allowlist smoke + Apple Sign-In native entegrasyonunu kapat.
+2. `P35-02` -> `P35-03` -> `P35-04`: streak kirilma uyarisi, rekor ve grace/freeze davranisini ayri kucuk dilimler halinde ele al.
+3. `P6-09b`: hesap/veri silme ve AI icerik raporlama akisini release blocker olarak ele al.
+4. `P6-01`/`P6-02`: auth, bookmark, reader progress ve paywall icin minimum unit/e2e smoke seti kur.
+5. `P1-15o`/`P1-15p`/`P1-15q`: LLM provider abstraction, shadow benchmark ve budget guard ile Groq limit riskini operasyonel hale getir.
+
+*Son guncellenme: 2026-05-02 - v0.6*
