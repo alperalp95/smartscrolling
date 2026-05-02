@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthPromptModal } from '../components/auth-prompt-modal';
 import { PremiumPromptModal } from '../components/premium-prompt-modal';
+import { configureForegroundNotifications } from '../src/lib/notifications';
 import { hydratePremiumEntitlement } from '../src/lib/premiumEntitlements';
 import { supabase } from '../src/lib/supabase';
 import { fetchUserPreferences } from '../src/lib/userPreferences';
@@ -33,6 +34,10 @@ export default function RootLayout() {
     (state) => state.hydrateNotificationPreference,
   );
   const resetOnboarding = useOnboardingStore((state) => state.resetOnboarding);
+
+  useEffect(() => {
+    configureForegroundNotifications();
+  }, []);
 
   useEffect(() => {
     async function syncSessionSideEffects(userId?: string) {

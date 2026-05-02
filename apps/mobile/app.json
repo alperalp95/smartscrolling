@@ -35,6 +35,13 @@
       "expo-dev-client",
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "color": "#8b5cf6",
+          "defaultChannel": "daily-reminders"
+        }
+      ],
+      [
         "expo-web-browser",
         {
           "experimentalLauncherActivity": false

@@ -6,6 +6,17 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.27] - 2026-05-02
+
+#### P35-10a Push Notification Foundation
+- `docs/tasks/p35_10a_push_notification_foundation.md` ile push notification altyapisi ilk kucuk foundation task'ina ayrildi.
+- `expo-notifications` ve `expo-device` Expo SDK 54 uyumlu surumlerle eklendi; `expo-constants` mevcut dependency olarak kullanildi.
+- `app.json` icine `expo-notifications` config plugin'i `daily-reminders` default channel'iyle eklendi.
+- `notifications.ts` helper'i foreground handler, Android channel hazirligi, OS permission ve Expo push token alma sonucunu normalize ediyor.
+- Profilde bildirim tercihi acilirken permission/token hazirligi tetikleniyor; fiziksel cihaz/dev build desteklenmiyorsa tercih acik kaydedilmiyor.
+- Token persistence, bildirim saati secimi ve streak reminder scheduling sonraki P35-10/P35-11/P35-12 dilimlerine birakildi.
+- Verification: `npm run typecheck`, hedefli Biome lint, formatter disi hedefli Biome check ve `npx expo config --type public` gecti.
+
 ### [v1.26] - 2026-05-02
 
 #### P35-06c Feed Read Qualification Threshold

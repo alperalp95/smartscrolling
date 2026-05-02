@@ -201,7 +201,7 @@ Not:
 - [x] **P35-09** Haftalik aktivite grafigi - profil ozetindeki 7 gunluk nokta satiri, `facts_read` degerini gosteren kompakt haftalik bar grafige donusturuldu (`docs/tasks/p35_09_weekly_activity_graph.md`)
 
 ### Push Notification
-- [ ] **P35-10** Expo Push Notification entegrasyonu
+- [ ] **P35-10** Expo Push Notification entegrasyonu - foundation slice'i eklendi: `expo-notifications` / `expo-device`, config plugin, Android channel ve profil opt-in permission/token hazirligi tamamlandi; fiziksel cihaz/dev build smoke ve persistence/scheduling sonraki dilimlerde (`docs/tasks/p35_10a_push_notification_foundation.md`)
 - [ ] **P35-11** Kullaniciya ozel bildirim saati ayari
 - [ ] **P35-12** Streak hatirlatici bildirimi
 - [ ] **P35-13** Yeni icerik bildirimi

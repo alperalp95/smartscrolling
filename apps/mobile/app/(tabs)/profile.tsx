@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { promptForAuth } from '../../src/lib/authPrompt';
+import { registerForPushNotifications } from '../../src/lib/notifications';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
 import { presentCustomerCenterSafe } from '../../src/lib/purchases';
 import { signInWithGoogle } from '../../src/lib/socialAuth';
@@ -87,6 +88,7 @@ export default function ProfileScreen() {
   const [password, setPassword] = useState('');
   const [isSavingDailyGoal, setIsSavingDailyGoal] = useState(false);
   const [isSavingInterests, setIsSavingInterests] = useState(false);
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authFeedback, setAuthFeedback] = useState<AuthFeedback>(null);
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
@@ -344,20 +346,37 @@ export default function ProfileScreen() {
   }
 
   async function handleNotificationPreferencePress() {
+    if (isSavingNotifications) {
+      return;
+    }
+
     if (!user?.id) {
       Alert.alert('Giris gerekli', 'Bildirim tercihini yonetmek icin once hesabini bagla.');
       return;
     }
 
     const nextValue = !notificationsEnabled;
+    setIsSavingNotifications(true);
 
     try {
+      if (nextValue) {
+        const registration = await registerForPushNotifications();
+
+        if (registration.status !== 'granted') {
+          setAuthFeedback({
+            tone: registration.status === 'denied' ? 'error' : 'info',
+            message: registration.message,
+          });
+          return;
+        }
+      }
+
       const savedValue = await updateNotificationPreference(user.id, nextValue);
       setNotificationsEnabled(savedValue);
       setAuthFeedback({
         tone: 'success',
         message: savedValue
-          ? 'Bildirim tercihin acildi. Gercek izin ve saat secimi daha sonra eklenecek.'
+          ? 'Bildirim izni hazir. Hatirlatma saati ve scheduling sonraki adimda eklenecek.'
           : 'Bildirim tercihin kapatildi.',
       });
     } catch (error) {
@@ -367,6 +386,8 @@ export default function ProfileScreen() {
         tone: 'error',
         message,
       });
+    } finally {
+      setIsSavingNotifications(false);
     }
   }
 
@@ -690,6 +711,7 @@ export default function ProfileScreen() {
               style={s.inlinePreferenceRow}
               onPress={() => void handleNotificationPreferencePress()}
               activeOpacity={0.85}
+              disabled={isSavingNotifications}
             >
               <View>
                 <Text style={s.preferenceTitle}>Bildirimler</Text>
