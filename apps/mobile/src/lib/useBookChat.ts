@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react';
-import { type AiChatMessage, fetchAiChat } from './aiChat';
+import { AiChatRequestError, type AiChatMessage, fetchAiChat } from './aiChat';
 
 type UseBookChatParams = {
   bookTitle: string;
+  hasPremium?: boolean;
   initialAssistantMessage: string;
+  onFreeQuotaExceeded?: () => void;
   readerContext: string;
 };
 
@@ -19,6 +21,44 @@ export function useBookChat(params: UseBookChatParams) {
   const failureCooldownRef = useRef<Map<string, number>>(new Map());
   const responseCacheRef = useRef<Map<string, { answer: string; createdAt: number }>>(new Map());
   const lastNoticeRef = useRef<string>('');
+
+  const formatRetryAfter = (seconds?: number) => {
+    if (!seconds || seconds < 60) {
+      return 'biraz sonra';
+    }
+
+    const minutes = Math.ceil(seconds / 60);
+    return `${minutes} dakika sonra`;
+  };
+
+  const getChatErrorNotice = (error: unknown) => {
+    if (!(error instanceof AiChatRequestError)) {
+      return 'Sohbet su anda kullanilamiyor. Lutfen daha sonra tekrar dene.';
+    }
+
+    if (error.code === 'quota_exceeded') {
+      if (error.quota?.tier === 'premium' || params.hasPremium) {
+        return 'Bugunluk AI sohbet limitine ulastin. Limit yenilendiginde tekrar devam edebilirsin.';
+      }
+
+      params.onFreeQuotaExceeded?.();
+      return 'Bugunluk 5 hazir AI soru hakkini kullandin. Premium ile gunluk 50 soruya cikabilirsin.';
+    }
+
+    if (error.code === 'groq_rate_limited') {
+      return `AI servisi su anda yogun. Lutfen ${formatRetryAfter(error.retryAfterSeconds)} tekrar dene.`;
+    }
+
+    if (error.code === 'quota_unavailable') {
+      return 'AI soru limiti su anda kontrol edilemiyor. Lutfen biraz sonra tekrar dene.';
+    }
+
+    if (error.code === 'auth_required') {
+      return 'AI sohbet icin once giris yapman gerekiyor.';
+    }
+
+    return 'Sohbet su anda kullanilamiyor. Lutfen daha sonra tekrar dene.';
+  };
 
   const pushAssistantNotice = (content: string) => {
     if (!content || lastNoticeRef.current === content) {
@@ -136,7 +176,7 @@ export function useBookChat(params: UseBookChatParams) {
       const message = error instanceof Error ? error.message : String(error);
       console.warn('[Dev] ai-chat invoke failed:', message);
       failureCooldownRef.current.set(requestKey, Date.now() + FAILURE_COOLDOWN_MS);
-      pushAssistantNotice('Sohbet su anda kullanilamiyor. Lutfen daha sonra tekrar dene.');
+      pushAssistantNotice(getChatErrorNotice(error));
       return { sent: false as const, reason: 'error' as const };
     } finally {
       setIsChatLoading(false);

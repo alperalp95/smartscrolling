@@ -52,8 +52,10 @@ const SOURCE_PROMPT_MAP = {
 - her dogru ansiklopedi maddesi feed icin uygun degildir; sadece anlatmaya deger ve merak uyandiran konulari kartlastir
 - kart bir ansiklopedi ozetine degil, anlatilabilir bir kesfe benzemeli
 - konu cok lokal, dusuk etkili veya sadece "X bir koydur / Y bir politikacidir" seviyesindeyse title alanini bos birak
+- temel bilim, saglik, teknoloji veya felsefe mekanizmasi anlatan guclu kaynaklarda title alanini bos birakma; kaynak destekliyorsa somut bir mekanizma veya etki acisi sec
 - proper noun kullanabilirsin ama tek basina isim yetmez; neden onemli oldugunu veya neden ilginc oldugunu acikca hissettir
 - konu cok genis ve ders kitabi bolum basligi gibi kalıyorsa onu daha keskin bir aciya daralt; daraltamiyorsan title alanini bos birak
+- baslikta "gizli", "gizem", "sir", "temel fikir", "rolu", "nedenleri" gibi genel veya magazinel kaliplar kullanma
 - bina, yol, secim bolgesi, kucuk yerlesim, siradan biyografi ve kuru istatistik konularini ancak acik bir tarihsel/bilimsel/kulturel onemi varsa kullan
 - turizm, ekonomi, idari yerlesim, siradan kultur/eglence ve liste maddeleri feed icin zayifsa title alanini bos birak
 - sayisal kiyas, "X kat", "en buyuk", "en eski", "ilk" gibi kesin iddialari yalnizca ham metinde acikca varsa yaz
@@ -80,7 +82,8 @@ const SOURCE_PROMPT_MAP = {
   pdf_curated: `PDF curated kartlari:
 - kaynak zaten Turkce aciklayici ve populer-bilim tonunda olabilir; senin gorevin onu uygulamaya uygun, daha temiz ve daha akici hale getirmek
 - basligi varsayilan olarak kaynakta oldugu gibi koru; title alanina kaynak basligini aynen yaz
-- ancak baslik bos, kirik veya acikca kullanilamaz durumdaysa daha temiz bir baslik uret
+- ancak kaynak basligi soru cumlesiyse onu soru olmayan, kisa ve deklaratif bir bilgi basligina cevir
+- baslik bos, kirik veya acikca kullanilamaz durumdaysa daha temiz bir baslik uret
 - metni salt ozetleme; icinden en merak uyandiran aciyi sec
 - fazla tekrar, uzun dolambacli anlatim ve gereksiz yan detaylari at
 - kart "bunu neden bileyim?" sorusuna net cevap vermeli
@@ -90,6 +93,11 @@ const SOURCE_PROMPT_MAP = {
 
 const ALLOWED_CATEGORIES = new Set(Object.values(CATEGORY_MAP));
 const LOW_QUALITY_TITLE_PATTERNS = [/\bkimdir\b/i, /\bnedir\b/i, /\bnasil\b/i, /\?$/];
+const RETRY_MIN_WORDS_BY_SOURCE = {
+  pdf_curated: 70,
+  wikipedia: 80,
+  default: 95,
+};
 const TITLE_ALIGNMENT_STOPWORDS = new Set([
   'bir',
   've',
@@ -115,13 +123,23 @@ function wordCount(text) {
   return (text ?? '').trim().split(/\s+/).filter(Boolean).length;
 }
 
+function formatDuration(startedAt) {
+  return `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
+}
+
 function normalizeKeywordToken(token) {
-  return token
+  const normalized = token
     .normalize('NFD')
     .replaceAll(/\p{Diacritic}/gu, '')
     .toLowerCase()
     .replaceAll(/[^a-z0-9]/g, '')
     .trim();
+
+  if (normalized.length >= 7) {
+    return normalized.replace(/(nin|nin|nın|nun|nün|in|ın|un|ün)$/u, '');
+  }
+
+  return normalized;
 }
 
 function extractTitleKeywords(title) {
@@ -145,6 +163,18 @@ function hasTitleContentAlignment(title, content) {
   const normalizedContent = normalizeKeywordToken(content ?? '');
   const matched = keywords.filter((keyword) => normalizedContent.includes(keyword));
   return matched.length >= Math.min(2, keywords.length);
+}
+
+function hasSourceContentAlignment(sourceTitle, title, content) {
+  const keywords = extractTitleKeywords(sourceTitle);
+
+  if (keywords.length === 0) {
+    return true;
+  }
+
+  const normalizedText = normalizeKeywordToken(`${title ?? ''} ${content ?? ''}`);
+  const matched = keywords.filter((keyword) => normalizedText.includes(keyword));
+  return matched.length >= Math.min(1, keywords.length);
 }
 
 function normalizeCategoryHint(categoryHint) {
@@ -184,6 +214,11 @@ function normalizeTitle(title) {
   }
 
   return title.replace(/\s+/g, ' ').trim();
+}
+
+function hasUsableGeneratedTitle(title) {
+  const normalizedTitle = normalizeTitle(title);
+  return normalizedTitle.length >= 12 && normalizedTitle.length <= 58;
 }
 
 function toSentenceCase(text) {
@@ -477,10 +512,12 @@ Sen bir yorumcu degilsin; yalnizca kaynakta acikca desteklenen bilgiyi daha okun
 CIKTI KURALLARI:
 - Yanitin sadece gecerli bir JSON objesi olmali.
 - title: Soru cumlesi degil, dogrudan anlamli bilgi basligi olmali. "Kimdir?", "Nedir?", "Nasil?" gibi kaliplarla bitmemeli. Maksimum 58 karakter.
+- title: Bos olmamali; 12-58 karakter araliginda somut ve kaynak konusuyla hizali olmali.
 - title: Yapay dramatizasyon, clickbait veya ansiklopedi maddesi etiketi gibi durmamali.
 - title: Genel ders kitabi basligi gibi kalmamali. Baslik somut bir aci, mekanizma, kirilma noktasi veya sasirtici baglam hissettirmeli.
 - title: Eger konu feed icin dusuk degerliyse veya gercekten ilgi cekici bir aci bulunamiyorsa title alanini BOS birak.
-- content: 120-160 kelimelik, 5-6 cumlelik, temiz Turkce ile yazilmis aciklayici bir metin olmali.
+- content: 120-150 kelimelik, 5 cumlelik, temiz Turkce ile yazilmis aciklayici bir metin olmali.
+- content: Her cumle yaklasik 20-30 kelime olmali; cok kisa cumlelerle 95 kelimenin altina dusme.
 - content: Ilk cumlede kullanicinin neden ilgilenmesi gerektigini hissettir.
 - content: Ikinci cumlede basligin acmis oldugu bilgiyi dogrudan cevapla.
 - content: Sonraki cumlelerde baglam, neden onemli oldugu veya neyi degistirdigi netlesmeli.
@@ -518,6 +555,7 @@ ORNEK BASLIK YAKLASIMI:
 - Iyi: "Budizm'in Dukkha Fikri"
 - Iyi: "Robert Goddard ve Sivi Yakitli Roket"
 - Iyi: "M13'e Gonderilen Arecibo Mesaji"
+- Bu ornek basliklari asla kopyalama; sadece verilen kaynagin kendi konusundan baslik uret.
 
 KARTI REDDETME KURALI:
 - Eger kaynak sadece dusuk degerli, anlamsiz derecede lokal, kuru biyografik ya da "neden onemli oldugu" kurulamayacak bir bilgi veriyorsa title alanini bos birak.
@@ -531,13 +569,18 @@ Ham metin:
 ---
 ${rawText.slice(0, rawTextLimit)}
 ---
+Zorunlu uzunluk kontrolu: content 120-150 kelime olmali; 95 kelimenin altina dusen yanit gecersizdir.
 Detayli hap bilgi JSON'unu uret.`;
 
   try {
+    const firstPassStartedAt = Date.now();
     const firstPass = await requestFactJsonWithRecovery(
       systemPrompt,
       userPrompt,
       normalizedCategoryHint,
+    );
+    console.log(
+      `[Groq] first_pass source="${sourceTitle || sourceLabel}" duration=${formatDuration(firstPassStartedAt)}`,
     );
 
     if (!firstPass) {
@@ -554,13 +597,34 @@ Detayli hap bilgi JSON'unu uret.`;
       rawText,
     );
 
-    if (wordCount(fact.content) < 95 || !hasTitleContentAlignment(fact.title, fact.content)) {
+    const firstPassWordCount = wordCount(fact.content);
+    const firstPassHasUsableTitle = hasUsableGeneratedTitle(fact.title);
+    const firstPassHasTitleAlignment = hasTitleContentAlignment(fact.title, fact.content);
+    const firstPassHasSourceAlignment =
+      sourceKind === 'wikipedia'
+        ? hasSourceContentAlignment(sourceTitle, fact.title, fact.content)
+        : true;
+    const retryMinWords =
+      RETRY_MIN_WORDS_BY_SOURCE[sourceKind] ?? RETRY_MIN_WORDS_BY_SOURCE.default;
+
+    if (
+      firstPassWordCount < retryMinWords ||
+      !firstPassHasUsableTitle ||
+      !firstPassHasTitleAlignment ||
+      !firstPassHasSourceAlignment
+    ) {
+      console.log(
+        `[Groq] retry source="${sourceTitle || sourceLabel}" reason=${firstPassWordCount < retryMinWords ? 'short_content' : !firstPassHasUsableTitle ? 'invalid_title' : !firstPassHasTitleAlignment ? 'title_alignment' : 'source_alignment'} words=${firstPassWordCount} min_words=${retryMinWords}`,
+      );
       const retryPrompt = `Ilk denemede icerik cok kisa, yuzeysel veya Turkce olarak zayif kaldi.
-Asagidaki ham kaynaga tekrar bak ve bu kez ayni konuyu DAHA TEMIZ, DAHA DOGAL TURKCEYLE ve yine kisa kalacak sekilde anlat.
+Asagidaki ham kaynaga tekrar bak ve bu kez ayni konuyu DAHA TEMIZ, DAHA DOGAL TURKCEYLE, 120-150 kelime araliginda anlat.
 
 KURALLAR:
 - Baslik yine soru cumlesi olmasin.
-- Icerik 120-160 kelime araliginda kalsin.
+- Baslik bos kalmasin; 12-58 karakter araliginda ve kaynak konusuna dogrudan bagli olsun.
+- Baslikta "gizli", "gizem", "sir", "temel fikir", "rolu", "nedenleri" gibi genel kaliplar kullanma.
+- Icerik 120-150 kelime araliginda kalsin; 95 kelimenin altina dusme.
+- Tam 5 cumle yaz; her cumle yaklasik 20-30 kelime olsun.
 - Konunun baglamini, neden onemli oldugunu ve ana sonucu daha acik anlat.
 - Ilk iki cumle basligin vaadini dogrudan karsilasin.
 - Ilk cumlede kullaniciya neden okumaya deger oldugunu hissettir.
@@ -587,10 +651,14 @@ ${JSON.stringify(firstPass)}
 
 Sadece yeni JSON objesini uret.`;
 
+      const secondPassStartedAt = Date.now();
       const secondPass = await requestFactJsonWithRecovery(
         systemPrompt,
         retryPrompt,
         normalizedCategoryHint,
+      );
+      console.log(
+        `[Groq] second_pass source="${sourceTitle || sourceLabel}" duration=${formatDuration(secondPassStartedAt)}`,
       );
 
       if (secondPass) {
@@ -604,6 +672,11 @@ Sadece yeni JSON objesini uret.`;
           rawText,
         );
       }
+    }
+
+    if (sourceKind === 'wikipedia' && !hasSourceContentAlignment(sourceTitle, fact.title, fact.content)) {
+      console.warn(`[Groq] source alignment failed after retry: "${sourceTitle}" -> "${fact.title}"`);
+      return null;
     }
 
     return fact;

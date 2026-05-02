@@ -1,15 +1,15 @@
 const THEME_SIGNAL_PROFILES = {
   science: {
-    title: ['dna', 'kuantum', 'quantum', 'fotosentez', 'kara delik', 'black hole', 'yanardag', 'yanardağ', 'volkan', 'astronomi', 'evrim', 'fizik', 'biyoloji', 'kimya', 'bitki', 'genus', 'species', 'tür', 'tur', 'cins'],
-    categories: ['fizik', 'physics', 'biyoloji', 'biology', 'astronomi', 'space', 'genetik', 'yanardag', 'yanardağ', 'volcano', 'kimya', 'chemistry', 'doğa', 'doga', 'nature', 'bitki', 'plant', 'botanik', 'botany', 'familya', 'genus', 'species', 'takson', 'galaksi', 'galaxy'],
-    description: ['fizik', 'biyolog', 'astronom', 'kimyaci', 'kimyacı', 'bitki cinsi', 'plant genus', 'bitki', 'cins', 'galaksi'],
-    summary: ['fizik', 'biyoloji', 'astronomi', 'genetik', 'doğal süreç', 'dogal surec', 'molekül', 'molekul', 'organizm', 'gezegen', 'planet', 'evren', 'universe', 'kimyasal', 'familyasına bağlı', 'familyasina bagli', 'bitki cinsi', 'plant genus', 'tür', 'tur', 'species', 'galaksi'],
+    title: ['dna', 'kuantum', 'quantum', 'fotosentez', 'kara delik', 'black hole', 'yanardag', 'yanardağ', 'volkan', 'astronomi', 'evrim', 'fizik', 'biyoloji', 'kimya', 'bitki', 'genus', 'species', 'cins', 'çevre', 'cevre', 'ekosistem', 'müsilaj', 'musilaj', 'deniz salyası', 'deniz salyasi'],
+    categories: ['fizik', 'physics', 'biyoloji', 'biology', 'biyokimya', 'biochemistry', 'astronomi', 'space', 'genetik', 'yanardag', 'yanardağ', 'volcano', 'kimya', 'chemistry', 'çevre', 'cevre', 'environment', 'ekosistem', 'ecosystem', 'iklim', 'climate', 'biyoçeşitlilik', 'biyocesitlilik', 'biodiversity', 'bitki', 'plant', 'botanik', 'botany', 'familya', 'genus', 'species', 'takson', 'galaksi', 'galaxy'],
+    description: ['fizik', 'biyolog', 'astronom', 'kimyaci', 'kimyacı', 'çevre', 'cevre', 'environment', 'ekosistem', 'ecosystem', 'iklim', 'climate', 'bitki cinsi', 'plant genus', 'bitki', 'cins', 'galaksi'],
+    summary: ['fizik', 'biyoloji', 'astronomi', 'genetik', 'doğal süreç', 'dogal surec', 'molekül', 'molekul', 'organizm', 'gezegen', 'planet', 'evren', 'universe', 'kimyasal', 'çevre felaketi', 'cevre felaketi', 'ekosistem', 'ecosystem', 'iklim değişikliği', 'iklim degisikligi', 'climate change', 'biyoçeşitlilik', 'biyocesitlilik', 'biodiversity', 'deniz salyası', 'deniz salyasi', 'müsilaj', 'musilaj', 'familyasına bağlı', 'familyasina bagli', 'bitki cinsi', 'plant genus', 'species', 'galaksi'],
   },
   history: {
-    title: ['türkiye', 'turkiye', 'osmanlı', 'osmanli', 'ottoman', 'imparatorluk', 'empire', 'cumhuriyet', 'republic', 'hanedan', 'dynasty', 'medeniyet', 'civilization', 'savaş', 'savas', 'war', 'devrim', 'revolution', 'rönesans', 'ronesans', 'antik', 'ancient', 'orta çağ', 'orta cag', 'medieval'],
-    categories: ['tarih', 'history', 'ülkeler', 'ulkeler', 'countries', 'devletler', 'states', 'imparatorluk', 'empire', 'medeniyet', 'civilization', 'hanedan', 'dynasty', 'savaş', 'savas', 'war', 'sanat tarihi', 'art history', 'tarihî', 'tarihi', 'historical', 'arkeolojik'],
-    description: ['ülke', 'ulke', 'country', 'imparatorluk', 'empire', 'devlet', 'state', 'tarihçi', 'tarihci', 'historian', 'antik', 'arkeolojik'],
-    summary: ['ülkedir', 'ulkedir', 'country', 'devlet', 'state', 'imparatorluk', 'empire', 'tarihi', 'historical', 'kuruldu', 'founded', 'savaş', 'savas', 'war', 'hanedan', 'dynasty', 'antik', 'arkeolojik'],
+    title: ['türkiye', 'turkiye', 'osmanlı', 'osmanli', 'ottoman', 'imparatorluk', 'imparatorluğu', 'imparatorlugu', 'empire', 'cumhuriyet', 'republic', 'hanedan', 'dynasty', 'medeniyet', 'civilization', 'beylik', 'beyliği', 'beyligi', 'selçuklu', 'selcuklu', 'oğuz', 'oguz', 'savaş', 'savas', 'war', 'devrim', 'revolution', 'rönesans', 'ronesans', 'antik', 'ancient', 'orta çağ', 'orta cag', 'medieval'],
+    categories: ['tarih', 'history', 'ülkeler', 'ulkeler', 'countries', 'beylik', 'beyliği', 'beyligi', 'selçuklu', 'selcuklu', 'oğuz', 'oguz', 'imparatorluk', 'imparatorluğu', 'imparatorlugu', 'empire', 'medeniyet', 'civilization', 'hanedan', 'dynasty', 'savaş', 'savas', 'war', 'sanat tarihi', 'art history', 'tarihî', 'tarihi', 'historical', 'arkeolojik'],
+    description: ['ülke', 'ulke', 'country', 'imparatorluk', 'imparatorluğu', 'imparatorlugu', 'empire', 'tarihçi', 'tarihci', 'historian', 'antik', 'arkeolojik'],
+    summary: ['ülkedir', 'ulkedir', 'country', 'beylik', 'beyliği', 'beyligi', 'selçuklu', 'selcuklu', 'oğuz', 'oguz', 'imparatorluk', 'imparatorluğu', 'imparatorlugu', 'empire', 'tarihi', 'historical', 'kuruldu', 'founded', 'savaş', 'savas', 'war', 'hanedan', 'dynasty', 'antik', 'arkeolojik'],
   },
   philosophy: {
     title: ['felsefe', 'philosophy', 'etik', 'ethics', 'mantık', 'mantik', 'logic', 'metafizik', 'bilinç', 'bilinc', 'consciousness', 'adalet', 'justice', 'sokrates', 'platon', 'aristoteles'],
@@ -18,13 +18,13 @@ const THEME_SIGNAL_PROFILES = {
     summary: ['felsefe', 'philosophy', 'etik', 'ethics', 'bilginin doğası', 'bilginin dogasi', 'ahlak', 'morality', 'varlık', 'varlik', 'being', 'düşünce', 'dusunce', 'thought'],
   },
   technology: {
-    title: ['yapay zeka', 'yapay zekâ', 'artificial intelligence', 'algoritma', 'algorithm', 'bilgisayar', 'computer', 'internet', 'veritabanı', 'veritabani', 'database', 'yazılım', 'yazilim', 'software', 'robot', 'mikroişlemci', 'mikroislemci'],
-    categories: ['teknoloji', 'technology', 'bilgisayar', 'computer', 'yapay zeka', 'yapay zekâ', 'artificial intelligence', 'yazılım', 'yazilim', 'software', 'internet', 'algoritma', 'algorithm', 'robotik'],
-    description: ['bilgisayar bilim', 'computer science', 'teknoloji', 'technology', 'mühendis', 'muhendis', 'engineer'],
-    summary: ['bilgisayar bilim', 'computer science', 'makine öğrenmesi', 'makine ogrenmesi', 'machine learning', 'algoritma', 'algorithm', 'yazılım', 'yazilim', 'software', 'veri', 'data', 'otomasyon'],
+    title: ['yapay zeka', 'yapay zekâ', 'artificial intelligence', 'algoritma', 'algorithm', 'bilgisayar', 'computer', 'internet', 'veritabanı', 'veritabani', 'database', 'yazılım', 'yazilim', 'software', 'robot', 'mikroişlemci', 'mikroislemci', 'gözetim', 'gozetim', 'gözetleme', 'gozetleme', 'surveillance'],
+    categories: ['teknoloji', 'technology', 'bilgisayar', 'computer', 'yapay zeka', 'yapay zekâ', 'artificial intelligence', 'yazılım', 'yazilim', 'software', 'internet', 'algoritma', 'algorithm', 'robotik', 'gözetim', 'gozetim', 'surveillance', 'casusluk', 'espionage'],
+    description: ['bilgisayar bilim', 'computer science', 'teknoloji', 'technology', 'mühendis', 'muhendis', 'engineer', 'gözetim', 'gozetim', 'gözetleme', 'gozetleme', 'surveillance'],
+    summary: ['bilgisayar bilim', 'computer science', 'makine öğrenmesi', 'makine ogrenmesi', 'machine learning', 'internet', 'iletişim', 'iletisim', 'communication', 'algoritma', 'algorithm', 'yazılım', 'yazilim', 'software', 'veri', 'data', 'şifre', 'sifre', 'encryption', 'otomasyon', 'gözetim', 'gozetim', 'gözetleme', 'gozetleme', 'surveillance', 'casusluk', 'espionage'],
   },
   health: {
-    title: ['uyku', 'sleep', 'bağışıklık', 'bagisiklik', 'immune', 'stres', 'stress', 'metabolizma', 'kolesterol', 'iltihap', 'inflammation', 'aşı', 'asi', 'vaccine', 'mikrobiyom'],
+    title: ['uyku', 'sleep', 'bağışıklık', 'bagisiklik', 'immune', 'stres', 'stress', 'metabolizma', 'kolesterol', 'iltihap', 'inflammation', 'vaccine', 'mikrobiyom'],
     categories: ['sağlık', 'saglik', 'health', 'tıp', 'tip', 'medicine', 'hastalık', 'hastalik', 'disease', 'bağışıklık', 'bagisiklik', 'immune', 'uyku', 'sleep', 'beslenme', 'nutrition'],
     description: ['doktor', 'doctor', 'hekim', 'physician', 'tıp', 'tip', 'medicine', 'sağlık', 'saglik', 'health'],
     summary: ['sağlık', 'saglik', 'health', 'hastalık', 'hastalik', 'disease', 'tedavi', 'treatment', 'bağışıklık', 'bagisiklik', 'immune', 'vücut', 'vucut', 'body', 'semptom'],
@@ -41,6 +41,20 @@ function normalizeText(value) {
     .trim();
 }
 
+function signalMatches(text, signal) {
+  const normalizedSignal = normalizeText(signal);
+
+  if (!normalizedSignal) {
+    return false;
+  }
+
+  if (normalizedSignal.includes(' ') || normalizedSignal.length >= 7) {
+    return text.includes(normalizedSignal);
+  }
+
+  return text.split(/[\s-]+/).includes(normalizedSignal);
+}
+
 function scoreSignalList(text, signals, weight, prefix) {
   const hits = [];
   let score = 0;
@@ -48,7 +62,7 @@ function scoreSignalList(text, signals, weight, prefix) {
   for (const signal of signals) {
     const normalizedSignal = normalizeText(signal);
 
-    if (normalizedSignal && text.includes(normalizedSignal)) {
+    if (signalMatches(text, normalizedSignal)) {
       score += weight;
       hits.push(`${prefix}:${normalizedSignal}`);
     }

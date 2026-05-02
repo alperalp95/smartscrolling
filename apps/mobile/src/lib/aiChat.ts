@@ -11,6 +11,43 @@ export type AiChatResult = {
   history?: AiChatMessage[];
 };
 
+export type AiChatQuota = {
+  tier?: 'free' | 'premium';
+  limit?: number;
+  remaining?: number;
+  resetAt?: string;
+};
+
+export type AiChatErrorCode =
+  | 'auth_required'
+  | 'quota_exceeded'
+  | 'quota_unavailable'
+  | 'groq_rate_limited';
+
+type AiChatErrorDetails = {
+  code?: AiChatErrorCode;
+  message: string;
+  quota?: AiChatQuota;
+  retryAfterSeconds?: number;
+  status?: number;
+};
+
+export class AiChatRequestError extends Error {
+  code?: AiChatErrorCode;
+  quota?: AiChatQuota;
+  retryAfterSeconds?: number;
+  status?: number;
+
+  constructor(message: string, details: Omit<AiChatErrorDetails, 'message'> = {}) {
+    super(message);
+    this.name = 'AiChatRequestError';
+    this.code = details.code;
+    this.quota = details.quota;
+    this.retryAfterSeconds = details.retryAfterSeconds;
+    this.status = details.status;
+  }
+}
+
 function clampContext(input?: string, maxChars = 4000) {
   if (!input) {
     return undefined;
@@ -23,17 +60,76 @@ function clampContext(input?: string, maxChars = 4000) {
   return input.slice(0, maxChars);
 }
 
-async function describeFunctionError(error: unknown, fallbackLabel: string) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object');
+}
+
+function normalizeErrorCode(value: unknown): AiChatErrorCode | undefined {
+  if (
+    value === 'auth_required' ||
+    value === 'quota_exceeded' ||
+    value === 'quota_unavailable' ||
+    value === 'groq_rate_limited'
+  ) {
+    return value;
+  }
+
+  return undefined;
+}
+
+function normalizeQuota(value: unknown): AiChatQuota | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const tier = value.tier === 'free' || value.tier === 'premium' ? value.tier : undefined;
+  const limit = typeof value.limit === 'number' ? value.limit : undefined;
+  const remaining = typeof value.remaining === 'number' ? value.remaining : undefined;
+  const resetAt = typeof value.resetAt === 'string' ? value.resetAt : undefined;
+
+  return {
+    tier,
+    limit,
+    remaining,
+    resetAt,
+  };
+}
+
+function detailsFromPayload(payload: unknown, fallbackMessage: string): AiChatErrorDetails | null {
+  if (!isRecord(payload)) {
+    return null;
+  }
+
+  const errorMessage =
+    typeof payload.error === 'string'
+      ? payload.error
+      : typeof payload.message === 'string'
+        ? payload.message
+        : fallbackMessage;
+
+  return {
+    code: normalizeErrorCode(payload.code),
+    message: errorMessage,
+    quota: normalizeQuota(payload.quota),
+    retryAfterSeconds:
+      typeof payload.retryAfterSeconds === 'number' ? payload.retryAfterSeconds : undefined,
+  };
+}
+
+async function describeFunctionError(
+  error: unknown,
+  fallbackLabel: string,
+): Promise<AiChatErrorDetails> {
   const fallbackMessage = error instanceof Error ? error.message : fallbackLabel;
 
   if (!error || typeof error !== 'object' || !('context' in error)) {
-    return fallbackMessage;
+    return { message: fallbackMessage };
   }
 
   const context = (error as { context?: unknown }).context;
 
   if (!context || typeof context !== 'object') {
-    return fallbackMessage;
+    return { message: fallbackMessage };
   }
 
   const response = context as {
@@ -47,17 +143,14 @@ async function describeFunctionError(error: unknown, fallbackLabel: string) {
     const cloned = response.clone?.();
     const json = cloned && 'json' in cloned ? await cloned.json?.() : undefined;
 
-    if (json && typeof json === 'object') {
-      const errorMessage =
-        'error' in json && typeof json.error === 'string'
-          ? json.error
-          : 'message' in json && typeof json.message === 'string'
-            ? json.message
-            : null;
+    const details = detailsFromPayload(json, fallbackMessage);
 
-      if (errorMessage) {
-        return `${statusPrefix}: ${errorMessage}`;
-      }
+    if (details) {
+      return {
+        ...details,
+        message: `${statusPrefix}: ${details.message}`,
+        status: response.status,
+      };
     }
   } catch {
     // Fallback to text parsing below.
@@ -68,13 +161,13 @@ async function describeFunctionError(error: unknown, fallbackLabel: string) {
     const text = cloned && 'text' in cloned ? await cloned.text?.() : undefined;
 
     if (text?.trim()) {
-      return `${statusPrefix}: ${text.trim()}`;
+      return { message: `${statusPrefix}: ${text.trim()}`, status: response.status };
     }
   } catch {
     // Ignore and use fallback.
   }
 
-  return fallbackMessage;
+  return { message: fallbackMessage, status: response.status };
 }
 
 export async function fetchAiChat(input: {
@@ -99,7 +192,7 @@ export async function fetchAiChat(input: {
 
     return data as AiChatResult;
   } catch (error) {
-    const message = await describeFunctionError(error, 'unknown error');
-    throw new Error(`ai-chat failed: ${message}`);
+    const details = await describeFunctionError(error, 'unknown error');
+    throw new AiChatRequestError(`ai-chat failed: ${details.message}`, details);
   }
 }

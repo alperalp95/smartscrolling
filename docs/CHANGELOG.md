@@ -6,6 +6,103 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.19] - 2026-04-29
+
+#### AI Chat Rate Limit Backlog'u Acildi
+- `P1-10` ve `P3-21` isleri overengineering olmadan kucuk uygulanabilir task'lara bolundu.
+- Upstash Redis sadece AI chat quota icin konumlandirildi; queue, cache, analytics ve token accounting bu ilk is kapsamindan disarida tutuldu.
+- Kota politikasi ilk MVP icin netlestirildi: guest serbest chat yok, free kullanici `5 soru/gun`, premium kullanici `50 soru/gun`.
+- Groq limitlerinin organizasyon/model seviyesinde oldugu not edilerek `429` ve `retry-after` handling ayri task olarak acildi.
+- Roadmap'te P1-10/P3-21 maddelerine yeni task dosyalarinin referanslari eklendi; implementation tamamlanmadigi icin ana checkbox'lar acik birakildi.
+
+#### P1-10a Upstash Redis Foundation Kapandi
+- Upstash secret isimleri `UPSTASH_REDIS_REST_URL` ve `UPSTASH_REDIS_REST_TOKEN` olarak sabitlendi.
+- Secret'larin yalnizca Supabase Edge Function runtime'inda tutulacagi, mobil `EXPO_PUBLIC_*` veya pipeline env alanlarina eklenmeyecegi netlestirildi.
+- Redis key modeli `ai_chat_quota:{yyyy-mm-dd}:{user_id}` olarak belirlendi ve gunluk pencere UTC gunu uzerinden tanimlandi.
+- TTL politikasi bir sonraki UTC gece yarisina kadar, 300 saniyelik buffer ile tanimlandi.
+- Upstash baglantisi yoksa `ai-chat` icin fail-closed davranis secildi; Redis yokken Groq cagrisi yapilmamasi kararlastirildi.
+
+#### P3-21a AI Chat Quota Policy Kapandi
+- AI chat quota policy guest/free/premium/system durumlari icin netlestirildi.
+- Free authenticated kullanici limiti `5 soru/gun`, premium authenticated kullanici limiti `50 soru/gun` olarak sabitlendi.
+- Gunluk pencere UTC gunu olarak belirlendi ve Redis key modeli P1-10a ile uyumlu tutuldu.
+- Edge Function'in client payload'indaki premium beyanina guvenmeyecegi; premium tier'in yalnizca server-side dogrulanabilir entitlement ile aktif edilecegi kayda gecti.
+- Server-side premium dogrulama P3-21b sirasinda hazir degilse tum authenticated kullanicilarin guvenli varsayilan olarak free quota tier sayilacagi not edildi.
+- `auth_required`, `quota_exceeded`, `quota_unavailable` ve `groq_rate_limited` response shape'leri ile mobil UI mesajlari tanimlandi.
+
+#### P3-21b AI Chat Edge Quota Gate Eklendi
+- `supabase/functions/ai-chat/index.ts` icinde Groq cagrisi oncesine Upstash Redis tabanli gunluk quota gate eklendi.
+- Quota sayaci `ai_chat_quota:{yyyy-mm-dd}:{user_id}` key'i uzerinden `INCR` ile artiyor, ilk sayacta UTC reset'e kadar `EXPIRE` atiyor.
+- Free tier icin gunluk 5, server-side premium metadata ile dogrulanabilen premium tier icin gunluk 50 limit uygulaniyor.
+- Limit asiminda Groq cagrisi yapmadan `429 quota_exceeded` donuluyor; Redis unavailable durumunda P1-10a kararina uygun sekilde `503 quota_unavailable` ile fail-closed davraniyor.
+- Premium tier client payload'indan okunmuyor; sadece Supabase Auth `app_metadata` icindeki trusted `premium` / `entitlement` / `entitlements` isaretleri dikkate aliniyor.
+- Verification: `npm run check:edge-functions`, `npm run typecheck` ve hedefli Biome check gecti; `deno check` calistirilamadi cunku bu makinede `deno` PATH'te yok.
+
+#### P3-21c Groq 429 Handling Eklendi
+- `ai-chat` Edge Function icinde Groq `429 Too Many Requests` response'u genel `502 Groq request failed` yolundan ayrildi.
+- `retry-after` header'i saniye veya HTTP date formatinda parse edilip guvenli `retryAfterSeconds` alaniyla response'a ekleniyor.
+- Groq sistem limiti artik `429 groq_rate_limited` koduyla donuyor; bu kod free/premium urun quota dolumu olan `quota_exceeded` kodundan ayrildi.
+- Provider ham hata body' si kullaniciya dondurulmeden non-429 Groq hatalari mevcut fallback davranisini koruyor.
+- Verification: `npm run check:edge-functions`, `npm run typecheck` ve hedefli Biome check gecti.
+
+#### P3-21d Mobile AI Quota UI Eklendi
+- Mobil `fetchAiChat` helper'i Edge Function hata body'lerindeki `code`, `quota` ve `retryAfterSeconds` alanlarini normalize eden typed error katmanina tasindi.
+- Reader chat hook'u `quota_exceeded`, `quota_unavailable`, `auth_required` ve `groq_rate_limited` kodlarini ayri kullanici mesajlarina ceviriyor.
+- Free kullanici gunluk AI hakkini doldurdugunda mevcut premium prompt mekanizmasi aciliyor; premium kullanicida quota dolarsa satin alma CTA'i yerine bugunluk limit dili gosteriliyor.
+- Groq sistem yogunlugu, free/premium quota dolumundan ayri "gecici yogunluk" mesaji olarak gosteriliyor.
+- Verification: `npm run typecheck` ve mobil AI chat helper dosyalari icin hedefli Biome check gecti; reader route dosyasinda task oncesinden gelen iki exhaustive-deps uyarisi oldugu icin tum route hedefli Biome check temiz degil.
+
+#### P3-21e Rate Limit Smoke Docs Eklendi
+- Free ve premium kullanicilar icin gunluk AI chat quota smoke test runbook'u eklendi.
+- Groq `429` / `retry-after` davranisini manuel dogrulama yolu ve beklenen mobil UI sonucu dokumante edildi.
+- Upstash Redis secret'lari Supabase remote project'e `npx supabase secrets set --env-file .env` ile yazildi.
+- `ai-chat` Edge Function yeni rate limit koduyla remote project'e deploy edildi.
+- Free kullanici remote smoke testte dogrulandi; hazir soru cache davranisinin Groq token'i ve quota harcamamasi MVP icin kabul edildi.
+- P1-10 ve P3-21 roadmap maddeleri MVP kapsami icin kapatildi; premium 51. soru yuk testi ileri dogrulama notu olarak birakildi.
+
+#### P3-24b Reklam Backlog'u Acildi
+- Reklam operasyon isi kucuk task'lara bolundu: business policy, AdMob backoffice, SDK test setup, feed ad cadence ve consent/release smoke.
+- MVP reklam policy'si netlestirildi: guest daha agresif, free daha yumusak, premium reklamsiz.
+- Guest icin ilk reklam 5. karttan sonra ve sonra her 6 kartta 1; static/banner ve inline video sirayla doner.
+- Free icin ilk reklam 9. karttan sonra ve sonra her 10 kartta 1; iki static/banner slotundan sonra bir inline video slotu gelir.
+- Fullscreen/interstitial reklamlar MVP disi birakildi; video reklam feed icinde inline/native ad slot olarak konumlandirildi.
+- Reader, AI chat, auth ve satin alma akislarina reklam konmamasi kararlastirildi.
+
+#### P3-24b-b AdMob Backoffice Checklist Kapandi
+- SmartScrolling icin Android package ve iOS bundle id `com.smartscrolling.mobile` olarak backoffice checklist'e eklendi.
+- AdMob App ID ve feed static/video Ad Unit ID degerleri icin gerekli config isimleri belirlendi.
+- Kullanici tarafindan yapilacak AdMob app/ad unit olusturma, test device, Play Console `contains ads`, Privacy Policy ve Data safety adimlari dokumante edildi.
+- Ilk entegrasyonda production reklama tiklanmamasi ve demo/test ad unit veya test device kullanilmasi not edildi.
+
+#### P3-24b-c Ads SDK Test Setup Basladi
+- `react-native-google-mobile-ads` mobile workspace'e eklendi.
+- Expo config plugin Google demo App ID'leriyle `apps/mobile/app.json` icine baglandi.
+- `apps/mobile/src/lib/ads.ts` ile demo ad unit ID'leri, guest/free/premium audience helper'i ve premium reklam guard'i eklendi.
+- Android AdMob App ID config'e islendi; native module crash riskini azaltmak icin `apps/mobile/package-lock.json` `expo-auth-session@~7.0.11` ve `react-native-google-mobile-ads@16.3.3` ile senkronlandi.
+- Cadence smoke asamasinda gercek AdMob render'i gecici kapali tutuldu; mevcut hedef placeholder slotlarla guest/free/premium davranisini dogrulamak.
+- Bu dilimde feed'e reklam yerlestirilmedi; placement/cadence `p3_24b_d` kapsaminda kaldi.
+- Verification: `npm run typecheck` ve hedefli Biome check gecti; native reklam smoke testi development build gerektirdigi icin beklemede.
+- Android AdMob App ID gercek degerle guncellendi; Android static/banner Ad Unit ID backoffice checklist'e kaydedildi.
+- Static/banner demo ad unit ID'leri Google banner test unit'lerine hizalandi; production ad unit henuz runtime'da kullanilmiyor.
+- Android feed inline native Ad Unit ID backoffice checklist'e kaydedildi; Android AdMob app + iki feed ad unit tamamladi.
+- iOS AdMob app/ad unit olusturma isi Android MVP onceligi nedeniyle release oncesi donulecek notu olarak birakildi.
+- Google Play Console 25 USD gelistirici hesap odemesi su asamada yapilmadi; Android release asamasinda Play Console odemesi, `contains ads`, Data safety ve iOS Apple/AdMob backoffice adimlarina donulecek.
+- Android development build smoke testinde Expo native module duplicate crash'i goruldu; Expo SDK 54 icin `experiments.autolinkingModuleResolution` aktif edildi ve mobile `.easignore` eklendi.
+- Crash'in asil dependency nedeni `expo-auth-session@55.0.15` tarafindan SDK 55 Expo modullerinin SDK 54 projesine tasinmasi olarak tespit edildi.
+- `npx expo install expo-auth-session` ile `expo-auth-session@~7.0.11` surumune donuldu; `expo-crypto` SDK 54 uyumlu surume indi.
+- Verification: `npm run typecheck` ve hedefli Biome check gecti; yeni Android development build alinacak.
+
+#### P3-24b-d Feed Ad Cadence Eklendi
+- Feed data akisi `FactType | FeedAdSlot` union'i ile guest/free/premium reklam slotlarini destekleyecek sekilde genisletildi.
+- Guest kullanicida ilk reklam 5. karttan sonra ve sonra her 6 kartta 1, free kullanicida ilk reklam 9. karttan sonra ve sonra her 10 kartta 1 olacak cadence eklendi.
+- Premium kullanicida ad slot uretilmiyor.
+- Static slotlar development build'de Google demo banner ad unit ile render ediliyor; inline native/video slotlar simdilik ayri slot karti olarak tutuluyor.
+- Fullscreen/interstitial reklam tetiklenmedi; reader, AI chat ve paywall akislarina reklam eklenmedi.
+- Verification: `npm run typecheck` ve hedefli Biome check gecti; Android test reklam smoke testi development build gerektirdigi icin beklemede.
+- Mevcut Android dev build'de `RNGoogleMobileAdsModule` binary icinde bulunmadiginda `react-native-google-mobile-ads` import'u render aninda crash ettigi icin native AdMob render gecici olarak kapatildi; feed ad slotlari crash-safe placeholder ile test edilecek.
+- Guest, free ve premium segmentlerinde placeholder cadence smoke kullanici tarafindan dogrulandi; gercek AdMob banner/native render ayri adim olarak acik kaldi.
+
+---
 ### [v1.18] - 2026-04-23
 
 #### Fact Pipeline Editorial Tuning Devam Etti

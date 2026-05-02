@@ -5,7 +5,12 @@
 
 import 'dotenv/config';
 import { convertToFact } from '../lib/groq.js';
-import { findRecentTopicPreflight, getExistingSourceUrls, insertFact } from '../lib/supabase.js';
+import {
+  findRecentTopicPreflight,
+  getExistingSourceUrls,
+  getExistingWikipediaSourceTitles,
+  insertFact,
+} from '../lib/supabase.js';
 import { fetchMedlinePlusArticles } from '../sources/medlineplus.js';
 import { fetchNasaApod } from '../sources/nasa.js';
 import { fetchPdfCuratedArticles } from '../sources/pdf-curated.js';
@@ -13,11 +18,11 @@ import { fetchStanfordPhilosophy } from '../sources/stanford.js';
 import { fetchWikipediaArticles } from '../sources/wikipedia.js';
 
 const DEFAULT_CONFIG = {
-  wikipedia: { count: 30, lang: 'en' },
+  wikipedia: { count: 30, lang: 'tr' },
   stanford: { count: 4 },
   medlineplus: { count: 4 },
   nasa: { count: 30 },
-  pdfCurated: { count: 0, filePath: null },
+  pdfCurated: { count: 0, filePath: null, offset: 0 },
 };
 
 function parseArgs(argv) {
@@ -66,6 +71,10 @@ function parseArgs(argv) {
 
     if (arg === '--pdf-curated-count') {
       overrides.pdfCurated = { ...(overrides.pdfCurated ?? {}), count: parsed };
+    }
+
+    if (arg === '--pdf-curated-offset') {
+      overrides.pdfCurated = { ...(overrides.pdfCurated ?? {}), offset: parsed };
     }
 
   }
@@ -130,6 +139,10 @@ function logSourceSummary(label, stats) {
   console.log(`   verified_true: ${stats.verified_true}`);
 }
 
+function formatDuration(startedAt) {
+  return `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
+}
+
 function isConversionRateLimited(fact) {
   return fact?._conversion_failed && fact?._conversion_reason === 'rate_limit';
 }
@@ -154,33 +167,56 @@ async function main() {
   const pdfCuratedStats = createRunStats();
 
   console.log(`\nWikipedia'dan ${CONFIG.wikipedia.count} makale cekiliyor...`);
+  const wikipediaFetchStartedAt = Date.now();
+  const wikipediaFetchMultiplier = 6;
+  const wikipediaFetchCount =
+    CONFIG.wikipedia.count > 0 ? Math.ceil(CONFIG.wikipedia.count * wikipediaFetchMultiplier) : 0;
+  const existingWikipediaSourceTitles =
+    CONFIG.wikipedia.count > 0 ? await getExistingWikipediaSourceTitles() : new Set();
   const wikiArticles =
     CONFIG.wikipedia.count > 0
-      ? await fetchWikipediaArticles(CONFIG.wikipedia.lang, CONFIG.wikipedia.count)
+      ? await fetchWikipediaArticles(CONFIG.wikipedia.lang, wikipediaFetchCount, {
+          excludeTitles: existingWikipediaSourceTitles,
+        })
       : [];
-  console.log(`   ${wikiArticles.length} makale alindi, Groq ile isleniyor...`);
+  console.log(
+    `   ${wikiArticles.length} makale alindi, Groq ile en fazla ${CONFIG.wikipedia.count} aday islenecek... fetch=${formatDuration(wikipediaFetchStartedAt)} existing_seed_titles=${existingWikipediaSourceTitles.size}`,
+  );
   const existingWikiUrls = await getExistingSourceUrls(wikiArticles.map((article) => article.url));
 
   for (const article of wikiArticles) {
+    if (wikipediaStats.processed >= CONFIG.wikipedia.count) {
+      break;
+    }
+
+    const itemStartedAt = Date.now();
+
     if (existingWikiUrls.has(article.url)) {
       console.log(`[Preflight] skipped existing Wikipedia source_url: "${article.title}"`);
       wikipediaStats.duplicate_source_url += 1;
+      console.log(`[Timing] Wikipedia "${article.title}" total=${formatDuration(itemStartedAt)}`);
       continue;
     }
 
+    const preflightStartedAt = Date.now();
     const recentTopicDuplicate = await findRecentTopicPreflight({
       title: article.title,
       category: article.category,
     });
+    const preflightDuration = formatDuration(preflightStartedAt);
 
     if (recentTopicDuplicate) {
       console.log(
         `[Preflight] skipped recent Wikipedia topic: "${article.title}" -> recent="${recentTopicDuplicate.title}"`,
       );
       wikipediaStats.duplicate_recent_topic += 1;
+      console.log(
+        `[Timing] Wikipedia "${article.title}" preflight=${preflightDuration} total=${formatDuration(itemStartedAt)}`,
+      );
       continue;
     }
 
+    const groqStartedAt = Date.now();
     const fact = await convertToFact(
       article.extract,
       'Wikipedia',
@@ -190,6 +226,7 @@ async function main() {
       article.title,
       { wikiContext: article.wikiContext ?? null },
     );
+    const groqDuration = formatDuration(groqStartedAt);
 
     if (isConversionRateLimited(fact)) {
       console.warn('[RunAll] Groq rate limit goruldu; Wikipedia dongusu erken durduruluyor.');
@@ -198,11 +235,19 @@ async function main() {
 
     if (!fact) {
       wikipediaStats.groq_failed += 1;
+      console.log(
+        `[Timing] Wikipedia "${article.title}" preflight=${preflightDuration} groq=${groqDuration} total=${formatDuration(itemStartedAt)}`,
+      );
       continue;
     }
 
+    const insertStartedAt = Date.now();
     const result = await insertFact(fact);
+    const insertDuration = formatDuration(insertStartedAt);
     applyInsertResult(wikipediaStats, result);
+    console.log(
+      `[Timing] Wikipedia "${article.title}" preflight=${preflightDuration} groq=${groqDuration} insert=${insertDuration} total=${formatDuration(itemStartedAt)}`,
+    );
     await sleep(200);
   }
 
@@ -363,6 +408,7 @@ async function main() {
     const pdfCuratedItems = await fetchPdfCuratedArticles({
       count: CONFIG.pdfCurated.count,
       filePath: CONFIG.pdfCurated.filePath ?? undefined,
+      offset: CONFIG.pdfCurated.offset,
     });
     console.log(`   ${pdfCuratedItems.length} madde alindi, Groq ile isleniyor...`);
     const existingPdfCuratedUrls = await getExistingSourceUrls(
@@ -446,7 +492,11 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-main().catch((err) => {
-  console.error('Pipeline kritik hata:', err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    process.exitCode = 0;
+  })
+  .catch((err) => {
+    console.error('Pipeline kritik hata:', err);
+    process.exit(1);
+  });

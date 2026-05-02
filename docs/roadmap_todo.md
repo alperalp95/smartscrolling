@@ -9,10 +9,10 @@
 ## PHASE 0 - Urun Stratejisi ve Planlama
 
 - [ ] **P0-01** Hedef kitle arastirmasi yap (18-35 yas, bilgi dostu kullanicilar)
-- [ ] **P0-02** Rakip analizi yap (Blinkist, Headway, Refind, ReadWise)
+- [x] **P0-02** Rakip analizi yap (Blinkist, Headway, Refind, ReadWise)
 - [x] **P0-03** MVP kapsamini netlestir (hangi ozellikler ilk surumde olacak?)
 - [x] **P0-04** Monetizasyon modelini belirle (Freemium + RevenueCat)
-- [ ] **P0-05** Kullanici yolculugu haritasini (user journey map) ciz
+- [x] **P0-05** Kullanici yolculugu haritasini (user journey map) ciz
 - [x] **P0-06** Wireframe / Lo-fi prototip hazirla - Browser UI Demo (`demo/index.html`)
 - [x] **P0-07** Icerik lisansi ve telif hakki stratejisini belirle (API, Gutenberg, Wikipedia)
 - [ ] **P0-08** Yapay zeka kullanim maliyetlerini tahmin et
@@ -40,7 +40,7 @@
 - [x] **P1-07** Veritabani semasini tasarla (users, books, facts, bookmarks, reading_progress, user_activity)
 - [x] **P1-08** Row-Level Security (RLS) politikalarini tanimla
 - [x] **P1-09** Supabase Edge Functions ortamini kur (Deno + TypeScript)
-- [ ] **P1-10** Upstash Redis kurulumu (P3-21 rate limiting isi ile birlikte, auth ve chat history sonrasinda devreye alinacak)
+- [x] **P1-10** Upstash Redis kurulumu (P3-21 rate limiting ile local implementasyon, remote secret/deploy ve free smoke kabulü tamamlandi)
 
 ### 1.3 Kimlik Dogrulama (Oncelikli Baslanacak - P0)
 - [x] **P1-11** E-posta/Sifre login ve Supabase `onAuthStateChange` dinleyicisi kurulumu
@@ -78,6 +78,12 @@ Not:
 - [ ] **P1-15i** Editorial value pilotu: `tellable / why should I care` odakli yeni fact promptu, Turkish rewrite kalite artisi ve low-value source rejection sonrasinda temiz `facts` pilot reset + 10 kartlik review batch'i tamamla
 - [x] **P1-15j** Duplicate / freshness memory ilk slice'i: son 60 gunde ayni kategoride benzer topic'leri hafif fingerprint ile Groq oncesi skip et, `duplicate_recent_topic` metriğini `run-all` ozetine ekle
 - [x] **P1-15k** PDF curated source lane ilk slice'i: `Luzumsuz Bilgiler Ansiklopedisi` gibi Turkce kitap/PDF kaynaklarini mevcut discovery hattini bozmadan JSON tabanli ayri source lane olarak Groq + quality gate + insert zincirine bagla
+- [ ] **P1-15l** Production Wikipedia daily ingest job: release sonrasi gunluk 10, haftalik 100 yeni fact hedefi icin `target_saved`, `max_candidates`, `max_groq`, `stop_on_rate_limit` limitleri olan kucuk ve olculebilir job tasarla (`docs/tasks/p1_15l_wikipedia_daily_ingest_job.md`)
+- [ ] **P1-15m** Wikipedia seed registry ve freshness ops: koddaki seed havuzunu `core seed pool + expansion layer + cooldown/blacklist` modeliyle yonetilebilir hale getir; kategori verisini DB'de koru, seed'i sadece discovery politikasi olarak kullan (`docs/tasks/p1_15m_wikipedia_seed_registry_ops.md`)
+- [ ] **P1-15n** Content ingest audit ve tuning loop: gunluk/haftalik run sonu `saved`, reject nedenleri, duplicate oranlari, Groq maliyeti ve seed performansini raporlayip prompt/policy tuning kararlarina bagla (`docs/tasks/p1_15n_content_ingest_audit_tuning.md`)
+- [ ] **P1-15o** LLM provider abstraction: mevcut `convertToFact()` prompt ve JSON contract'ini bozmadan Groq'a sabit bagli conversion cagrilarini provider/model secilebilir adapter katmanina tasi (`docs/tasks/p1_15o_llm_provider_abstraction.md`)
+- [ ] **P1-15p** LLM shadow benchmark ve cost audit: Groq ic/dış model adaylarini production insert yapmadan ayni source batch uzerinde JSON kalite, retry, latency, cost ve reject metrikleriyle karsilastir (`docs/tasks/p1_15p_llm_shadow_benchmark.md`)
+- [ ] **P1-15q** LLM production fallback ve budget guard: rate/token limitte kontrollu fallback, run-level max fallback ve gunluk/aylik cost guard davranisini tanimla (`docs/tasks/p1_15q_llm_production_fallback_ops.md`)
 - [ ] **P1-16** NASA APOD aktif hattini koru; ArXiv / PubMed backlog'unun yanina Turkce kaynak genislemesi icin `Khan Academy Turkce`, `TUBITAK Bilim Genc`, `TDV Islam Ansiklopedisi` ve uygun olursa `Saglik Bakanligi / Saglikli Bilgi` adaylarini degerlendir
 - [x] **P1-17** Public domain / acik lisansli kitaplik ilk gercek katalogu Supabase `books` tablosuna yuklendi; `p3_05b_real_books_catalog`, `p3_27_learning_library_shortlist`, `p3_10c_full_readable_sections_phase1` migration'lari uygulandı; 10 kitaplik katalog aktif
 - [x] **P1-18** Kitap erisim katmani `access_tier` alani (`free_anchor` / `premium`) ve `resolveBookAccess()` fonksiyonu ile runtime'a tasindi; `p3_26_book_access_policy` migration'i uygulandı
@@ -102,7 +108,7 @@ Not:
 - [x] **P2-03d** Feed payload optimization: feed sorgusunu hafif projection'a indir ve ilk acilis icin kucuk ilk sayfa + arka plan prefetch modeli kullan
 - [x] **P2-03e** Feed performance measurement: veri sorgusu, ilk kart gorunumu ve ilk gorsel yuklenmesini ayri loglarla olc
 - [ ] **P2-03f** Feed query strategy backlog'u: server-side freshness / weighted ranking / kategoriye ozel ilk sayfa stratejisini daha sonra degerlendir
-- [ ] **P2-12** Fact quality review loop: production disi editor feedback katmani ile `good / bad / unsure` ve ozellikle `bad` comment sinyali toplayip Groq prompt/pipeline tuning icin kullan
+- [x] **P2-12** Fact quality review loop: production disi editor feedback katmani ile `good / bad / unsure` ve ozellikle `bad` comment sinyali toplayip Groq prompt/pipeline tuning icin kullan; ilk dilim in-memory review + JSON export olarak tamamlandi
 - [x] **P2-12c** Feed review mode UI: `index.tsx` icinde `good / bad / unsure` verdict secimi, issue tag chipleri, zorunlu comment ve modal sheet olarak tamamlandi; `isReviewMode` flag ile internal modda aktif
 - [x] **P2-12d** Fact review storage/export: `handleExportReviews()` ile in-memory review map'i JSON formatinda `Share` API uzerinden export ediliyor; `reviewsByFactId` state'i her session icin tutuluyor
 - [x] **P2-13** Tek akis feed: `feedStore.ts`'de kategori filtre state'i yok; `index.tsx`'de kategori filtre UI bulunmuyor; feed tek kesintisiz akis olarak calisıyor
@@ -155,7 +161,7 @@ Not:
 - [x] **P3-18** Baglam yonetimi (aktif kitap / konu bilgisi prompt'a eklenmeli)
 - [x] **P3-19** Edge katmani: `ai-chat` fonksiyonu uzerinden kitap baglamli sohbet ve persona prompting kurgusu
 - [x] **P3-20** Sohbet gecmisini kaydet (Supabase)
-- [ ] **P3-21** Kullanim limiti / rate limiting (freemium: 5 sorgu/gun, Upstash Redis)
+- [x] **P3-21** Kullanim limiti / rate limiting (free: 5 soru/gun, premium: 50 soru/gun, Upstash Redis; `p3_21a`-`p3_21e`, remote deploy ve MVP free smoke kabulü tamamlandi; premium 51. soru yuk testi ileri dogrulama notu)
 - [x] **P3-22** Sunucu proxy mimarisi (API anahtarinin gizlenmesi icin Supabase secrets entegrasyonu)
 
 ### Simdi Devam Edilebilecek En Net Isler
@@ -167,7 +173,7 @@ Not:
 ### 3.5 Monetizasyon ve Paywall (Gelir Modeli)
 - [x] **P3-23** RevenueCat entegrasyonu tamamlandi: `purchases.ts` icinde `ensurePurchasesConfigured`, `getPremiumEntitlementStatus`, `purchasePackageSafe`, `restorePurchasesSafe`, `presentSmartScrollPaywall`, `presentCustomerCenterSafe` fonksiyonlari aktif; `premiumEntitlements.ts` ile `authStore`'a baglandı
 - [x] **P3-24** Paywall ekrani `premium.tsx` olarak tamamlandi: RevenueCat offering'lerinden dinamik paket listeleme, satin alma ve restore akisi, benefit listesi ve loading state mevcut; `promptForPremium` ile uygulama icinden tetikleniyor
-- [ ] **P3-24b** Reklam operasyon checklist'i: AdMob test/production ad unit'leri, Play Console `contains ads` beyanı ve consent/backoffice adimlarini release oncesi tamamla
+- [ ] **P3-24b** Reklam operasyon checklist'i: AdMob test/production ad unit'leri, Play Console `contains ads` beyanı ve consent/backoffice adimlarini release oncesi tamamla (`p3_24b_a` tamamlandi; Android AdMob app/ad unit hazir; Google Play odemesi ve iOS backoffice release oncesine ertelendi; guest/free/premium feed cadence placeholder smoke dogrulandi; gercek Android AdMob render ve consent/release smoke bekliyor)
 
 ### 3.6 Icerik Stratejisi Kararlari (Yeni Oncelik)
 - [x] **P3-25** Kutuphaneyi `AI-assisted learning library` olarak yeniden konumlandir; aktif katalog 10 kitaplik non-fiction shortlist ile tarih/bilim/felsefe/toplum odagina cekildi
@@ -190,7 +196,7 @@ Not:
 
 ### Ilerleme Gostergesi
 - [ ] **P35-06** Ana ekranda "Bugun X kart okudun" ozet widget'i
-- [ ] **P35-07** Gunluk hedef belirleme (orn: 3 kart / 5 sayfa)
+- [x] **P35-07** Gunluk hedef belirleme (orn: 3 kart / 5 sayfa) - profile UI + Supabase `users.daily_goal_type/value` persistence tamamlandi
 - [ ] **P35-08** Dairesel ilerleme cubugu animasyonu
 - [ ] **P35-09** Haftalik aktivite grafigi
 
@@ -199,7 +205,7 @@ Not:
 - [ ] **P35-11** Kullaniciya ozel bildirim saati ayari
 - [ ] **P35-12** Streak hatirlatici bildirimi
 - [ ] **P35-13** Yeni icerik bildirimi
-- [ ] **P35-14** Bildirim tercihlerini profil ayarlarindan yonetme
+- [x] **P35-14** Bildirim tercihlerini profil ayarlarindan yonetme - profile toggle + `users.notifications_enabled` persistence tamamlandi; OS permission/schedule P35-10..13 kapsaminda bekliyor
 
 ---
 
@@ -207,7 +213,7 @@ Not:
 
 > Bu asama MVP sonrasi 2. surum icin planlanmistir.
 
-- [ ] **P4-01** (P1-00e asamasinda devreye alindi, kapsam genisletilecek) 
+- [x] **P4-01** Kullanici ilgi alani secimi ilk slice'i profile ekraninda devreye alindi; kapsam feed siralama/onboarding etkisiyle genisletilecek
 - [ ] **P4-02** Kisilestirilmis bilgi onerileri (oneri motoru)
 - [ ] **P4-03** Rozet ve basarim sistemi
 - [ ] **P4-04** Detayli istatistik ekrani
@@ -280,21 +286,21 @@ Not:
 ### Adim 1: Supabase Yerel Gelistirme Ortaminin (Docker) Ayaga Kaldirilmasi
 - [ ] Supabase CLI kur ve `supabase start` ile yerel Supabase docker konteynerlerini ayaga kaldir
 - [ ] Mevcut migration betiginin yerel ortama basildigini onayla (`supabase db reset`)
-- [ ] Eksik olan TypeScript tiplerini DB uzerinden uret (`supabase gen types typescript --local > apps/mobile/src/types/supabase.ts`)
+- [x] Eksik olan TypeScript tiplerini DB uzerinden uret (`npx supabase gen types --linked --lang typescript --schema public > apps/mobile/src/types/supabase.ts`)
 
 ### Adim 2: Authentication Akisinin Insasi
-- [ ] `public.users` tablosuna trigger bagla: Supabase Auth ile olusan kullaniciyi otomatik `public.users` tablosuna yaz
-- [ ] Frontend'de `apps/mobile/src/lib/supabase.ts` icerisine `supabase.auth.onAuthStateChange` ekle ve Zustand state'ine bagla
-- [ ] RLS politikalarini kontrol et: `facts` public okunabilir, `bookmarks` ve `reading_progress` kesinlikle `auth.uid() = user_id` olmali
+- [x] `public.users` tablosuna trigger bagla: Supabase Auth ile olusan kullaniciyi otomatik `public.users` tablosuna yaz
+- [x] Frontend'de root layout icinde `supabase.auth.onAuthStateChange` ekle ve Zustand state'ine bagla
+- [x] RLS politikalarini kontrol et: `facts` public okunabilir, `bookmarks` ve `reading_progress` kesinlikle `auth.uid() = user_id` olmali
 
 ### Adim 3: Edge Functions'in Groq API'ye Baglanmasi
-- [ ] `supabase/functions/ai-definition/index.ts` icine `word` ve `context` alan, Groq ile Turkce baglamsal tanim donen gercek endpoint yaz
-- [ ] `supabase/functions/ai-chat/index.ts` icine kitap metadatasi ve soru baglamini prompt'a ekleyen sohbet endpoint'i yaz
-- [ ] `supabase secrets set GROQ_API_KEY=xxx` ile gerekli secret'lari local ve remote projelere aktar
+- [x] `supabase/functions/ai-definition/index.ts` icine `word` ve `context` alan, Groq ile Turkce baglamsal tanim donen gercek endpoint yaz
+- [x] `supabase/functions/ai-chat/index.ts` icine kitap metadatasi ve soru baglamini prompt'a ekleyen sohbet endpoint'i yaz
+- [x] `supabase secrets set GROQ_API_KEY=xxx` ile gerekli secret'lari remote projeye aktar; local secret/env degerleri developer makinesi bazinda korunur
 
 ### Adim 4: Etkilesimlerin Kalicilastirilmasi
 - [ ] Frontend'deki `toggleLike` fonksiyonunu gercek Supabase RPC veya insert cagrilarina donustur
-- [ ] Reader ekranindan cikildiginda veya anlamli scroll araliklarinda `reading_progress` tablosuna UPSERT at
+- [x] Reader ekranindan cikildiginda veya anlamli scroll araliklarinda `reading_progress` tablosuna UPSERT at
 - [ ] Tum bu API isteklerinde optimistik UI paternini koru
 
 ### Adim 5: Backend Deployment (CI/CD Entegrasyonu)

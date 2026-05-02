@@ -168,3 +168,4 @@ Dokumantasyon uyumu gerekirse:
 
 - Bu degisiklik kategori verisini veya pipeline kategorilerini silmez.
 - Ileride kategori geri gelecekse bu task geri alinabilir olmali; ancak simdiki hedef sade tek akis deneyimidir.
+- 2026-04-27 notu: Tek feed deneyiminde kart uzerindeki kategori badge/metni de kaldirilabilir; ancak `facts.category` verisi FTUE, ilgi secimi, "For You" ranking ve editor/review analizleri icin tutulmaya devam etmelidir.

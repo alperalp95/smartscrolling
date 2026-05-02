@@ -20,11 +20,36 @@ type ChatRequest = {
   history?: ChatMessage[];
 };
 
+type AuthenticatedUser = {
+  app_metadata?: Record<string, unknown>;
+  id: string;
+};
+
+type AuthResult =
+  | {
+      error: null;
+      user: AuthenticatedUser;
+      userId: string;
+    }
+  | {
+      error: Response;
+      user: null;
+      userId: null;
+    };
+
+type QuotaTier = 'free' | 'premium';
+
 const groqApiKey = Deno.env.get('GROQ_API_KEY');
 const groqModel = Deno.env.get('GROQ_MODEL') ?? 'llama-3.1-8b-instant';
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+const upstashRedisRestUrl = Deno.env.get('UPSTASH_REDIS_REST_URL')?.replace(/\/+$/, '');
+const upstashRedisRestToken = Deno.env.get('UPSTASH_REDIS_REST_TOKEN');
 const MAX_CONTEXT_CHARS = 4000;
+const QUOTA_LIMITS: Record<QuotaTier, number> = {
+  free: 5,
+  premium: 50,
+};
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -57,17 +82,162 @@ function sanitizeContext(context?: string) {
   return normalized.slice(0, MAX_CONTEXT_CHARS);
 }
 
-async function requireAuthenticatedUser(req: Request) {
+function parseRetryAfterSeconds(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const seconds = Number.parseInt(value, 10);
+
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.min(seconds, 86_400);
+  }
+
+  const retryDateMs = Date.parse(value);
+
+  if (!Number.isFinite(retryDateMs)) {
+    return null;
+  }
+
+  const deltaSeconds = Math.ceil((retryDateMs - Date.now()) / 1000);
+
+  if (deltaSeconds < 0) {
+    return 0;
+  }
+
+  return Math.min(deltaSeconds, 86_400);
+}
+
+function getUtcDayKey(now = new Date()) {
+  return now.toISOString().slice(0, 10);
+}
+
+function getNextUtcReset(now = new Date()) {
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0),
+  );
+}
+
+function getQuotaTtlSeconds(now = new Date()) {
+  const resetAt = getNextUtcReset(now);
+  return Math.max(60, Math.ceil((resetAt.getTime() - now.getTime()) / 1000) + 300);
+}
+
+function getQuotaKey(userId: string, now = new Date()) {
+  return `ai_chat_quota:${getUtcDayKey(now)}:${userId}`;
+}
+
+function buildRedisCommandUrl(command: string, ...args: Array<number | string>) {
+  if (!upstashRedisRestUrl) {
+    return null;
+  }
+
+  return [upstashRedisRestUrl, command, ...args.map((arg) => encodeURIComponent(String(arg)))].join(
+    '/',
+  );
+}
+
+async function runRedisCommand<T>(command: string, ...args: Array<number | string>) {
+  if (!upstashRedisRestToken) {
+    throw new Error('missing_upstash_secret');
+  }
+
+  const url = buildRedisCommandUrl(command, ...args);
+
+  if (!url) {
+    throw new Error('missing_upstash_url');
+  }
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${upstashRedisRestToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`upstash_${response.status}`);
+  }
+
+  const body = (await response.json()) as { error?: string; result?: T };
+
+  if (body.error) {
+    throw new Error('upstash_command_error');
+  }
+
+  return body.result as T;
+}
+
+function resolveQuotaTier(user: AuthenticatedUser): QuotaTier {
+  const metadata = user.app_metadata ?? {};
+
+  if (metadata.premium === true || metadata.entitlement === 'premium') {
+    return 'premium';
+  }
+
+  if (Array.isArray(metadata.entitlements) && metadata.entitlements.includes('premium')) {
+    return 'premium';
+  }
+
+  return 'free';
+}
+
+async function enforceAiChatQuota(user: AuthenticatedUser) {
+  const now = new Date();
+  const tier = resolveQuotaTier(user);
+  const limit = QUOTA_LIMITS[tier];
+  const resetAt = getNextUtcReset(now);
+  const key = getQuotaKey(user.id, now);
+
+  try {
+    const count = Number(await runRedisCommand<number>('incr', key));
+
+    if (!Number.isFinite(count)) {
+      throw new Error('invalid_upstash_count');
+    }
+
+    if (count === 1) {
+      await runRedisCommand<number>('expire', key, getQuotaTtlSeconds(now));
+    }
+
+    return {
+      ok: count <= limit,
+      quota: {
+        tier,
+        limit,
+        remaining: Math.max(limit - count, 0),
+        resetAt: resetAt.toISOString(),
+      },
+    };
+  } catch (error) {
+    console.error('[ai-chat] quota check failed:', error instanceof Error ? error.message : error);
+    return {
+      error: jsonResponse(
+        {
+          error: 'AI quota is temporarily unavailable',
+          code: 'quota_unavailable',
+        },
+        503,
+      ),
+    };
+  }
+}
+
+async function requireAuthenticatedUser(req: Request): Promise<AuthResult> {
   const authHeader = req.headers.get('Authorization') ?? req.headers.get('authorization');
   const token = authHeader?.replace(/^Bearer\s+/i, '').trim();
 
   if (!token) {
-    return { error: jsonResponse({ error: 'Missing bearer token' }, 401), userId: null };
+    return {
+      error: jsonResponse({ error: 'Authentication required', code: 'auth_required' }, 401),
+      user: null,
+      userId: null,
+    };
   }
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return {
       error: jsonResponse({ error: 'Missing Supabase env for auth verification' }, 500),
+      user: null,
       userId: null,
     };
   }
@@ -80,10 +250,21 @@ async function requireAuthenticatedUser(req: Request) {
   const { data, error } = await supabase.auth.getUser(token);
 
   if (error || !data.user) {
-    return { error: jsonResponse({ error: 'Invalid auth token' }, 401), userId: null };
+    return {
+      error: jsonResponse({ error: 'Authentication required', code: 'auth_required' }, 401),
+      user: null,
+      userId: null,
+    };
   }
 
-  return { error: null, userId: data.user.id };
+  return {
+    error: null,
+    user: {
+      app_metadata: data.user.app_metadata,
+      id: data.user.id,
+    },
+    userId: data.user.id,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -99,6 +280,10 @@ Deno.serve(async (req) => {
 
   if (authResult.error) {
     return authResult.error;
+  }
+
+  if (!authResult.userId || !authResult.user) {
+    return jsonResponse({ error: 'Authentication required', code: 'auth_required' }, 401);
   }
 
   if (!groqApiKey) {
@@ -117,6 +302,23 @@ Deno.serve(async (req) => {
 
   if (!question) {
     return jsonResponse({ error: 'question is required' }, 400);
+  }
+
+  const quotaResult = await enforceAiChatQuota(authResult.user);
+
+  if ('error' in quotaResult) {
+    return quotaResult.error;
+  }
+
+  if (!quotaResult.ok) {
+    return jsonResponse(
+      {
+        error: 'Daily AI chat limit reached',
+        code: 'quota_exceeded',
+        quota: quotaResult.quota,
+      },
+      429,
+    );
   }
 
   const history = sanitizeHistory(payload.history);
@@ -152,6 +354,20 @@ Deno.serve(async (req) => {
   });
 
   if (!groqResponse.ok) {
+    if (groqResponse.status === 429) {
+      const retryAfterSeconds = parseRetryAfterSeconds(groqResponse.headers.get('retry-after'));
+      console.warn('[ai-chat] Groq rate limited:', { retryAfterSeconds });
+
+      return jsonResponse(
+        {
+          error: 'AI is temporarily busy',
+          code: 'groq_rate_limited',
+          ...(retryAfterSeconds === null ? {} : { retryAfterSeconds }),
+        },
+        429,
+      );
+    }
+
     const groqErrorText = await groqResponse.text();
     console.error('[ai-chat] Groq API error:', groqResponse.status, groqErrorText);
     return jsonResponse({ error: 'Groq request failed' }, 502);

@@ -51,6 +51,14 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-6637567308957272~3442526952",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "userTrackingUsageDescription": "This identifier may be used to deliver relevant ads."
+        }
       ]
     ],
     "extra": {
@@ -64,6 +72,7 @@
       }
     },
     "experiments": {
+      "autolinkingModuleResolution": true,
       "typedRoutes": true,
       "reactCompiler": true
     }

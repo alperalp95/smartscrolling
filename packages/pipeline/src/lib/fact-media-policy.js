@@ -30,6 +30,7 @@ const BAD_MEDIA_KEYWORDS = [
 export function evaluateFactMedia({ sourceLabel, mediaUrl }) {
   const normalizedSourceLabel = normalizeText(sourceLabel);
   const normalizedMediaUrl = (mediaUrl ?? '').trim().toLowerCase();
+  const mediaUrlWithoutQuery = normalizedMediaUrl.split('?')[0];
 
   if (!normalizedMediaUrl) {
     return { ok: true, reason: 'missing_media' };
@@ -46,15 +47,15 @@ export function evaluateFactMedia({ sourceLabel, mediaUrl }) {
     return { ok: false, reason: 'wikipedia_non_free_asset' };
   }
 
-  if (UNSUPPORTED_IMAGE_FORMATS.some((ext) => normalizedMediaUrl.includes(ext))) {
+  if (UNSUPPORTED_IMAGE_FORMATS.some((ext) => mediaUrlWithoutQuery.includes(ext))) {
     return { ok: false, reason: 'unsupported_format' };
   }
 
-  if (/\.svg(\.png)?($|\?)/i.test(normalizedMediaUrl)) {
+  if (/\.svg(\.png)?$/i.test(mediaUrlWithoutQuery)) {
     return { ok: false, reason: 'svg_not_supported' };
   }
 
-  if (BAD_MEDIA_KEYWORDS.some((keyword) => normalizedMediaUrl.includes(keyword))) {
+  if (BAD_MEDIA_KEYWORDS.some((keyword) => mediaUrlWithoutQuery.includes(keyword))) {
     return { ok: false, reason: 'diagrammatic_or_brand_asset' };
   }
 

@@ -40,6 +40,47 @@ export async function getExistingSourceUrls(sourceUrls) {
   return new Set((data ?? []).map((row) => row.source_url).filter(Boolean));
 }
 
+function wikipediaTitleFromSourceUrl(sourceUrl) {
+  try {
+    const url = new URL(sourceUrl);
+    const marker = '/wiki/';
+    const markerIndex = url.pathname.indexOf(marker);
+
+    if (markerIndex === -1) {
+      return null;
+    }
+
+    return decodeURIComponent(url.pathname.slice(markerIndex + marker.length))
+      .replaceAll('_', ' ')
+      .trim();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Wikipedia seed fetch'lerinde DB'de zaten bulunan basliklari bastan elemek icin kullanilir.
+ * @returns {Promise<Set<string>>}
+ */
+export async function getExistingWikipediaSourceTitles() {
+  const { data, error } = await supabase
+    .from('facts')
+    .select('source_url')
+    .eq('source_label', 'Wikipedia')
+    .limit(1000);
+
+  if (error) {
+    console.error('[Supabase] Wikipedia source title preflight error:', error.message);
+    return new Set();
+  }
+
+  return new Set(
+    (data ?? [])
+      .map((row) => wikipediaTitleFromSourceUrl(row.source_url))
+      .filter(Boolean),
+  );
+}
+
 export async function findRecentTopicPreflight({ title, category, freshnessDays = 60 } = {}) {
   return findRecentTopicDuplicate(supabase, { title, category, freshnessDays });
 }

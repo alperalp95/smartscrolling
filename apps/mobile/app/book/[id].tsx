@@ -164,7 +164,15 @@ export default function BookReaderScreen() {
     setChatMessages,
   } = useBookChat({
     bookTitle,
+    hasPremium,
     initialAssistantMessage: `${bookTitle} baglaminda hazir sorulardan biriyle baslayabilir veya premium ile serbest soru sorabilirsin.`,
+    onFreeQuotaExceeded: () =>
+      promptForPremium({
+        title: 'Gunluk AI hakkin doldu',
+        message:
+          'Free planda bugunluk 5 AI sorusu kullaniliyor. Premium ile gunluk 50 soruya cikabilir ve serbest soru akisini daha rahat kullanabilirsin.',
+        onConfirm: () => router.push('/premium'),
+      }),
     readerContext,
   });
 

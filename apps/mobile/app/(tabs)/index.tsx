@@ -25,6 +25,11 @@ import {
 import type { ImageSourcePropType, ViewToken } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PremiumUpsellCard } from '../../components/premium-upsell-card';
+import {
+  type FeedAdSlot,
+  getAdAudience,
+  insertFeedAdSlots,
+} from '../../src/lib/ads';
 import { promptForAuth } from '../../src/lib/authPrompt';
 import { isBadFactMediaUrl } from '../../src/lib/factVisuals';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
@@ -581,6 +586,12 @@ type FactReviewExportEntry = FactReviewDraft & {
   visualKey: string | null;
 };
 
+type FeedListItem = FactType | FeedAdSlot;
+
+function isFeedAdSlot(item: FeedListItem): item is FeedAdSlot {
+  return 'slotType' in item && item.slotType === 'ad';
+}
+
 const REVIEW_TAG_OPTIONS: Array<{ value: FactReviewTag; label: string }> = [
   { value: 'not_snackable', label: 'Hap bilgi degil' },
   { value: 'not_interesting', label: 'Merak uyandirmiyor' },
@@ -593,6 +604,56 @@ const REVIEW_TAG_OPTIONS: Array<{ value: FactReviewTag; label: string }> = [
   { value: 'language_awkward', label: 'Dil yapay' },
   { value: 'duplicate_feeling', label: 'Tekrar hissi' },
 ];
+
+function FeedAdCard({
+  height,
+  slot,
+  tabBarHeight,
+  bottomInset,
+  onNext,
+}: {
+  height: number;
+  slot: FeedAdSlot;
+  tabBarHeight: number;
+  bottomInset: number;
+  onNext: () => void;
+}) {
+  const cardBottomOffset = tabBarHeight + Math.max(bottomInset, Platform.OS === 'ios' ? 12 : 8);
+  const isNativeSlot = slot.kind === 'inline_video';
+
+  const renderBanner = () => {
+    return (
+      <View style={s.adFallbackBox}>
+        <Text style={s.adFallbackText}>
+          {isNativeSlot
+            ? 'Inline native reklam slotu'
+            : 'Test banner slotu - native AdMob render kapali'}
+        </Text>
+      </View>
+    );
+  };
+
+  return (
+    <View style={[s.adScreen, { height, paddingBottom: cardBottomOffset + 20 }]}>
+      <View style={s.adCard}>
+        <Text style={s.adEyebrow}>
+          {slot.audience === 'guest' ? 'Misafir reklami' : 'Free reklam'}
+        </Text>
+        <Text style={s.adTitle}>
+          {isNativeSlot ? 'Video destekli reklam alani' : 'Sponsorlu alan'}
+        </Text>
+        <Text style={s.adBody}>
+          Premium'a gecince feed reklamlarini kaldirabilir, kitaplik ve AI deneyimini daha derin
+          kullanabilirsin.
+        </Text>
+        <View style={s.adUnitWrap}>{renderBanner()}</View>
+        <TouchableOpacity onPress={onNext} style={s.adContinueButton}>
+          <Text style={s.adContinueText}>Akisa Devam Et</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
 
 type FullScreenFactCardProps = {
   item: FactType;
@@ -979,7 +1040,7 @@ export default function FeedScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const { height: windowHeight } = useWindowDimensions();
   const listHeight = windowHeight;
-  const flatListRef = useRef<FlashListRef<FactType> | null>(null);
+  const flatListRef = useRef<FlashListRef<FeedListItem> | null>(null);
   const appStateRef = useRef(AppState.currentState);
   const feedScreenOpenedAt = useRef(Date.now());
   const hasLoggedFirstCard = useRef(false);
@@ -1021,6 +1082,13 @@ export default function FeedScreen() {
   const user = useAuthStore((state) => state.user);
   const hasPremium = useAuthStore((state) => state.hasPremium);
   const setPostAuthRedirectPath = useAuthStore((state) => state.setPostAuthRedirectPath);
+  const feedItems = insertFeedAdSlots(
+    orderedFacts,
+    getAdAudience({
+      hasPremium,
+      isAuthenticated: Boolean(user),
+    }),
+  );
 
   useEffect(() => {
     void fetchFacts({ reset: true });
@@ -1044,11 +1112,13 @@ export default function FeedScreen() {
   }, [bumpFeedRotation, isFocused, refreshFacts]);
 
   const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: ViewToken<FactType>[] }) => {
+    ({ viewableItems }: { viewableItems: ViewToken<FeedListItem>[] }) => {
       const firstViewableItem = viewableItems[0];
       const firstItem = firstViewableItem?.item;
 
-      if (firstItem?.id) {
+      if (firstItem && isFeedAdSlot(firstItem)) {
+        setActiveFactId(null);
+      } else if (firstItem?.id) {
         setActiveFactId(firstItem.id);
       }
 
@@ -1185,8 +1255,8 @@ export default function FeedScreen() {
     });
   };
 
-  const handleFinish = (index: number) => {
-    if (index < orderedFacts.length - 1) {
+  const handleFinish = (index: number, itemCount = orderedFacts.length) => {
+    if (index < itemCount - 1) {
       flatListRef.current?.scrollToIndex({ index: index + 1, animated: true });
     }
   };
@@ -1250,7 +1320,7 @@ export default function FeedScreen() {
         ) : (
           <FlashList
             ref={flatListRef}
-            data={orderedFacts}
+            data={feedItems}
             keyExtractor={(item) => item.id}
             refreshing={isLoading}
             onEndReached={() => {
@@ -1273,25 +1343,39 @@ export default function FeedScreen() {
                 </View>
               ) : null
             }
-            renderItem={({ item, index }) => (
-              <FullScreenFactCard
-                item={item}
-                isActive={activeFactId === item.id}
-                height={listHeight}
-                onFinish={() => handleFinish(index)}
-                toggleLike={toggleLike}
-                toggleSave={handleToggleSave}
-                isLiked={likedIds.includes(item.id)}
-                isSaved={savedIds.includes(item.id)}
-                tabBarHeight={tabBarHeight}
-                bottomInset={insets.bottom}
-                topInset={insets.top}
-                onExpandedChange={(expanded) => handleExpandedChange(item.id, expanded)}
-                isReviewMode={isReviewMode}
-                reviewVerdict={reviewsByFactId[item.id]?.verdict ?? null}
-                onOpenReview={openReviewForFact}
-              />
-            )}
+            renderItem={({ item, index }) => {
+              if (isFeedAdSlot(item)) {
+                return (
+                  <FeedAdCard
+                    height={listHeight}
+                    slot={item}
+                    tabBarHeight={tabBarHeight}
+                    bottomInset={insets.bottom}
+                    onNext={() => handleFinish(index, feedItems.length)}
+                  />
+                );
+              }
+
+              return (
+                <FullScreenFactCard
+                  item={item}
+                  isActive={activeFactId === item.id}
+                  height={listHeight}
+                  onFinish={() => handleFinish(index, feedItems.length)}
+                  toggleLike={toggleLike}
+                  toggleSave={handleToggleSave}
+                  isLiked={likedIds.includes(item.id)}
+                  isSaved={savedIds.includes(item.id)}
+                  tabBarHeight={tabBarHeight}
+                  bottomInset={insets.bottom}
+                  topInset={insets.top}
+                  onExpandedChange={(expanded) => handleExpandedChange(item.id, expanded)}
+                  isReviewMode={isReviewMode}
+                  reviewVerdict={reviewsByFactId[item.id]?.verdict ?? null}
+                  onOpenReview={openReviewForFact}
+                />
+              );
+            }}
           />
         )}
       </View>
@@ -1485,6 +1569,79 @@ export default function FeedScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000', overflow: 'hidden' },
   listWrapper: { flex: 1, overflow: 'hidden' },
+  adScreen: {
+    alignItems: 'center',
+    backgroundColor: '#020617',
+    justifyContent: 'center',
+    paddingHorizontal: 22,
+    width: '100%',
+  },
+  adCard: {
+    alignItems: 'center',
+    backgroundColor: '#0f172a',
+    borderColor: 'rgba(148,163,184,0.28)',
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: 12,
+    maxWidth: 360,
+    padding: 18,
+    width: '100%',
+  },
+  adEyebrow: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  adTitle: {
+    color: '#f8fafc',
+    fontSize: 20,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  adBody: {
+    color: '#cbd5e1',
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+  },
+  adUnitWrap: {
+    alignItems: 'center',
+    backgroundColor: '#111827',
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 10,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 250,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  adFallbackBox: {
+    alignItems: 'center',
+    height: 250,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    width: '100%',
+  },
+  adFallbackText: {
+    color: '#94a3b8',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  adContinueButton: {
+    alignItems: 'center',
+    backgroundColor: '#8b5cf6',
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  adContinueText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
   cardOuter: {
     width: '100%',
     overflow: 'hidden',
