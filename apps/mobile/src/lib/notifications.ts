@@ -1,7 +1,12 @@
 import Constants from 'expo-constants';
+import { requireOptionalNativeModule } from 'expo-modules-core';
 import { Platform } from 'react-native';
 
 const DEFAULT_NOTIFICATION_CHANNEL_ID = 'daily-reminders';
+const REQUIRED_NOTIFICATION_MODULES = [
+  'ExpoNotificationPermissionsModule',
+  'ExpoPushTokenManager',
+] as const;
 
 type DeviceModule = typeof import('expo-device');
 type NotificationsModule = typeof import('expo-notifications');
@@ -35,6 +40,10 @@ function loadNotificationsModule() {
   }
 }
 
+function getMissingNativeModule(moduleNames: readonly string[]) {
+  return moduleNames.find((moduleName) => !requireOptionalNativeModule(moduleName)) ?? null;
+}
+
 async function ensureAndroidNotificationChannel(Notifications: NotificationsModule) {
   if (Platform.OS !== 'android') {
     return;
@@ -61,26 +70,39 @@ export async function registerForPushNotifications(): Promise<PushRegistrationRe
       };
     }
 
-    const Notifications = loadNotificationsModule();
+    const requiredModules =
+      Platform.OS === 'android'
+        ? [...REQUIRED_NOTIFICATION_MODULES, 'ExpoNotificationChannelManager']
+        : REQUIRED_NOTIFICATION_MODULES;
+    const missingNotificationModule = getMissingNativeModule(requiredModules);
 
-    if (!Notifications) {
+    if (missingNotificationModule) {
       return {
         status: 'unsupported',
-        message:
-          'Bu build notification native modulunu icermiyor. Development build yeniden alinmali.',
+        message: `${missingNotificationModule} bu build icinde yok. Development build notification config'iyle yeniden alinmali.`,
+      };
+    }
+
+    const missingDeviceModule = getMissingNativeModule(['ExpoDevice']);
+
+    if (missingDeviceModule) {
+      return {
+        status: 'unsupported',
+        message: `${missingDeviceModule} bu build icinde yok. Development build notification config'iyle yeniden alinmali.`,
+      };
+    }
+
+    const Notifications = loadNotificationsModule();
+    const Device = loadDeviceModule();
+
+    if (!Notifications || !Device) {
+      return {
+        status: 'unsupported',
+        message: 'Notification native modulleri bu build icinde hazir degil.',
       };
     }
 
     await ensureAndroidNotificationChannel(Notifications);
-
-    const Device = loadDeviceModule();
-
-    if (!Device) {
-      return {
-        status: 'unsupported',
-        message: 'Bu build device native modulunu icermiyor. Development build yeniden alinmali.',
-      };
-    }
 
     if (!Device.isDevice) {
       return {
