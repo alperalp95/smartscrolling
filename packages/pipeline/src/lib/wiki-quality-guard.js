@@ -10,6 +10,8 @@ const GENERIC_ENTITY_TITLES = new Set([
   'saglik',
   'sağlık',
   'felsefe',
+  'biography',
+  'biyografi',
 ]);
 
 const LOW_VALUE_TOPIC_PATTERNS = [
@@ -244,6 +246,72 @@ const PERSON_ROLE_SIGNALS = [
   /\bpolitician\b/i,
   /\bressam\b/i,
   /\bpainter\b/i,
+  /\bfutbolcu\b/i,
+  /\bfootballer\b/i,
+  /\btenisçi\b/i,
+  /\btenisci\b/i,
+  /\btennis player\b/i,
+  /\bsporcu\b/i,
+  /\bathlete\b/i,
+];
+
+const HIGH_IMPACT_PERSON_SIGNALS = [
+  ...HIGH_VALUE_PERSON_SIGNALS,
+  /\bnikola tesla\b/i,
+  /\bthomas edison\b/i,
+  /\balbert einstein\b/i,
+  /\bmarie curie\b/i,
+  /\bleonardo da vinci\b/i,
+  /\blionel messi\b/i,
+  /\brafael nadal\b/i,
+  /\bmichael jackson\b/i,
+  /\bmartin luther king\b/i,
+  /\bmustafa kemal atatürk\b/i,
+  /\bmustafa kemal ataturk\b/i,
+  /\bcharles darwin\b/i,
+  /\bisaac newton\b/i,
+  /\bgalileo galilei\b/i,
+  /\balan turing\b/i,
+  /\bkatherine johnson\b/i,
+  /\brosalind franklin\b/i,
+  /\bmahatma gandhi\b/i,
+  /\bnelson mandela\b/i,
+  /\brosa parks\b/i,
+  /\bfrida kahlo\b/i,
+  /\bpablo picasso\b/i,
+  /\bwolfgang amadeus mozart\b/i,
+  /\bludwig van beethoven\b/i,
+  /\bserena williams\b/i,
+  /\bmuhammed ali\b/i,
+  /\busain bolt\b/i,
+  /\bpele\b/i,
+  /\bdiego maradona\b/i,
+  /\bstephen hawking\b/i,
+  /\bnobel\b/i,
+  /\bgrammy\b/i,
+  /\bballon d'?or\b/i,
+  /\bgrand slam\b/i,
+  /\bworld record\b/i,
+  /\bdünya rekoru\b/i,
+  /\bdunya rekoru\b/i,
+  /\bking of pop\b/i,
+  /\bpopun kralı\b/i,
+  /\bpopun krali\b/i,
+  /\bsivil haklar\b/i,
+  /\bcivil rights\b/i,
+  /\btarihin en\b/i,
+  /\bone of the greatest\b/i,
+  /\bmost influential\b/i,
+  /\bfounder\b/i,
+  /\bkurucusu\b/i,
+  /\bdevlet adamı\b/i,
+  /\bdevlet adami\b/i,
+  /\bstatesman\b/i,
+  /\bdevrim yarattı\b/i,
+  /\bdevrim yaratti\b/i,
+  /\brekor\b/i,
+  /\bödül\b/i,
+  /\bodul\b/i,
 ];
 
 function normalizeText(value) {
@@ -307,8 +375,15 @@ export function evaluateWikipediaTaxonomyDecision({
     ? enrichment.categories.join(' ')
     : '';
   const contentText = `${preferredData?.title ?? ''} ${preferredData?.description ?? ''} ${preferredData?.extract ?? ''} ${entity?.description ?? ''} ${enrichmentCategories}`;
+  const isBiographyCandidate = taxonomy?.category === 'biography' || targetCategory === 'biography';
+  const hasHighImpactPersonSignal = HIGH_IMPACT_PERSON_SIGNALS.some((pattern) =>
+    pattern.test(contentText),
+  );
 
-  if (LOW_VALUE_TOPIC_PATTERNS.some((pattern) => pattern.test(contentText))) {
+  if (
+    LOW_VALUE_TOPIC_PATTERNS.some((pattern) => pattern.test(contentText)) &&
+    !(isBiographyCandidate && hasHighImpactPersonSignal)
+  ) {
     reasons.push('low_value_topic');
   }
 
@@ -320,7 +395,7 @@ export function evaluateWikipediaTaxonomyDecision({
   const hasHighValuePersonSignal = HIGH_VALUE_PERSON_SIGNALS.some(
     (pattern) =>
       pattern.test(preferredData?.extract ?? '') || pattern.test(entity?.canonicalTitle ?? ''),
-  );
+  ) || (isBiographyCandidate && hasHighImpactPersonSignal);
 
   if (personLikeTitle && looksLikePersonSummary && !hasHighValuePersonSignal) {
     reasons.push('low_value_person');
@@ -337,7 +412,7 @@ export function evaluateWikipediaTaxonomyDecision({
   }
 
   const canBypassTargetMismatch =
-    (taxonomy?.confidence ?? 0) >= 0.9 && curiosityScore >= 4;
+    !isBiographyCandidate && (taxonomy?.confidence ?? 0) >= 0.9 && curiosityScore >= 4;
 
   if (
     !relaxedCategoryTarget &&

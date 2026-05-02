@@ -442,6 +442,39 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     return 'health-brief';
   }
 
+  // ── BİYOGRAFİ ───────────────────────────────────────────────────────────
+  if (normalizedCategory.includes('biyografi')) {
+    if (
+      includesAny(topicText, [
+        'scientist', 'inventor', 'physicist', 'mathematician', 'engineer',
+        'bilim insani', 'mucit', 'fizikci', 'matematikci', 'muhendis',
+        'tesla', 'edison', 'einstein', 'curie', 'turing',
+      ])
+    ) {
+      return 'history-science';
+    }
+
+    if (
+      includesAny(topicText, [
+        'football', 'tennis', 'athlete', 'ballon', 'grand slam', 'olympic',
+        'futbol', 'tenis', 'sporcu', 'rekor', 'messi', 'nadal', 'williams',
+      ])
+    ) {
+      return 'history-culture';
+    }
+
+    if (
+      includesAny(topicText, [
+        'music', 'singer', 'artist', 'painter', 'composer', 'grammy',
+        'muzik', 'sarkici', 'sanatci', 'ressam', 'besteci', 'jackson', 'kahlo',
+      ])
+    ) {
+      return 'editorial-culture';
+    }
+
+    return 'history-archive';
+  }
+
   // ── EDITORIAL fallthrough ────────────────────────────────────────────────
   if (includesAny(normalizedSourceLabel, ['luzumsuz', 'ansiklopedi'])) {
     return 'editorial-trivia';

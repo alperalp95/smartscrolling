@@ -4,6 +4,7 @@ const ALLOWED_CATEGORIES = new Set([
   '🧠 FELSEFE',
   '💻 TEKNOLOJİ',
   '🌱 SAĞLIK',
+  '👤 BİYOGRAFİ',
 ]);
 
 const LOW_QUALITY_TITLE_PATTERNS = [

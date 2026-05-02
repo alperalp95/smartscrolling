@@ -12,6 +12,7 @@ const CATEGORY_MAP = {
   philosophy: '\u{1F9E0} FELSEFE',
   technology: '\u{1F4BB} TEKNOLOJ\u0130',
   health: '\u{1F331} SA\u011ELIK',
+  biography: '\u{1F464} B\u0130YOGRAF\u0130',
 };
 
 const CATEGORY_PROMPT_MAP = {
@@ -45,6 +46,12 @@ const CATEGORY_PROMPT_MAP = {
 - sansasyonel veya kesin tibbi iddia gibi yazma
 - dil sakin, guvenli ve bilgilendirici olmali
 - kaynakta olmayan tibbi yorum, tavsiye veya kesinlik ekleme`,
+  biography: `BIYOGRAFI kartlari:
+- sadece tarihe, bilime, sanata, spora veya kulture damga vurmus kisileri kartlastir
+- ilk cumlede kisinin neden onemli oldugunu somut etkiyle kur
+- kuru dogum-olum bilgisi ya da "kimdir" ozetine donme
+- kariyeri bir liste gibi sayma; bir kirilma noktasi, bulus, rekor, hareket veya kulturel etki acisi sec
+- kaynakta olmayan psikolojik niyet, abarti veya magazinel yorum ekleme`,
 };
 
 const SOURCE_PROMPT_MAP = {
@@ -52,11 +59,12 @@ const SOURCE_PROMPT_MAP = {
 - her dogru ansiklopedi maddesi feed icin uygun degildir; sadece anlatmaya deger ve merak uyandiran konulari kartlastir
 - kart bir ansiklopedi ozetine degil, anlatilabilir bir kesfe benzemeli
 - konu cok lokal, dusuk etkili veya sadece "X bir koydur / Y bir politikacidir" seviyesindeyse title alanini bos birak
-- temel bilim, saglik, teknoloji veya felsefe mekanizmasi anlatan guclu kaynaklarda title alanini bos birakma; kaynak destekliyorsa somut bir mekanizma veya etki acisi sec
+- temel bilim, saglik, teknoloji, felsefe veya biyografi acisi anlatan guclu kaynaklarda title alanini bos birakma; kaynak destekliyorsa somut bir mekanizma, etki veya kirilma noktasi sec
 - proper noun kullanabilirsin ama tek basina isim yetmez; neden onemli oldugunu veya neden ilginc oldugunu acikca hissettir
 - konu cok genis ve ders kitabi bolum basligi gibi kalıyorsa onu daha keskin bir aciya daralt; daraltamiyorsan title alanini bos birak
 - baslikta "gizli", "gizem", "sir", "temel fikir", "rolu", "nedenleri", "anlamak", "farkliligi", "tarihsel baglami" gibi genel veya magazinel kaliplar kullanma
 - bina, yol, secim bolgesi, kucuk yerlesim, siradan biyografi ve kuru istatistik konularini ancak acik bir tarihsel/bilimsel/kulturel onemi varsa kullan
+- biyografi konularinda yalnizca dunya olceginde etki, kalici eser, bulus, rekor, odul, akim veya tarihsel donusum varsa kart uret
 - turizm, ekonomi, idari yerlesim, siradan kultur/eglence ve liste maddeleri feed icin zayifsa title alanini bos birak
 - sayisal kiyas, "X kat", "en buyuk", "en eski", "ilk" gibi kesin iddialari yalnizca ham metinde acikca varsa yaz
 - kaynakta net olmayan karsilastirmalari guvenli ve genel ifadeye cevir; kesin rakam uydurma`,
@@ -366,7 +374,7 @@ Anahtarlar: title, content, category, tags, read_time_sq
 Kurallar:
 - JSON disinda hicbir sey yazma
 - Icerikte cift tirnak kullanma, gerekiyorsa alintiyi kaldir
-- category su degerlerden biri olmali: "${CATEGORY_MAP.science}", "${CATEGORY_MAP.history}", "${CATEGORY_MAP.philosophy}", "${CATEGORY_MAP.technology}", "${CATEGORY_MAP.health}"
+- category su degerlerden biri olmali: "${CATEGORY_MAP.science}", "${CATEGORY_MAP.history}", "${CATEGORY_MAP.philosophy}", "${CATEGORY_MAP.technology}", "${CATEGORY_MAP.health}", "${CATEGORY_MAP.biography}"
 - tags bir string array olmali
 - read_time_sq sayi olmali`;
 
@@ -522,7 +530,7 @@ CIKTI KURALLARI:
 - content: Ikinci cumlede basligin acmis oldugu bilgiyi dogrudan cevapla.
 - content: Sonraki cumlelerde baglam, neden onemli oldugu veya neyi degistirdigi netlesmeli.
 - content: Metin icinde cift tirnak kullanmaktan kacin. Eser veya kavram adlarini dogrudan acikla.
-- category: Yalnizca su kategorilerden biri olmali: "${CATEGORY_MAP.science}", "${CATEGORY_MAP.history}", "${CATEGORY_MAP.philosophy}", "${CATEGORY_MAP.technology}", "${CATEGORY_MAP.health}"
+- category: Yalnizca su kategorilerden biri olmali: "${CATEGORY_MAP.science}", "${CATEGORY_MAP.history}", "${CATEGORY_MAP.philosophy}", "${CATEGORY_MAP.technology}", "${CATEGORY_MAP.health}", "${CATEGORY_MAP.biography}"
 - tags: 3-5 adet kisa etiket olmali.
 - read_time_sq: 15 ile 28 arasinda tahmini okuma suresi.
 

@@ -4,6 +4,7 @@ const CATEGORY_LABEL_TO_HINT = {
   '🧠 FELSEFE': 'philosophy',
   '💻 TEKNOLOJİ': 'technology',
   '🌱 SAĞLIK': 'health',
+  '👤 BİYOGRAFİ': 'biography',
 };
 
 const STOPWORDS = new Set([
@@ -77,6 +78,7 @@ const TOKEN_ALIASES = {
   source: ['kaynak'],
   theory: ['kuram', 'teori'],
   health: ['saglik'],
+  biography: ['biyografi', 'hayati', 'kariyer', 'miras'],
   pressure: ['basinc', 'tansiyon'],
   safety: ['guvenlik'],
   stress: ['stres'],

@@ -29,6 +29,12 @@ const THEME_SIGNAL_PROFILES = {
     description: ['doktor', 'doctor', 'hekim', 'physician', 'tıp', 'tip', 'medicine', 'sağlık', 'saglik', 'health'],
     summary: ['sağlık', 'saglik', 'health', 'hastalık', 'hastalik', 'disease', 'tedavi', 'treatment', 'bağışıklık', 'bagisiklik', 'immune', 'vücut', 'vucut', 'body', 'semptom'],
   },
+  biography: {
+    title: ['nikola tesla', 'thomas edison', 'albert einstein', 'marie curie', 'leonardo da vinci', 'isaac newton', 'charles darwin', 'galileo galilei', 'alan turing', 'katherine johnson', 'rosalind franklin', 'stephen hawking', 'lionel messi', 'rafael nadal', 'serena williams', 'muhammed ali', 'usain bolt', 'pele', 'diego maradona', 'michael jackson', 'frida kahlo', 'pablo picasso', 'mozart', 'beethoven', 'martin luther king', 'nelson mandela', 'rosa parks', 'mahatma gandhi', 'mustafa kemal atatürk', 'mustafa kemal ataturk'],
+    categories: ['biyografi', 'biography', 'kişiler', 'kisiler', 'people', 'mucit', 'inventor', 'scientist', 'bilim insanı', 'bilim insani', 'physicists', 'mathematicians', 'naturalists', 'nobel', 'grammy', 'ballon d or', 'grand slam', 'tennis players', 'footballers', 'singers', 'musicians', 'civil rights', 'rights activists'],
+    description: ['mucit', 'inventor', 'bilim insanı', 'bilim insani', 'scientist', 'fizikçi', 'fizikci', 'physicist', 'matematikçi', 'matematikci', 'mathematician', 'futbolcu', 'footballer', 'tenisçi', 'tenisci', 'tennis player', 'şarkıcı', 'sarkici', 'singer', 'müzisyen', 'muzisyen', 'musician', 'sanatçı', 'sanatci', 'artist', 'aktivist', 'activist'],
+    summary: ['mucit', 'inventor', 'icat', 'invention', 'nobel', 'grammy', 'ballon d or', 'grand slam', 'dünya rekoru', 'dunya rekoru', 'world record', 'sivil haklar', 'civil rights', 'popun kralı', 'popun krali', 'king of pop', 'tarihin en', 'one of the greatest', 'considered one of', 'etkili', 'influential'],
+  },
 };
 
 function normalizeText(value) {
