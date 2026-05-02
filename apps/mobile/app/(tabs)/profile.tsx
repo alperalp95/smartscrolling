@@ -108,6 +108,11 @@ export default function ProfileScreen() {
   const todayKey = getTodayKey();
   const streakDays = activitySummary?.streakDays ?? 0;
   const bestStreakDays = activitySummary?.bestStreakDays ?? 0;
+  const weeklyActivityMax = Math.max(
+    dailyGoal?.value ?? 0,
+    ...(activitySummary?.week.map((activity) => activity.factsRead) ?? []),
+    1,
+  );
   const shouldShowDailyGoalEditor = isEditingDailyGoal || !dailyGoal;
   const shouldShowInterestEditor = isEditingInterests || selectedInterests.length === 0;
 
@@ -435,18 +440,30 @@ export default function ProfileScreen() {
           </View>
 
           <View style={s.weekRow}>
-            {WEEK_DAYS.map((day, i) => (
-              <View key={`${day}-${activitySummary?.week[i]?.date ?? i}`} style={s.dayCol}>
-                <View
-                  style={[
-                    s.dayDot,
-                    activitySummary?.week[i]?.isActive ? s.dayDotDone : null,
-                    activitySummary?.week[i]?.date === todayKey ? s.dayDotToday : null,
-                  ]}
-                />
-                <Text style={s.dayLabel}>{day}</Text>
-              </View>
-            ))}
+            {WEEK_DAYS.map((day, i) => {
+              const activity = activitySummary?.week[i];
+              const factsRead = activity?.factsRead ?? 0;
+              const barHeight = Math.max(4, Math.round((factsRead / weeklyActivityMax) * 34));
+              const isToday = activity?.date === todayKey;
+
+              return (
+                <View key={`${day}-${activity?.date ?? i}`} style={s.dayCol}>
+                  <Text style={[s.dayCount, factsRead > 0 ? s.dayCountActive : null]}>
+                    {factsRead}
+                  </Text>
+                  <View style={[s.dayBarTrack, isToday ? s.dayBarTrackToday : null]}>
+                    <View
+                      style={[
+                        s.dayBarFill,
+                        factsRead > 0 ? s.dayBarFillActive : null,
+                        { height: barHeight },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[s.dayLabel, isToday ? s.dayLabelToday : null]}>{day}</Text>
+                </View>
+              );
+            })}
           </View>
 
           <TouchableOpacity style={s.heroAction} onPress={handlePremiumPress} activeOpacity={0.85}>
@@ -807,18 +824,25 @@ const s = StyleSheet.create({
   summaryDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.06)' },
 
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  dayCol: { alignItems: 'center', gap: 5 },
-  dayDot: { width: 26, height: 26, borderRadius: 9, backgroundColor: '#2a2a2c' },
-  dayDotDone: { backgroundColor: '#ff9f0a' },
-  dayDotToday: {
-    borderColor: '#ff9f0a',
-    borderWidth: 2,
-    shadowColor: '#ff9f0a',
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 4,
+  dayCol: { alignItems: 'center', gap: 5, width: 34 },
+  dayCount: { color: '#64748b', fontSize: 10, fontWeight: '700' },
+  dayCountActive: { color: '#c4b5fd' },
+  dayBarTrack: {
+    width: 18,
+    height: 38,
+    borderRadius: 9,
+    backgroundColor: '#2a2a2c',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
   },
+  dayBarTrackToday: {
+    borderColor: '#a78bfa',
+    borderWidth: 1,
+  },
+  dayBarFill: { width: '100%', borderRadius: 9, backgroundColor: '#3a3a3c' },
+  dayBarFillActive: { backgroundColor: '#8b5cf6' },
   dayLabel: { color: '#6b7280', fontSize: 10, fontWeight: '500' },
+  dayLabelToday: { color: '#c4b5fd', fontWeight: '800' },
   heroAction: {
     backgroundColor: '#8b5cf6',
     borderRadius: 14,

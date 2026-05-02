@@ -189,7 +189,7 @@ Not:
 
 ### Streak Sistemi
 - [x] **P35-01** Gunluk giris / okuma serisi (streak) sayaci - `user_activity` uzerinden gercek streak hesaplama profile summary'ye baglandi (`docs/tasks/p35_01_real_streak_counter.md`)
-- [ ] **P35-02** Streak kirilma uyarisi
+- [ ] **P35-02** Streak kirilma uyarisi - push notification olmadan kullaniciya zamaninda ulasmadigi icin P35-10/P35-12 bildirim dilimiyle birlikte ele alinacak
 - [x] **P35-03** Streak rekoru goruntuleme - son 90 gun `user_activity` verisinden hesaplanan en iyi seri profil ozetinde `Rekor: X gun` olarak gosteriliyor; kalici rekor kolonu MVP disi tutuldu (`docs/tasks/p35_03_best_streak_summary.md`)
 - [ ] **P35-04** Streak korumasi (1 gunluk grace period veya freeze)
 - [x] **P35-05** `user_activity` tablosu ile gunluk kayit tut - feed kart goruntuleme, reader sayfa ilerlemesi ve basarili AI soru sayisi `incrementDailyActivity()` ile gunluk kayda yaziliyor
@@ -198,7 +198,7 @@ Not:
 - [x] **P35-06** Ana ekranda "Bugun X kart okudun" ozet widget'i - feed overlay bugunku `facts_read` sayisini ve varsa kart hedefini kompakt activity ring olarak gosteriyor; basa don butonu activity ring ile hizalandi (`docs/tasks/p35_06_today_cards_widget.md`, `docs/tasks/p35_06a_compact_feed_activity_ring.md`, `docs/tasks/p35_06b_align_feed_activity_controls.md`)
 - [x] **P35-07** Gunluk hedef belirleme (orn: 3 kart / 5 kart) - profile UI + Supabase `users.daily_goal_type/value` persistence tamamlandi; dakika hedefi gercek zaman olcumu gelene kadar kaldirildi; profil yuzeyi ozet + `Duzenle` davranisina alindi (`docs/tasks/p35_07b_card_only_daily_goal.md`, `docs/tasks/p35_07c_daily_goal_summary_edit.md`)
 - [ ] **P35-08** Dairesel ilerleme cubugu animasyonu
-- [ ] **P35-09** Haftalik aktivite grafigi
+- [x] **P35-09** Haftalik aktivite grafigi - profil ozetindeki 7 gunluk nokta satiri, `facts_read` degerini gosteren kompakt haftalik bar grafige donusturuldu (`docs/tasks/p35_09_weekly_activity_graph.md`)
 
 ### Push Notification
 - [ ] **P35-10** Expo Push Notification entegrasyonu
@@ -319,14 +319,14 @@ Not:
 
 ### Kodda mevcut ama urun olarak tamam sayilmamasi gereken alanlar
 - `P35-05`, `P35-01` ve `P35-06` ilk retention dikeyi olarak kapandi; sonraki adim uyarilar/rekor/grace-period veya daha genis hedef UI'i.
-- Profilde gercek seri sayaci baglandi; rekor, kirilma uyarisi ve grace/freeze davranislari henuz yok. `P35-02`-`P35-04` acik kalmali.
+- Profilde gercek seri sayaci ve rekor gosterimi baglandi; kirilma uyarisi push notification dilimine birakildi, grace/freeze davranisi henuz yok. `P35-02` ve `P35-04` acik kalmali.
 - Google OAuth icin mobil helper, callback route ve profil butonu var; Dashboard/provider allowlist smoke ve Apple native akis tamam olmadigi icin `P1-13` acik kalmali.
 - RevenueCat/paywall kodu var; reklam tarafinda production AdMob render, consent ve store beyan smoke bekledigi icin `P3-24b` acik kalmali.
 - Supabase Edge Function dosyalari ve CI sanity check var; schema/function prod deploy workflow'u yok. `P6-11` ve Backend Deployment adimlari acik kalmali.
 
 ### Devam icin onerilen sira
 1. `P1-13`: Google OAuth production callback/allowlist smoke + Apple Sign-In native entegrasyonunu kapat.
-2. `P35-02` -> `P35-03` -> `P35-04`: streak kirilma uyarisi, rekor ve grace/freeze davranisini ayri kucuk dilimler halinde ele al.
+2. `P35-10`/`P35-12` ile push notification altyapisini kurarken `P35-02` streak kirilma uyarisi mesajini ele al; `P35-04` grace/freeze davranisini ayri urun karari olarak tut.
 3. `P6-09b`: hesap/veri silme ve AI icerik raporlama akisini release blocker olarak ele al.
 4. `P6-01`/`P6-02`: auth, bookmark, reader progress ve paywall icin minimum unit/e2e smoke seti kur.
 5. `P1-15o`/`P1-15p`/`P1-15q`: LLM provider abstraction, shadow benchmark ve budget guard ile Groq limit riskini operasyonel hale getir.

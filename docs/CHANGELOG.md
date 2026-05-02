@@ -6,6 +6,14 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.24] - 2026-05-02
+
+#### P35-09 Haftalik Aktivite Grafigi
+- `docs/tasks/p35_09_weekly_activity_graph.md` ile haftalik grafik isi kucuk UI task'i olarak acildi ve kapatildi.
+- Profil ozetindeki 7 gunluk nokta satiri, `facts_read` sayisini gosteren kompakt bar grafige donusturuldu.
+- Barlar haftanin en yuksek kart sayisi ve varsa gunluk kart hedefine gore normalize ediliyor; bugun hafif vurgulu kaliyor.
+- `P35-02` streak kirilma uyarisi push notification olmadan anlamli olmayacagi icin P35-10/P35-12 bildirim dilimine notlandi ve acik birakildi.
+
 ### [v1.23] - 2026-05-02
 
 #### P35-03 Best Streak Ozeti
