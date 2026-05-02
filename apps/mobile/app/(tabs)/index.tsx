@@ -791,8 +791,12 @@ function FullScreenFactCard({
   const duration = (item.read_time_sq || 15) * 1000;
   const readQualificationProgress = getReadQualificationProgress(duration);
   const cardBottomOffset = tabBarHeight + Math.max(bottomInset, Platform.OS === 'ios' ? 12 : 8);
+  const collapsedBottomOffset = cardBottomOffset + (Platform.OS === 'android' ? 32 : 22);
   const cardTopOffset = Math.max(topInset + 72, 96);
   const expandedCardTopOffset = Math.max(topInset + 112, 128);
+  const isTightCard = height < 680;
+  const isCompactCard = height < 760;
+  const previewLineCount = isTightCard ? 3 : isCompactCard ? 4 : 5;
   const remoteMediaUrl = resolveRemoteMediaUrl(item.media_url);
   const isRemoteUrlBlocked = remoteMediaUrl ? failedRemoteImageUrls.has(remoteMediaUrl) : false;
   const visualPreset = getVisualPreset(item);
@@ -991,17 +995,19 @@ function FullScreenFactCard({
           isExpanded ? s.infoContainerExpanded : null,
           isExpanded
             ? { top: expandedCardTopOffset, bottom: cardBottomOffset + 24 }
-            : { bottom: cardBottomOffset + 20 },
+            : { bottom: collapsedBottomOffset },
         ]}
       >
         <View style={s.catBadge}>
           <Text style={s.catBadgeText}>{item.category} Dogrulandi</Text>
         </View>
-        <View style={s.imageDebugBadge}>
-          <Text style={s.imageDebugBadgeText}>
-            {imageDebugMode} / {item.visual_key ?? 'no-key'}
-          </Text>
-        </View>
+        {isReviewMode ? (
+          <View style={s.imageDebugBadge}>
+            <Text style={s.imageDebugBadgeText}>
+              {imageDebugMode} / {item.visual_key ?? 'no-key'}
+            </Text>
+          </View>
+        ) : null}
         {isReviewMode ? (
           <View style={s.reviewToolbar}>
             <TouchableOpacity onPress={() => onOpenReview(item)} style={s.reviewButton}>
@@ -1073,7 +1079,10 @@ function FullScreenFactCard({
             <Text style={s.cardTitle} numberOfLines={2}>
               {item.title}
             </Text>
-            <Text style={s.cardTextPreview} numberOfLines={5}>
+            <Text
+              style={[s.cardTextPreview, isCompactCard ? s.cardTextPreviewCompact : null]}
+              numberOfLines={previewLineCount}
+            >
               {item.content}
             </Text>
             <Text style={s.expandHint}>Devamini okumak icin dokun</Text>
@@ -1104,7 +1113,7 @@ function FullScreenFactCard({
       </View>
 
       {!isExpanded ? (
-        <View style={[s.actionContainer, { bottom: cardBottomOffset + 20 }]}>
+        <View style={[s.actionContainer, { bottom: collapsedBottomOffset }]}>
           <TouchableOpacity style={s.actionBtnVertical} onPress={() => toggleLike(item.id)}>
             <Text style={s.actionEmoji}>{isLiked ? '❤️' : '🤍'}</Text>
             <Text style={s.actionLabel}>{(item.likes || 0) + (isLiked ? 1 : 0)}</Text>
@@ -1930,6 +1939,10 @@ const s = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.85)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 5,
+  },
+  cardTextPreviewCompact: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   cardTextExpanded: {
     color: 'rgba(255,255,255,0.96)',

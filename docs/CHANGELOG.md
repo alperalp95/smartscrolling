@@ -6,6 +6,15 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.29] - 2026-05-02
+
+#### P35-06d Feed Collapsed Safe Layout
+- `docs/tasks/p35_06d_feed_collapsed_safe_layout.md` ile fiziksel Android cihazlarda collapsed feed kartinin alt navigation/tab alanina tasma riski icin kucuk polish task'i acildi.
+- Collapsed kartta Android icin daha korumali alt offset kullaniliyor; expanded okuma modu degistirilmedi.
+- Kisa ekranlarda preview metni dinamik olarak 3-4 satira iniyor, daha rahat ekranlarda 5 satir korunuyor.
+- `FALLBACK-NO-MEDIA / visual_key` debug badge'i normal kullanicidan gizlendi; yalnizca review mode yuzeyinde gosteriliyor.
+- Verification: `npm run typecheck`, hedefli Biome lint ve formatter disi hedefli Biome check gecti.
+
 ### [v1.28] - 2026-05-02
 
 #### P35-10a Native Module Crash Hotfix
