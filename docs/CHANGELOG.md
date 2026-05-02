@@ -6,6 +6,15 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.23] - 2026-05-02
+
+#### P35-03 Best Streak Ozeti
+- `docs/tasks/p35_03_best_streak_summary.md` ile best streak isi kucuk, migration'siz bir backlog task'ina ayrildi.
+- `fetchActivitySummary()` cevabina son 90 gunluk `user_activity` verisinden hesaplanan `bestStreakDays` eklendi.
+- Profil ozetindeki `Gunluk seri` alanina kompakt `Rekor: X gun` satiri eklendi.
+- Kalici rekor kolonu, streak uyarisi ve freeze/grace davranisi bu task kapsaminda bilerek disarida tutuldu.
+- Verification: `npm run typecheck` ve hedefli Biome check (`userActivity`, `profile`) gecti.
+
 ### [v1.22] - 2026-05-02
 
 #### Profil Hedef Ozeti ve Feed Kontrol Hizasi

@@ -107,6 +107,7 @@ export default function ProfileScreen() {
   const dailyGoalSummary = dailyGoal ? `Her gun ${dailyGoal.value} kart` : 'Henuz hedef secilmedi';
   const todayKey = getTodayKey();
   const streakDays = activitySummary?.streakDays ?? 0;
+  const bestStreakDays = activitySummary?.bestStreakDays ?? 0;
   const shouldShowDailyGoalEditor = isEditingDailyGoal || !dailyGoal;
   const shouldShowInterestEditor = isEditingInterests || selectedInterests.length === 0;
 
@@ -419,6 +420,7 @@ export default function ProfileScreen() {
             <View style={s.summaryBlock}>
               <Text style={s.summaryValue}>{streakDays}</Text>
               <Text style={s.summaryLabel}>Gunluk seri</Text>
+              <Text style={s.summarySubLabel}>Rekor: {bestStreakDays} gun</Text>
             </View>
             <View style={s.summaryDivider} />
             <View style={s.summaryBlock}>
@@ -801,6 +803,7 @@ const s = StyleSheet.create({
   summaryBlock: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
   summaryValue: { color: '#fff', fontSize: 16, fontWeight: '800' },
   summaryLabel: { color: '#94a3b8', fontSize: 11, marginTop: 4, textAlign: 'center' },
+  summarySubLabel: { color: '#c4b5fd', fontSize: 10, marginTop: 3, textAlign: 'center' },
   summaryDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.06)' },
 
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },

@@ -15,6 +15,7 @@ export type DailyActivity = {
 };
 
 export type ActivitySummary = {
+  bestStreakDays: number;
   streakDays: number;
   today: DailyActivity;
   week: DailyActivity[];
@@ -54,6 +55,30 @@ function getCurrentWeekDateKeys() {
     date.setDate(monday.getDate() + index);
     return getLocalDateKey(date);
   });
+}
+
+function getBestStreakDays(activeDates: Set<string>) {
+  let bestStreakDays = 0;
+
+  for (const date of activeDates) {
+    const previousDate = addDays(date, -1);
+
+    if (activeDates.has(previousDate)) {
+      continue;
+    }
+
+    let streakDays = 0;
+    let cursor = date;
+
+    while (activeDates.has(cursor)) {
+      streakDays += 1;
+      cursor = addDays(cursor, 1);
+    }
+
+    bestStreakDays = Math.max(bestStreakDays, streakDays);
+  }
+
+  return bestStreakDays;
 }
 
 function normalizeActivityRow(
@@ -134,6 +159,7 @@ export async function fetchActivitySummary(): Promise<ActivitySummary> {
 
   if (!userId) {
     return {
+      bestStreakDays: 0,
       streakDays: 0,
       today: emptyToday,
       week: weekKeys.map((date) => normalizeActivityRow(null, date)),
@@ -152,6 +178,7 @@ export async function fetchActivitySummary(): Promise<ActivitySummary> {
   if (error) {
     console.error('[Dev] activity summary fetch failed:', error.message);
     return {
+      bestStreakDays: 0,
       streakDays: 0,
       today: emptyToday,
       week: weekKeys.map((date) => normalizeActivityRow(null, date)),
@@ -187,6 +214,7 @@ export async function fetchActivitySummary(): Promise<ActivitySummary> {
   }
 
   return {
+    bestStreakDays: getBestStreakDays(activeDates),
     streakDays,
     today,
     week: weekKeys.map((date) => activityByDate.get(date) ?? normalizeActivityRow(null, date)),
