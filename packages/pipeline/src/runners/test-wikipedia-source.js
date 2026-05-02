@@ -1,16 +1,23 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 import { evaluateFactMedia } from '../lib/fact-media-policy.js';
+import { getExistingWikipediaSourceTitles } from '../lib/supabase.js';
 import { fetchWikipediaArticles } from '../sources/wikipedia.js';
 
 const lang = process.argv[2] ?? 'tr';
 const count = Number.parseInt(process.argv[3] ?? '4', 10);
 
-console.log(`[Wikipedia Source Test] lang=${lang} count=${count}`);
-
 async function main() {
-  const articles = await fetchWikipediaArticles(lang, count);
+  const existingTitles = await getExistingWikipediaSourceTitles();
+  const fetchCount = Math.max(count, Math.ceil(count * 6));
+  const articles = (await fetchWikipediaArticles(lang, fetchCount, {
+    excludeTitles: existingTitles,
+  })).slice(0, count);
   const categoryCounts = {};
+
+  console.log(
+    `[Wikipedia Source Test] lang=${lang} count=${count} fetched=${articles.length} existing_seed_titles=${existingTitles.size}`,
+  );
 
   for (const article of articles) {
     categoryCounts[article.category] = (categoryCounts[article.category] ?? 0) + 1;

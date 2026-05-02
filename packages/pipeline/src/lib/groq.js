@@ -55,7 +55,7 @@ const SOURCE_PROMPT_MAP = {
 - temel bilim, saglik, teknoloji veya felsefe mekanizmasi anlatan guclu kaynaklarda title alanini bos birakma; kaynak destekliyorsa somut bir mekanizma veya etki acisi sec
 - proper noun kullanabilirsin ama tek basina isim yetmez; neden onemli oldugunu veya neden ilginc oldugunu acikca hissettir
 - konu cok genis ve ders kitabi bolum basligi gibi kalıyorsa onu daha keskin bir aciya daralt; daraltamiyorsan title alanini bos birak
-- baslikta "gizli", "gizem", "sir", "temel fikir", "rolu", "nedenleri" gibi genel veya magazinel kaliplar kullanma
+- baslikta "gizli", "gizem", "sir", "temel fikir", "rolu", "nedenleri", "anlamak", "farkliligi", "tarihsel baglami" gibi genel veya magazinel kaliplar kullanma
 - bina, yol, secim bolgesi, kucuk yerlesim, siradan biyografi ve kuru istatistik konularini ancak acik bir tarihsel/bilimsel/kulturel onemi varsa kullan
 - turizm, ekonomi, idari yerlesim, siradan kultur/eglence ve liste maddeleri feed icin zayifsa title alanini bos birak
 - sayisal kiyas, "X kat", "en buyuk", "en eski", "ilk" gibi kesin iddialari yalnizca ham metinde acikca varsa yaz
@@ -622,7 +622,7 @@ Asagidaki ham kaynaga tekrar bak ve bu kez ayni konuyu DAHA TEMIZ, DAHA DOGAL TU
 KURALLAR:
 - Baslik yine soru cumlesi olmasin.
 - Baslik bos kalmasin; 12-58 karakter araliginda ve kaynak konusuna dogrudan bagli olsun.
-- Baslikta "gizli", "gizem", "sir", "temel fikir", "rolu", "nedenleri" gibi genel kaliplar kullanma.
+- Baslikta "gizli", "gizem", "sir", "temel fikir", "rolu", "nedenleri", "anlamak", "farkliligi", "tarihsel baglami" gibi genel kaliplar kullanma.
 - Icerik 120-150 kelime araliginda kalsin; 95 kelimenin altina dusme.
 - Tam 5 cumle yaz; her cumle yaklasik 20-30 kelime olsun.
 - Konunun baglamini, neden onemli oldugunu ve ana sonucu daha acik anlat.

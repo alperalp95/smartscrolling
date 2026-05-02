@@ -24,12 +24,16 @@ const LOW_QUALITY_TITLE_PATTERNS = [
   /\bsırrı\b/i,
   /\bsirri\b/i,
   /\btemel fikri\b/i,
-  /\brolü\b/i,
+  /rolü/i,
   /\brolu\b/i,
   /\bnedenleri\b/i,
+  /\banlamak\b/i,
+  /farklılığı/i,
+  /\bfarkliligi\b/i,
+  /tarihsel baglam[ıi]/i,
   /\bgizli maceras[ıi]\b/i,
   /(?:'nın|'nin|'nun|'nün|in|ın|un|ün)\s+tarihi$/i,
-  /\bözellikleri$/i,
+  /özellikleri$/i,
   /\bozellikleri$/i,
 ];
 
@@ -58,6 +62,7 @@ const LOW_QUALITY_LANGUAGE_PATTERNS = [
   /\bbarkodlarin\b/i,
   /\bunik(liğ|lig|lik|liği|ligi|lik)\b/i,
   /\bisle(mi|yi|yiş|yis)\b/i,
+  /baglam[ıi]/i,
 ];
 
 const ADVICE_TONE_PATTERNS = [
@@ -72,6 +77,7 @@ const ADVICE_TONE_PATTERNS = [
   /\bkesfetmek icin harika\b/i,
   /\bziyaret etmek için\b/i,
   /\bziyaret etmek icin\b/i,
+  /\bbilmek istersiniz\b/i,
 ];
 
 const LOW_VALUE_SOURCE_TITLE_PATTERNS = [
