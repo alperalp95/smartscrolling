@@ -1,9 +1,10 @@
 import Constants from 'expo-constants';
-import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 const DEFAULT_NOTIFICATION_CHANNEL_ID = 'daily-reminders';
+
+type DeviceModule = typeof import('expo-device');
+type NotificationsModule = typeof import('expo-notifications');
 
 export type PushRegistrationResult =
   | {
@@ -17,17 +18,41 @@ export type PushRegistrationResult =
     };
 
 export function configureForegroundNotifications() {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
+  void loadNotificationsModule().then((Notifications) => {
+    if (!Notifications) {
+      return;
+    }
+
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
   });
 }
 
-async function ensureAndroidNotificationChannel() {
+async function loadDeviceModule() {
+  try {
+    return await import('expo-device');
+  } catch (error) {
+    console.warn('[Notifications] expo-device unavailable:', error);
+    return null;
+  }
+}
+
+async function loadNotificationsModule() {
+  try {
+    return await import('expo-notifications');
+  } catch (error) {
+    console.warn('[Notifications] expo-notifications unavailable:', error);
+    return null;
+  }
+}
+
+async function ensureAndroidNotificationChannel(Notifications: NotificationsModule) {
   if (Platform.OS !== 'android') {
     return;
   }
@@ -53,7 +78,26 @@ export async function registerForPushNotifications(): Promise<PushRegistrationRe
       };
     }
 
-    await ensureAndroidNotificationChannel();
+    const Notifications = await loadNotificationsModule();
+
+    if (!Notifications) {
+      return {
+        status: 'unsupported',
+        message:
+          'Bu build notification native modulunu icermiyor. Development build yeniden alinmali.',
+      };
+    }
+
+    await ensureAndroidNotificationChannel(Notifications);
+
+    const Device: DeviceModule | null = await loadDeviceModule();
+
+    if (!Device) {
+      return {
+        status: 'unsupported',
+        message: 'Bu build device native modulunu icermiyor. Development build yeniden alinmali.',
+      };
+    }
 
     if (!Device.isDevice) {
       return {

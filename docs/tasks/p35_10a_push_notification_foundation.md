@@ -41,3 +41,8 @@ Expo push notification altyapisinin mobil uygulamada guvenli ilk temelini kurmak
 - Bildirim tercihi acilirken OS permission/token hazirligi tetiklenir.
 - Emulator veya Expo Go sinirlari kullaniciya net hata/mesaj olarak doner.
 - DB semasi ve scheduling davranisi bu taskta degismez.
+
+## Hotfix Notes
+
+- [x] Native notification/device modulleri top-level import edilmedigi icin build icinde modul yoksa profil route'u crash etmez.
+- [x] Native modul eksikligi bildirim opt-in sirasinda kontrollu unsupported mesajina doner.

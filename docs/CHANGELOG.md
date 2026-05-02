@@ -6,6 +6,13 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.28] - 2026-05-02
+
+#### P35-10a Native Module Crash Hotfix
+- `notifications.ts` icindeki `expo-device` ve `expo-notifications` top-level import'lari lazy native import'a tasindi.
+- Native notification/device modulu build icinde yoksa profil route'u artik crash etmiyor; bildirim opt-in sirasinda kontrollu unsupported mesaji donuyor.
+- Bu duzeltme emulator/dev-client uyumsuzlugunda profil tab'inin kaybolmasini engeller.
+
 ### [v1.27] - 2026-05-02
 
 #### P35-10a Push Notification Foundation
