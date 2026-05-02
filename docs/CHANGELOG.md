@@ -6,6 +6,15 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.22] - 2026-05-02
+
+#### Profil Hedef Ozeti ve Feed Kontrol Hizasi
+- Profilde gunluk kart hedefi secildikten sonra ilgi alanlariyla ayni kompakt `ozet + Duzenle` davranisina alindi.
+- Hedef secici yalnizca hedef yokken veya kullanici `Duzenle` dediginde acik kaliyor; basarili kayit sonrasi tekrar ozet moda donuyor.
+- Feed'de authenticated kullanicida activity ring ile basa don butonunun ust hizasi esitlendi; guest hint offset'i degistirilmedi.
+- Backlog task'lari kapatildi: `p35_07c_daily_goal_summary_edit`, `p35_06b_align_feed_activity_controls`.
+- Verification: `npm run typecheck` gecti.
+
 ### [v1.21] - 2026-05-02
 
 #### Feed Activity Ring ve Profil Tercihleri Sadelestirildi

@@ -90,6 +90,7 @@ export default function ProfileScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authFeedback, setAuthFeedback] = useState<AuthFeedback>(null);
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
+  const [isEditingDailyGoal, setIsEditingDailyGoal] = useState(false);
   const [isEditingInterests, setIsEditingInterests] = useState(false);
 
   const isLoggedIn = Boolean(user);
@@ -106,6 +107,7 @@ export default function ProfileScreen() {
   const dailyGoalSummary = dailyGoal ? `Her gun ${dailyGoal.value} kart` : 'Henuz hedef secilmedi';
   const todayKey = getTodayKey();
   const streakDays = activitySummary?.streakDays ?? 0;
+  const shouldShowDailyGoalEditor = isEditingDailyGoal || !dailyGoal;
   const shouldShowInterestEditor = isEditingInterests || selectedInterests.length === 0;
 
   useEffect(() => {
@@ -324,6 +326,7 @@ export default function ProfileScreen() {
     try {
       await updateUserDailyGoal(user.id, dailyGoal);
       completeDailyGoal();
+      setIsEditingDailyGoal(false);
       Alert.alert('Kaydedildi', 'Gunluk hedefin profile kaydedildi.');
     } catch (error) {
       const message =
@@ -612,35 +615,54 @@ export default function ProfileScreen() {
             <View style={s.preferenceDivider} />
 
             <View style={s.preferenceSection}>
-              <Text style={s.preferenceTitle}>Gunluk Hedef</Text>
-              <Text style={s.preferenceHelp}>{dailyGoalSummary}</Text>
-              <View style={s.chipWrap}>
-                {DAILY_GOAL_OPTIONS.map((option) => {
-                  const label = `${option.value} kart`;
-                  const isSelected = isDailyGoalSelected(option);
-
-                  return (
-                    <TouchableOpacity
-                      key={`${option.type}-${option.value}`}
-                      style={[s.chip, isSelected && s.chipSelected]}
-                      onPress={() => setDailyGoal(option)}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={[s.chipText, isSelected && s.chipTextSelected]}>{label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
+              <View style={s.preferenceHeaderRow}>
+                <View style={s.preferenceHeaderCopy}>
+                  <Text style={s.preferenceTitle}>Gunluk Hedef</Text>
+                  <Text style={s.preferenceHelp}>{dailyGoalSummary}</Text>
+                </View>
+                {!shouldShowDailyGoalEditor ? (
+                  <TouchableOpacity
+                    onPress={() => setIsEditingDailyGoal(true)}
+                    style={s.smallEditButton}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={s.smallEditButtonText}>Duzenle</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
-              <TouchableOpacity
-                style={[s.primaryButton, (!dailyGoal || isSavingDailyGoal) && s.buttonDisabled]}
-                onPress={() => void handleSaveDailyGoal()}
-                activeOpacity={0.85}
-                disabled={!dailyGoal || isSavingDailyGoal}
-              >
-                <Text style={s.primaryButtonText}>
-                  {isSavingDailyGoal ? 'Kaydediliyor...' : 'Gunluk Hedefi Kaydet'}
-                </Text>
-              </TouchableOpacity>
+              {shouldShowDailyGoalEditor ? (
+                <>
+                  <View style={s.chipWrap}>
+                    {DAILY_GOAL_OPTIONS.map((option) => {
+                      const label = `${option.value} kart`;
+                      const isSelected = isDailyGoalSelected(option);
+
+                      return (
+                        <TouchableOpacity
+                          key={`${option.type}-${option.value}`}
+                          style={[s.chip, isSelected && s.chipSelected]}
+                          onPress={() => setDailyGoal(option)}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
+                            {label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <TouchableOpacity
+                    style={[s.primaryButton, (!dailyGoal || isSavingDailyGoal) && s.buttonDisabled]}
+                    onPress={() => void handleSaveDailyGoal()}
+                    activeOpacity={0.85}
+                    disabled={!dailyGoal || isSavingDailyGoal}
+                  >
+                    <Text style={s.primaryButtonText}>
+                      {isSavingDailyGoal ? 'Kaydediliyor...' : 'Gunluk Hedefi Kaydet'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : null}
             </View>
 
             <View style={s.preferenceDivider} />

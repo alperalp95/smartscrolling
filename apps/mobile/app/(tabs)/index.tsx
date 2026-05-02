@@ -1270,7 +1270,7 @@ export default function FeedScreen() {
   const shouldShowBackToTop = activeFactIndex >= BACK_TO_TOP_VISIBLE_INDEX && !expandedCardId;
   const backToTopButtonTop = !user
     ? Math.max(insets.top + 92, Platform.OS === 'web' ? 88 : 104)
-    : Math.max(insets.top + 58, Platform.OS === 'web' ? 56 : 68);
+    : insets.top + 20;
 
   const openReviewForFact = (fact: FactType) => {
     const existingReview = reviewsByFactId[fact.id];
