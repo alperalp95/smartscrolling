@@ -46,3 +46,4 @@ Expo push notification altyapisinin mobil uygulamada guvenli ilk temelini kurmak
 
 - [x] Native notification/device modulleri top-level import edilmedigi icin build icinde modul yoksa profil route'u crash etmez.
 - [x] Native modul eksikligi bildirim opt-in sirasinda kontrollu unsupported mesajina doner.
+- [x] Root layout app acilisinda `expo-notifications` yuklemez; native module eksikligi profil route'unu etkilemez.

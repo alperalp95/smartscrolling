@@ -12,6 +12,8 @@
 - `notifications.ts` icindeki `expo-device` ve `expo-notifications` top-level import'lari lazy native import'a tasindi.
 - Native notification/device modulu build icinde yoksa profil route'u artik crash etmiyor; bildirim opt-in sirasinda kontrollu unsupported mesaji donuyor.
 - Bu duzeltme emulator/dev-client uyumsuzlugunda profil tab'inin kaybolmasini engeller.
+- Ikinci hotfix: root layout'taki startup notification handler kurulumu kaldirildi; `expo-notifications` artik app acilisinda yuklenmiyor, yalnizca bildirim opt-in aninda runtime `require` ile deneniyor.
+- Verification: `npm run typecheck`, hedefli Biome lint ve formatter disi hedefli Biome check gecti.
 
 ### [v1.27] - 2026-05-02
 

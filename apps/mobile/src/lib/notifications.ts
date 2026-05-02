@@ -17,35 +17,18 @@ export type PushRegistrationResult =
       status: 'denied' | 'error' | 'missing_project_id' | 'unsupported';
     };
 
-export function configureForegroundNotifications() {
-  void loadNotificationsModule().then((Notifications) => {
-    if (!Notifications) {
-      return;
-    }
-
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldPlaySound: false,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      }),
-    });
-  });
-}
-
-async function loadDeviceModule() {
+function loadDeviceModule() {
   try {
-    return await import('expo-device');
+    return require('expo-device') as DeviceModule;
   } catch (error) {
     console.warn('[Notifications] expo-device unavailable:', error);
     return null;
   }
 }
 
-async function loadNotificationsModule() {
+function loadNotificationsModule() {
   try {
-    return await import('expo-notifications');
+    return require('expo-notifications') as NotificationsModule;
   } catch (error) {
     console.warn('[Notifications] expo-notifications unavailable:', error);
     return null;
@@ -78,7 +61,7 @@ export async function registerForPushNotifications(): Promise<PushRegistrationRe
       };
     }
 
-    const Notifications = await loadNotificationsModule();
+    const Notifications = loadNotificationsModule();
 
     if (!Notifications) {
       return {
@@ -90,7 +73,7 @@ export async function registerForPushNotifications(): Promise<PushRegistrationRe
 
     await ensureAndroidNotificationChannel(Notifications);
 
-    const Device: DeviceModule | null = await loadDeviceModule();
+    const Device = loadDeviceModule();
 
     if (!Device) {
       return {
