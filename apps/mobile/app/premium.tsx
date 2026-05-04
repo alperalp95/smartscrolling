@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,125 +10,53 @@ import {
   Text,
   View,
 } from 'react-native';
-import type { PurchasesPackage } from 'react-native-purchases';
 import {
-  getCurrentOfferingSafe,
   getPremiumEntitlementStatus,
-  purchasePackageSafe,
   restorePurchasesSafe,
 } from '../src/lib/purchases';
 import { useAuthStore } from '../src/store/authStore';
 
-type PackageCard = {
-  id: string;
-  title: string;
-  subtitle: string;
-  badge?: string;
-  price: string;
-  packageRef: PurchasesPackage;
-};
+const BENEFITS: { icon: React.ComponentProps<typeof Ionicons>['name']; title: string; body: string }[] = [
+  {
+    icon: 'ban-outline',
+    title: 'Reklamsiz Deneyim',
+    body: 'Okuma akisini bozan hicbir reklam yok. Sadece sen ve icerik.',
+  },
+  {
+    icon: 'library-outline',
+    title: 'Tum Kutuphane Erisimi',
+    body: 'Sinirli icerik kalmaz. Kutuphanedeki her kitap ve koleksiyon sana acik.',
+  },
+  {
+    icon: 'sparkles-outline',
+    title: 'Sinirsiz AI Sorulari',
+    body: 'Okudugun her konu hakkinda istedigin kadar soru sor, derinlesmek senin elinde.',
+  },
+  {
+    icon: 'chatbubbles-outline',
+    title: 'AI Sohbet Gecmisi',
+    body: 'Onceki AI konusmalarini tekrar ac. Dusunce zincirini kaybetme.',
+  },
+];
 
-const BENEFITS = [
-  ['Reklamsiz kullanim', 'Dikkatini bozmadan kesintisiz oku.'],
-  ['Tum kutuphane erisimi', 'Secili iceriklerin tamamini ac.'],
-  ['Serbest AI sorulari', 'Istedigin kadar sor, daha derine in.'],
-  ['AI sohbet gecmisi', 'Tum dusunce zincirine sonra da don.'],
-] as const;
-
-function mapPackageTitle(identifier: string) {
-  const normalized = identifier.toLowerCase();
-
-  if (normalized.includes('year')) {
-    return { title: 'Yillik', subtitle: 'En dengeli tercih', badge: 'EN IYI DEGER' };
-  }
-
-  if (normalized.includes('month')) {
-    return { title: 'Aylik', subtitle: 'Esnek baslangic' };
-  }
-
-  if (normalized.includes('life')) {
-    return { title: 'Omur Boyu', subtitle: 'Tek seferlik erisim' };
-  }
-
-  return { title: identifier, subtitle: 'Premium erisim' };
-}
+// TODO: RevenueCat entegrasyonu yapildiginda gercek fiyat buradan gelecek
+const PLACEHOLDER_PRICE = '149.99 TL';
 
 export default function PremiumScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setHasPremium = useAuthStore((state) => state.setHasPremium);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [packages, setPackages] = useState<PackageCard[]>([]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    void (async () => {
-      const offering = await getCurrentOfferingSafe(user?.id);
-      const availablePackages =
-        offering?.availablePackages
-          ?.filter((pkg) => {
-            const identifier = pkg.identifier.toLowerCase();
-            return (
-              identifier.includes('month') ||
-              identifier.includes('year') ||
-              identifier.includes('life')
-            );
-          })
-          .sort((left, right) => {
-            const order = (identifier: string) => {
-              const normalized = identifier.toLowerCase();
-              if (normalized.includes('year')) return 0;
-              if (normalized.includes('month')) return 1;
-              if (normalized.includes('life')) return 2;
-              return 3;
-            };
-
-            return order(left.identifier) - order(right.identifier);
-          }) ?? [];
-
-      if (!isMounted) {
-        return;
-      }
-
-      const nextPackages = availablePackages.map((pkg) => {
-        const meta = mapPackageTitle(pkg.identifier);
-        return {
-          id: pkg.identifier,
-          title: meta.title,
-          subtitle: meta.subtitle,
-          badge: meta.badge,
-          price: pkg.product.priceString,
-          packageRef: pkg,
-        };
-      });
-
-      setPackages(nextPackages);
-      setSelectedId(nextPackages[0]?.id ?? null);
-      setIsLoading(false);
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]);
-
-  const selectedPackage = useMemo(
-    () => packages.find((pkg) => pkg.id === selectedId) ?? null,
-    [packages, selectedId],
-  );
-
+  // TODO: RevenueCat entegrasyonu yapildiginda gercek purchase akisi buraya gelecek
   const handlePurchase = async () => {
-    if (!selectedPackage || isSubmitting) {
-      return;
-    }
-
+    if (isSubmitting) return;
     setIsSubmitting(true);
-    const customerInfo = await purchasePackageSafe(selectedPackage.packageRef, user?.id);
-    const hasPremium = customerInfo ? await getPremiumEntitlementStatus(user?.id) : false;
 
+    // Placeholder — gercek purchasePackageSafe cagrisi eklenecek
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    const hasPremium = await getPremiumEntitlementStatus(user?.id);
     if (hasPremium) {
       setHasPremium(true);
       router.back();
@@ -137,10 +66,7 @@ export default function PremiumScreen() {
   };
 
   const handleRestore = async () => {
-    if (isSubmitting) {
-      return;
-    }
-
+    if (isSubmitting) return;
     setIsSubmitting(true);
     await restorePurchasesSafe(user?.id);
     setHasPremium(await getPremiumEntitlementStatus(user?.id));
@@ -150,65 +76,62 @@ export default function PremiumScreen() {
   return (
     <SafeAreaView style={s.screen}>
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+        <Pressable onPress={() => router.back()} style={s.backButton}>
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </Pressable>
+
         <View style={s.hero}>
-          <Text style={s.heroEyebrow}>Premium deneyim</Text>
-          <Text style={s.heroTitle}>SmartScroll Pro ile daha derin bir deneyim</Text>
+          <View style={s.heroBadge}>
+            <Ionicons name="star" size={14} color="#f5b942" />
+            <Text style={s.heroBadgeText}>PREMIUM</Text>
+          </View>
+          <Text style={s.heroTitle}>Tam deneyimin kilidini ac</Text>
           <Text style={s.heroSubtitle}>
-            Reklamsiz akis, tum kutuphaneye erisim ve sinirsiz AI deneyimi tek uyelikte.
+            Tek seferlik odeme ile reklamsiz okuma, tum kutuphane ve sinirsiz AI erisimi.
           </Text>
         </View>
 
-        <View style={s.benefitList}>
-          {BENEFITS.map(([title, body]) => (
-            <View key={title} style={s.benefitCard}>
-              <View style={s.benefitIcon}>
-                <Text style={s.benefitIconText}>✓</Text>
+        <View style={s.benefitCard}>
+          {BENEFITS.map((item, index) => (
+            <View key={item.title}>
+              <View style={s.benefitRow}>
+                <View style={s.benefitIconWrap}>
+                  <Ionicons name={item.icon} size={20} color="#a78bfa" />
+                </View>
+                <View style={s.benefitTextWrap}>
+                  <Text style={s.benefitTitle}>{item.title}</Text>
+                  <Text style={s.benefitBody}>{item.body}</Text>
+                </View>
               </View>
-              <View style={s.benefitTextWrap}>
-                <Text style={s.benefitTitle}>{title}</Text>
-                <Text style={s.benefitBody}>{body}</Text>
-              </View>
+              {index < BENEFITS.length - 1 ? <View style={s.benefitDivider} /> : null}
             </View>
           ))}
         </View>
 
-        {isLoading ? (
-          <View style={s.loadingWrap}>
-            <ActivityIndicator color="#8b5cf6" />
-            <Text style={s.loadingText}>Paketler yukleniyor...</Text>
+        <View style={s.priceCard}>
+          <View style={s.priceAccent} />
+          <View style={s.priceContent}>
+            <View style={s.priceLeft}>
+              <Text style={s.priceLabel}>Omur Boyu Erisim</Text>
+              <Text style={s.priceSubLabel}>Tek seferlik odeme, abonelik yok</Text>
+            </View>
+            <View style={s.priceRight}>
+              <Text style={s.priceAmount}>{PLACEHOLDER_PRICE}</Text>
+              <Text style={s.priceOnce}>bir kerelik</Text>
+            </View>
           </View>
-        ) : (
-          <View style={s.pricingWrap}>
-            {packages.map((pkg) => {
-              const selected = pkg.id === selectedId;
-              return (
-                <Pressable
-                  key={pkg.id}
-                  onPress={() => setSelectedId(pkg.id)}
-                  style={[s.packageCard, selected ? s.packageCardSelected : null]}
-                >
-                  <View style={s.packageHeader}>
-                    <Text style={s.packageTitle}>{pkg.title}</Text>
-                    {pkg.badge ? (
-                      <View style={s.packageBadge}>
-                        <Text style={s.packageBadgeText}>{pkg.badge}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <Text style={s.packagePrice}>{pkg.price}</Text>
-                  <Text style={s.packageSubtitle}>{pkg.subtitle}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        )}
+        </View>
 
         <Pressable
-          disabled={!selectedPackage || isSubmitting || isLoading}
+          disabled={isSubmitting}
           onPress={() => void handlePurchase()}
-          style={[s.ctaButton, !selectedPackage || isLoading ? s.ctaButtonDisabled : null]}
+          style={[s.ctaButton, isSubmitting && s.ctaButtonDisabled]}
         >
-          <Text style={s.ctaButtonText}>{isSubmitting ? 'Isleniyor...' : "Pro'ya Gec"}</Text>
+          {isSubmitting ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={s.ctaButtonText}>Premium'a Gec</Text>
+          )}
         </Pressable>
 
         <Pressable onPress={() => router.back()} style={s.secondaryAction}>
@@ -216,10 +139,12 @@ export default function PremiumScreen() {
         </Pressable>
 
         <Pressable onPress={() => void handleRestore()} style={s.secondaryAction}>
-          <Text style={s.secondaryActionText}>Satın alımlari geri yukle</Text>
+          <Text style={s.secondaryActionText}>Satin alimlari geri yukle</Text>
         </Pressable>
 
-        <Text style={s.footerNote}>Aboneligini istedigin zaman yonetebilirsin.</Text>
+        <Text style={s.footerNote}>
+          Tek seferlik odeme ile kalici erisim. Abonelik veya gizli ucret yok.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -228,174 +153,187 @@ export default function PremiumScreen() {
 const s = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#0b0814',
+    backgroundColor: '#0D0D0D',
   },
   content: {
     padding: 20,
     paddingBottom: 36,
   },
-  hero: {
-    backgroundColor: '#171126',
-    borderColor: 'rgba(139,92,246,0.28)',
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 24,
-    marginBottom: 18,
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
-  heroEyebrow: {
-    color: '#a78bfa',
-    fontSize: 12,
+  hero: {
+    alignItems: 'center',
+    marginBottom: 24,
+    gap: 12,
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(245,185,66,0.1)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(245,185,66,0.3)',
+  },
+  heroBadgeText: {
+    color: '#f5b942',
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   heroTitle: {
     color: '#fff',
-    fontSize: 30,
-    fontWeight: '900',
-    lineHeight: 36,
-    marginBottom: 10,
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
     textAlign: 'center',
   },
   heroSubtitle: {
-    color: '#d8d3ea',
+    color: '#9ca3af',
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
   },
-  benefitList: {
-    gap: 12,
-    marginBottom: 20,
-  },
   benefitCard: {
-    alignItems: 'center',
-    backgroundColor: '#171126',
-    borderColor: 'rgba(139,92,246,0.18)',
-    borderRadius: 20,
-    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  benefitRow: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'flex-start',
+    gap: 14,
     padding: 16,
   },
-  benefitIcon: {
+  benefitIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(139,92,246,0.12)',
     alignItems: 'center',
-    backgroundColor: 'rgba(139,92,246,0.18)',
-    borderColor: 'rgba(139,92,246,0.34)',
-    borderRadius: 999,
-    borderWidth: 1,
-    height: 28,
     justifyContent: 'center',
-    width: 28,
-  },
-  benefitIconText: {
-    color: '#a78bfa',
-    fontWeight: '800',
+    marginTop: 2,
   },
   benefitTextWrap: {
     flex: 1,
   },
   benefitTitle: {
     color: '#fff',
-    fontSize: 17,
-    fontWeight: '800',
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 3,
   },
   benefitBody: {
-    color: '#d8d3ea',
+    color: '#9ca3af',
     fontSize: 13,
     lineHeight: 18,
   },
-  loadingWrap: {
-    alignItems: 'center',
-    paddingVertical: 24,
+  benefitDivider: {
+    height: 0.5,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    marginLeft: 66,
   },
-  loadingText: {
-    color: '#d8d3ea',
-    marginTop: 10,
+  priceCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: 'rgba(139,92,246,0.2)',
+    overflow: 'hidden',
+    marginBottom: 24,
   },
-  pricingWrap: {
-    gap: 12,
-    marginBottom: 20,
-  },
-  packageCard: {
-    backgroundColor: '#171126',
-    borderColor: 'rgba(139,92,246,0.18)',
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 18,
-  },
-  packageCardSelected: {
-    borderColor: '#8b5cf6',
-    borderWidth: 2,
-    shadowColor: '#8b5cf6',
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
-  },
-  packageHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  packageTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  packageBadge: {
+  priceAccent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 3,
+    height: '100%',
     backgroundColor: '#8b5cf6',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
   },
-  packageBadgeText: {
+  priceContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 18,
+    paddingLeft: 20,
+  },
+  priceLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  priceLabel: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  priceSubLabel: {
+    color: '#9ca3af',
+    fontSize: 12,
+  },
+  priceRight: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  priceAmount: {
+    color: '#fff',
+    fontSize: 22,
     fontWeight: '800',
   },
-  packagePrice: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '900',
-    marginBottom: 6,
-  },
-  packageSubtitle: {
-    color: '#c4bddf',
-    fontSize: 13,
+  priceOnce: {
+    color: '#a78bfa',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   ctaButton: {
     alignItems: 'center',
     backgroundColor: '#8b5cf6',
-    borderRadius: 999,
+    borderRadius: 14,
     justifyContent: 'center',
-    minHeight: 56,
+    minHeight: 52,
     marginBottom: 14,
+    shadowColor: '#8b5cf6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
   ctaButtonDisabled: {
     opacity: 0.55,
   },
   ctaButtonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: '900',
+    fontSize: 16,
+    fontWeight: '800',
   },
   secondaryAction: {
     alignItems: 'center',
     paddingVertical: 8,
   },
   secondaryActionText: {
-    color: '#d8d3ea',
+    color: '#9ca3af',
     fontSize: 14,
     fontWeight: '600',
   },
   footerNote: {
-    color: '#a9a0c8',
+    color: '#6b7280',
     fontSize: 12,
     lineHeight: 18,
-    marginTop: 8,
+    marginTop: 12,
     textAlign: 'center',
   },
 });
