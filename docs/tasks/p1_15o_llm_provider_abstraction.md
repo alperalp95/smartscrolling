@@ -1,15 +1,18 @@
-# P1-15o - Fact LLM Provider Abstraction
+# P1-15o - Groq Multi-Model Resolver
 
 ## Amac
 
-Mevcut `convertToFact()` davranisini ve JSON output contract'ini bozmadan, Groq'a sabit bagli editorial conversion katmanini provider/model secilebilir hale getirmek.
+Mevcut `convertToFact()` davranisini, prompt'unu ve JSON output contract'ini bozmadan Groq icindeki iyi aday modelleri secilebilir hale getirmek.
 
-Bu is refactor degil, kontrollu bir adapter dilimidir:
+Bu task tam provider abstraction degildir. Ilk release hedefi Groq disina cikmadan free-tier limit darboazini azaltmaktir.
 
-- Mevcut prompt aynen korunur.
-- `convertToFact()` public imzasi korunur.
-- Ilk production default yine `groq:llama-3.1-8b-instant` olur.
-- Yeni provider'lar once dry-run/shadow ile dogrulanmadan insert akisina alinmaz.
+Korunacaklar:
+
+- `convertToFact()` public imzasi ve default davranisi.
+- Mevcut SmartScrolling editorial prompt'u.
+- Quality guard, consistency/source alignment ve Turkce editorial kalite kurallari.
+- DB insert payload contract'i.
+- Mevcut Groq rate limit sonucu: `_conversion_failed: true`, `_conversion_reason: 'rate_limit'`.
 
 ## Mevcut Durum
 
@@ -17,117 +20,118 @@ Ana dosya:
 
 - `packages/pipeline/src/lib/groq.js`
 
-Su anda ayni dosyada birlikte duruyor:
+Su anda model sabit:
 
-- SmartScrolling fact prompt'u.
-- Groq SDK client kurulumu.
-- `model: 'llama-3.1-8b-instant'` sabiti.
-- JSON object mode istegi.
-- `failed_generation` repair davranisi.
-- Retry nedeni ve quality-aware second pass.
-- Groq rate limit algilama.
+- `llama-3.1-8b-instant`
 
-Bu yapi prompt contract'i acisindan iyi, ancak production oncesi rate/token limitleri icin tek provider'a bagimlilik yaratiyor.
+Bu model production icin hizli ve ucuz baseline olmaya devam edecek, ancak free-tier limitlerinde ayni Groq projesindeki diger iyi modelleri kontrollu sekilde kullanabilmemiz gerekiyor.
+
+## Ilk Allowlist
+
+Ilk implementasyonda yalnizca su model id'leri kabul edilir:
+
+- `groq:llama-3.1-8b-instant`
+- `groq:openai/gpt-oss-20b`
+- `groq:qwen/qwen3-32b`
+
+V1 disinda kalanlar:
+
+- `groq:openai/gpt-oss-120b`
+- Gemini, OpenAI API, Mistral veya baska external provider'lar
+
+120B modeli ileride kalite benchmark'i icin ayrica degerlendirilebilir, ancak release oncesi fallback havuzuna alinmayacak.
 
 ## Kapsam
 
-Yeni teknik katman:
-
-- `packages/pipeline/src/lib/llm/index.js`
-- `packages/pipeline/src/lib/llm/groq-provider.js`
-- `packages/pipeline/src/lib/llm/json-recovery.js`
-- `packages/pipeline/src/lib/llm/provider-config.js`
-
-Ilk dilimde yalnizca Groq adapter'i eklenir. OpenAI/Gemini/Mistral adapter'lari bu task'ta zorunlu degildir; interface'i bozmadan sonradan eklenebilir olmalidir.
+- Groq model id parser/resolver ekle.
+- Env ve CLI ile primary model override destekle.
+- Bilinmeyen veya allowlist disi model id'lerini erken hata ile durdur.
+- `groq.js` icindeki hardcoded model secimini resolver'dan gelen modelle degistir.
+- Log/audit icin provider/model bilgisini normalize et.
+- DB semasi veya insert payload'ina yeni field ekleme.
 
 ## Kapsam Disi
 
 - Prompt'u yeniden yazmak.
 - Quality gate'i gevsetmek.
-- `facts` DB semasini degistirmek.
-- Otomatik provider fallback'i production'a almak.
-- Hardcoded eski fallback kaynak yapisina donmek.
+- Production fallback'i bu task'ta aktif etmek.
+- Eski hardcoded source fallback mantigina donmek.
+- External provider adapter'i yazmak.
+- Cost/billing sistemi kurmak.
 
-## Onerilen Interface
+## Env ve CLI
 
-```js
-await requestFactJson({
-  provider: 'groq',
-  model: 'llama-3.1-8b-instant',
-  systemPrompt,
-  userPrompt,
-  temperature: 0.35,
-  maxTokens: 900,
-  responseFormat: 'json_object',
-  categoryHint,
-});
+Varsayilan:
+
+```bash
+FACT_LLM_PRIMARY=groq:llama-3.1-8b-instant
 ```
 
-Provider sonucu normalize edilmeli:
+Runner override:
 
-```js
-{
-  ok: true,
-  json,
-  rawText,
-  usage: {
-    inputTokens,
-    outputTokens,
-    totalTokens,
-  },
-  provider: 'groq',
-  model: 'llama-3.1-8b-instant',
-}
+```bash
+--llm groq:openai/gpt-oss-20b
 ```
 
-Hata sonucu normalize edilmeli:
+Gelecek task'larda kullanilacak ama burada sadece parse edilebilir kalabilir:
+
+```bash
+FACT_LLM_SHADOW=groq:openai/gpt-oss-20b,groq:qwen/qwen3-32b
+FACT_LLM_FALLBACKS=groq:openai/gpt-oss-20b,groq:qwen/qwen3-32b
+```
+
+## Onerilen Kucuk Interface
+
+Buyuk soyutlama yerine kucuk bir resolver yeterli:
+
+```js
+resolveFactLlmModel(value)
+```
+
+Ornek sonuc:
 
 ```js
 {
-  ok: false,
-  retryable: true,
-  reason: 'rate_limit',
   provider: 'groq',
   model: 'llama-3.1-8b-instant',
-  retryAfterMs,
-  originalError,
+  providerModel: 'groq:llama-3.1-8b-instant'
 }
 ```
-
-## Env ve CLI Karari
-
-Ilk kabul edilen env isimleri:
-
-- `FACT_LLM_PRIMARY=groq:llama-3.1-8b-instant`
-- `FACT_LLM_FALLBACKS=`
-- `FACT_LLM_SHADOW=`
-
-Runner override daha sonra eklenebilir:
-
-- `--llm groq:openai/gpt-oss-20b`
-- `--llm-shadow openai:gpt-4o-mini`
 
 ## Uygulama Plani
 
-- [ ] `requestFactJson()` icindeki Groq SDK cagrisi adapter'a tasinacak.
-- [ ] `convertToFact()` icinde prompt, retry ve payload normalization aynen kalacak.
-- [ ] `failed_generation` repair davranisi provider-agnostic `json-recovery` katmanina alinacak.
-- [ ] Groq rate limit algisi provider-normalized hata formatina cevrilecek.
-- [ ] Default model env yoksa bugunku model olacak.
-- [ ] Dry-run scriptleri yeni env model secimini kullanabilecek.
-- [ ] Usage/token bilgisi varsa loglanacak, yoksa null gecilecek.
+- [ ] Mevcut import/typecheck durumunu tekrar dogrula.
+- [ ] `packages/pipeline/src/lib/llm-model-policy.js` veya benzer kucuk bir resolver dosyasi ekle.
+- [ ] Allowlist'i merkezi tut; runner'lara duplicate seed/model listesi dagitma.
+- [ ] `groq.js` icindeki `model: 'llama-3.1-8b-instant'` sabitini resolver sonucu ile degistir.
+- [ ] `test-wikipedia-groq-dry-run.js` ve ilgili kucuk runner'lara `--llm` parametresi ekle.
+- [ ] Unknown model icin Groq call yapmadan temiz hata ver.
+- [ ] Usage/token bilgisi varsa logla; yoksa null-safe gec.
 
 ## Kabul Kriterleri
 
-- `GROQ_API_KEY` disinda yeni secret olmadan mevcut pipeline eskisi gibi calisir.
-- `convertToFact()` ciktisi degismez.
-- Mevcut `run-all` ve `test:wikipedia-groq` davranisi default durumda ayni kalir.
-- `FACT_LLM_PRIMARY=groq:openai/gpt-oss-20b` ile ayni prompt farkli Groq modeliyle calistirilabilir.
-- Rate limit durumunda mevcut `_conversion_failed: true, _conversion_reason: 'rate_limit'` davranisi korunur.
+- Env/CLI verilmeden pipeline bugunku gibi `llama-3.1-8b-instant` ile calisir.
+- `--llm groq:openai/gpt-oss-20b` ile kucuk dry-run calisir.
+- `--llm groq:qwen/qwen3-32b` ile kucuk dry-run calisir.
+- Allowlist disi model id Groq'a istek atmadan reddedilir.
+- `npm run typecheck` gecer.
+- Quality guard ve source policy davranisi degismez.
+
+## Test Plani
+
+Kucuk sirayla:
+
+```bash
+node -e "import('./packages/pipeline/src/lib/groq.js').then(() => console.log('ok'))"
+npm run typecheck
+npm run test:wikipedia-groq -- --lang tr --count 1 --llm groq:llama-3.1-8b-instant
+npm run test:wikipedia-groq -- --lang tr --count 1 --llm groq:openai/gpt-oss-20b
+```
+
+Groq token harcamasi dusuk tutulmali; once import/typecheck, sonra 1'lik smoke.
 
 ## Riskler
 
-- Erken genisletilen interface gereksiz soyutlama yaratabilir; bu yuzden ilk adapter sadece Groq olmali.
-- Provider usage formatlari farkli oldugu icin cost logu null-safe tasarlanmali.
-- JSON repair provider'a tasinirsa prompt contract'i sessizce degismemeli.
-
+- Model secimi prompt davranisini sessizce degistirebilir; bu yuzden ilk asamada prompt modele gore ozellestirilmeyecek.
+- Free-tier limitleri production garantisi degildir; bu task sadece kapasite dagitimi icin zemin hazirlar.
+- Fazla erken provider abstraction overengineering yaratir; external provider isi ayri task olarak kalmali.

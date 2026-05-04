@@ -1,18 +1,22 @@
-# P1-15p - LLM Shadow Benchmark ve Cost Audit
+# P1-15p - Groq Model Shadow Benchmark ve Fixture Audit
 
 ## Amac
 
-Yeni LLM/provider adaylarini production insert akisina almadan once ayni source batch uzerinde olculebilir sekilde karsilastirmak.
+Groq icindeki aday modelleri production insert akisina almadan once ayni sabit kaynak batch'i uzerinde karsilastirmak.
 
-Karar verilecek metrikler:
+Bu task'in hedefi "hangi model daha havali" sorusu degil; SmartScrolling fact kalitesi icin hangi Groq modellerinin release oncesi guvenli fallback/override adayi oldugunu olcmektir.
+
+## Karar Metrikleri
 
 - JSON parse basari orani.
-- Retry orani.
-- `quality_rejected` ve `consistency_rejected` dagilimi.
-- Source alignment basarisi.
-- Turkce dogallik/editorial kalite.
+- Retry/repair orani.
+- `quality_rejected` dagilimi.
+- `consistency_rejected` ve source alignment sorunlari.
+- Turkce baslik/govde dogalligi.
+- Merak uyandirici Wikipedia dolasimi hedefine uyum.
 - Ortalama latency.
-- Tahmini token maliyeti.
+- Token kullanimi.
+- Rate limit/timeout gorunurlugu.
 
 ## Mevcut Durum
 
@@ -22,45 +26,79 @@ Ilgili scriptler:
 - `packages/pipeline/src/runners/test-wikipedia-shadow.js`
 - `packages/pipeline/src/runners/review-wikipedia-candidates.js`
 
-Bugunku dry-run scripti Groq'a sabit bagli ve model/provider karsilastirma raporu uretmiyor.
+Bugunku dry-run akisinda model karsilastirmasi ve sabit fixture uzerinden adil benchmark yeterince gorunur degil.
 
 ## Kapsam
 
-Yeni veya genisletilecek script:
-
-- `packages/pipeline/src/runners/test-fact-llm-shadow.js`
-
-Script davranisi:
-
-- Wikipedia veya fixture kaynak batch'i alir.
-- Bir primary model ve bir veya daha fazla shadow model calistirir.
-- DB insert yapmaz.
-- Her aday icin normalized audit kaydi basar.
-- Ozet metrikleri run sonunda gosterir.
+- Sabit JSONL fixture ile ayni Wikipedia adaylarini farkli Groq modellerinde calistir.
+- DB insert yapma.
+- Model bazli audit ozeti bas.
+- Run sonunda kalite/reject/rate-limit nedenlerini okunur hale getir.
+- Ilk model matrisi sadece Groq allowlist ile sinirli kalsin.
 
 ## Kapsam Disi
 
 - Production fallback'i aktif etmek.
 - Kayitlari Supabase'e insert etmek.
 - Prompt'u modele gore ozellestirmek.
+- External provider maliyet benchmark'i yapmak.
 - Human review UI yapmak.
+
+## Model Matrisi
+
+Baseline:
+
+- `groq:llama-3.1-8b-instant`
+
+Benchmark adaylari:
+
+- `groq:openai/gpt-oss-20b`
+- `groq:qwen/qwen3-32b`
+
+V1 disi:
+
+- `groq:openai/gpt-oss-120b`
+- Gemini/OpenAI/Mistral external modeller
+
+## Fixture Yaklasimi
+
+Adil benchmark icin kaynak batch sabitlenmeli:
+
+- Ornek fixture: `packages/pipeline/fixtures/llm-shadow/wikipedia-tr-10.jsonl`
+- Her satir tek Wikipedia adayini temsil eder.
+- Fixture DB insert sonucu degil, source/enrichment sonrasi conversion oncesi aday payload'i olmali.
+- Fixture dosyasi kucuk tutulmali; ilk standart 10 aday.
+
+10'luk fixture'da mumkunse karisik konu profili olsun:
+
+- bilim/cevre
+- tarih
+- teknoloji
+- biyografi
+- sanat/kultur
+
+Kategori esitleme hedef degil; burada amac model davranisini farkli metin tiplerinde gormek.
 
 ## Onerilen Komutlar
 
+Fixture ile benchmark:
+
 ```bash
-npm --workspace @smartscrolling/pipeline run test:fact-llm-shadow -- --source wikipedia --lang tr --count 10 --models groq:llama-3.1-8b-instant,groq:openai/gpt-oss-20b
+npm --workspace @smartscrolling/pipeline run test:fact-llm-shadow -- --fixture packages/pipeline/fixtures/llm-shadow/wikipedia-tr-10.jsonl --models groq:llama-3.1-8b-instant,groq:openai/gpt-oss-20b,groq:qwen/qwen3-32b
 ```
 
-Sonraki adaylar:
+Kucuk live pilot:
 
 ```bash
---models groq:llama-3.1-8b-instant,gemini:gemini-2.5-flash-lite,openai:gpt-4o-mini
+npm --workspace @smartscrolling/pipeline run test:fact-llm-shadow -- --source wikipedia --lang tr --count 3 --models groq:llama-3.1-8b-instant,groq:openai/gpt-oss-20b
 ```
 
 ## Rapor Formati
 
 Run sonunda en az su alanlar olmali:
 
+- `fixture`
+- `models`
 - `total_candidates`
 - `generated`
 - `json_failed`
@@ -69,55 +107,78 @@ Run sonunda en az su alanlar olmali:
 - `quality_rejected_by_reason`
 - `consistency_rejected_by_reason`
 - `rate_limited`
+- `timeout`
 - `avg_latency_ms`
 - `input_tokens`
 - `output_tokens`
-- `estimated_cost_usd`
 
-Model bazli satir:
+Model bazli satir ornegi:
 
 ```json
 {
   "providerModel": "groq:openai/gpt-oss-20b",
-  "generated": 9,
-  "qualityRejected": 2,
+  "totalCandidates": 10,
+  "generated": 8,
+  "qualityRejected": 1,
   "consistencyRejected": 1,
-  "retryRate": 0.22,
-  "estimatedCostUsd": 0.004,
-  "notes": ["good_json", "slightly_long_titles"]
+  "jsonFailed": 0,
+  "rateLimited": 0,
+  "avgLatencyMs": 1240,
+  "notes": ["good_json", "title_style_ok"]
 }
 ```
 
-## Ilk Benchmark Matrisi
+Reject audit ornegi:
 
-- Baseline: `groq:llama-3.1-8b-instant`
-- Groq fallback: `groq:openai/gpt-oss-20b`
-- Groq quality fallback: `groq:openai/gpt-oss-120b`
-- External cost fallback: `gemini:gemini-2.5-flash-lite`
-- External quality fallback: `openai:gpt-4o-mini`
-- Optional EU/provider diversity: `mistral:mistral-small-latest`
+```json
+{
+  "title": "Marmara Denizi deniz salyasi felaketi",
+  "providerModel": "groq:qwen/qwen3-32b",
+  "accepted": false,
+  "rejectReason": "taxonomy_or_source_drift",
+  "policyHint": "science_environment_or_reject"
+}
+```
 
 ## Uygulama Plani
 
-- [ ] Shadow script icin arg parser ekle.
-- [ ] Mevcut `fetchWikipediaArticles()` ile source batch sec.
-- [ ] `convertToFact()` icine model override gecmenin minimal yolunu tasarla.
-- [ ] DB insert yerine `evaluateFactQuality()` ve `evaluateFactConsistency()` lokal calistir.
-- [ ] Usage varsa cost hesapla; yoksa model pricing config ile tahmini hesapla.
-- [ ] JSONL veya stdout audit formati belirle.
-- [ ] 10 kartlik ve 50 kartlik iki benchmark standardi dokumante et.
+- [ ] P1-15o model resolver tamamlandiktan sonra shadow runner'i ona bagla.
+- [ ] `--fixture` ve `--models` argumanlarini ekle.
+- [ ] DB insert yolunu kapali tut; sadece local audit calissin.
+- [ ] `evaluateFactQuality()` ve consistency/source alignment kontrollerini benchmark raporuna dahil et.
+- [ ] JSONL audit output opsiyonu ekle, ama stdout ozeti okunur kalsin.
+- [ ] 3'luk live pilot ve 10'luk fixture benchmark standardini dokumante et.
 
 ## Kabul Kriterleri
 
 - Shadow run production DB'ye dokunmaz.
-- Ayni source batch'te en az iki model karsilastirilir.
-- Baseline Groq 8B ile yeni aday arasinda karar verilebilir metrik cikar.
-- Cost tahmini official pricing config'e dayali ve tarihli notla loglanir.
-- Rate limit gorulurse model bazli gorunur.
+- Ayni fixture'da en az iki Groq modeli karsilastirilir.
+- Baseline 8B ile 20B/Qwen arasinda karar verilebilir metrik cikar.
+- Rate limit, timeout ve reject nedenleri model bazli gorunur.
+- Groq token harcamasi 10'luk fixture ile sinirli tutulabilir.
+
+## Test Plani
+
+Once no-token:
+
+```bash
+npm run typecheck
+```
+
+Sonra kucuk tokenli smoke:
+
+```bash
+npm --workspace @smartscrolling/pipeline run test:fact-llm-shadow -- --fixture packages/pipeline/fixtures/llm-shadow/wikipedia-tr-10.jsonl --models groq:llama-3.1-8b-instant --limit 1
+```
+
+Ardindan 2 model x 3 aday:
+
+```bash
+npm --workspace @smartscrolling/pipeline run test:fact-llm-shadow -- --fixture packages/pipeline/fixtures/llm-shadow/wikipedia-tr-10.jsonl --models groq:llama-3.1-8b-instant,groq:openai/gpt-oss-20b --limit 3
+```
 
 ## Riskler
 
-- Tek batch editorial kalite icin yeterli olmayabilir; en az bilim/tarih/felsefe/teknoloji/saglik dagilimi gerekir.
-- Turkce kaliteyi sadece otomatik gate ile olcmek yetersizdir; kucuk human review notu gerekebilir.
-- Provider fiyatlari degisebilir; pricing config release oncesi manuel dogrulanmalidir.
-
+- Tek fixture editorial kalite icin yeterli degildir; release oncesi 3-5 farkli kucuk batch ile kontrol gerekir.
+- Free-tier limitler benchmark'i yarida kesebilir; bu durum basarisizlik degil audit verisi olarak loglanmali.
+- Model farklarini kalite artisi gibi okumamak gerekir; source policy ve quality guard gevsetilmeyecek.
