@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -43,17 +43,6 @@ type AuthFeedback = {
   tone: 'error' | 'info' | 'success';
 } | null;
 
-type ManagementItem = {
-  label: string;
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-};
-
-const BASE_MANAGEMENT_ITEMS: ManagementItem[] = [
-  { label: 'Premium', icon: 'star-outline' },
-  { label: 'Gorunum', icon: 'moon-outline' },
-  { label: 'Dil', icon: 'language-outline' },
-];
-
 function getTodayKey() {
   const today = new Date();
   const year = today.getFullYear();
@@ -82,6 +71,7 @@ export default function ProfileScreen() {
   const selectedInterests = useOnboardingStore((state) => state.selectedInterests);
   const setDailyGoal = useOnboardingStore((state) => state.setDailyGoal);
   const setNotificationsEnabled = useOnboardingStore((state) => state.setNotificationsEnabled);
+  const setSelectedInterests = useOnboardingStore((state) => state.setSelectedInterests);
   const toggleInterest = useOnboardingStore((state) => state.toggleInterest);
 
   const [email, setEmail] = useState('');
@@ -94,6 +84,28 @@ export default function ProfileScreen() {
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
   const [isEditingDailyGoal, setIsEditingDailyGoal] = useState(false);
   const [isEditingInterests, setIsEditingInterests] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+
+  const interestsBackup = useRef<string[]>([]);
+  const dailyGoalBackup = useRef<DailyGoalPreference>(null);
+
+  const cancelInterestEdit = useCallback(() => {
+    const backup = interestsBackup.current;
+    const current = useOnboardingStore.getState().selectedInterests;
+    if (JSON.stringify(backup) !== JSON.stringify(current)) {
+      setSelectedInterests(backup);
+    }
+    setIsEditingInterests(false);
+  }, [setSelectedInterests]);
+
+  const cancelDailyGoalEdit = useCallback(() => {
+    const backup = dailyGoalBackup.current;
+    const current = useOnboardingStore.getState().dailyGoal;
+    if (backup?.type !== current?.type || backup?.value !== current?.value) {
+      setDailyGoal(backup);
+    }
+    setIsEditingDailyGoal(false);
+  }, [setDailyGoal]);
 
   const isLoggedIn = Boolean(user);
   const userEmail = user?.email?.trim() || 'Misafir Kullanici';
@@ -391,11 +403,6 @@ export default function ProfileScreen() {
     }
   }
 
-  const managementItems = [...BASE_MANAGEMENT_ITEMS];
-  if (isLoggedIn) {
-    managementItems.push({ label: 'Cikis Yap', icon: 'log-out-outline' });
-  }
-
   return (
     <View style={[s.container, Platform.OS === 'web' && !isFocused ? s.webHiddenScreen : null]}>
       <View style={[s.header, { paddingTop: topPadding + 10 }]}>
@@ -407,102 +414,92 @@ export default function ProfileScreen() {
         contentContainerStyle={[s.scroll, { paddingBottom: tabBarHeight + 16 }]}
       >
         <View style={s.heroCard}>
-          <View style={s.heroTopRow}>
-            <View style={s.avatar}>
-              <Text style={s.avatarText}>{userInitial}</Text>
-            </View>
-            <View style={s.heroContent}>
-              <Text style={s.name} numberOfLines={1}>
-                {userEmail}
-              </Text>
-              <View style={[s.planBadge, hasPremium && s.planBadgePremium]}>
-                <Ionicons
-                  name={hasPremium ? 'star' : 'flash-outline'}
-                  size={11}
-                  color={hasPremium ? '#f5b942' : '#a78bfa'}
-                />
-                <Text style={[s.planText, hasPremium && s.planTextPremium]}>
-                  {hasPremium ? 'Premium Aktif' : isLoggedIn ? 'Ucretsiz Plan' : 'Misafir Modu'}
-                </Text>
+          <View style={s.heroSection}>
+            <View style={s.avatarGlow}>
+              <View style={s.avatar}>
+                <Text style={s.avatarText}>{userInitial}</Text>
               </View>
-              {isLoggedIn ? (
-                <View style={s.providerPill}>
-                  <Ionicons
-                    name={authProvider === 'google' ? 'logo-google' : 'mail-outline'}
-                    size={12}
-                    color="#c4b5fd"
-                  />
-                  <Text style={s.providerPillText}>{authProviderLabel}</Text>
-                </View>
-              ) : (
-                <Text style={s.guestHint}>
-                  Kayitlarini ve ilerlemeni korumak icin asagidan hesabinla devam edebilirsin.
-                </Text>
-              )}
             </View>
-          </View>
-
-          <View style={s.summaryRow}>
-            <View style={s.summaryBlock}>
-              <Text style={s.summaryValue}>{streakDays}</Text>
-              <Text style={s.summaryLabel}>Gunluk seri</Text>
-              <Text style={s.summarySubLabel}>Rekor: {bestStreakDays} gun</Text>
-            </View>
-            <View style={s.summaryDivider} />
-            <View style={s.summaryBlock}>
-              <Text style={s.summaryValue}>{dailyGoal ? dailyGoal.value : '-'}</Text>
-              <Text style={s.summaryLabel}>{dailyGoal ? dailyGoalSummary : 'Gunluk hedef'}</Text>
-            </View>
-            <View style={s.summaryDivider} />
-            <View style={s.summaryBlock}>
-              <Text style={s.summaryValue}>{notificationsEnabled ? 'Acik' : 'Kapali'}</Text>
-              <Text style={s.summaryLabel}>Bildirimler</Text>
-            </View>
-          </View>
-
-          <View style={s.weekRow}>
-            {WEEK_DAYS.map((day, i) => {
-              const activity = activitySummary?.week[i];
-              const factsRead = activity?.factsRead ?? 0;
-              const barHeight = Math.max(4, Math.round((factsRead / weeklyActivityMax) * 34));
-              const isToday = activity?.date === todayKey;
-
-              return (
-                <View key={`${day}-${activity?.date ?? i}`} style={s.dayCol}>
-                  <Text style={[s.dayCount, factsRead > 0 ? s.dayCountActive : null]}>
-                    {factsRead}
-                  </Text>
-                  <View style={[s.dayBarTrack, isToday ? s.dayBarTrackToday : null]}>
-                    <View
-                      style={[
-                        s.dayBarFill,
-                        factsRead > 0 ? s.dayBarFillActive : null,
-                        { height: barHeight },
-                      ]}
-                    />
-                  </View>
-                  <Text style={[s.dayLabel, isToday ? s.dayLabelToday : null]}>{day}</Text>
-                </View>
-              );
-            })}
-          </View>
-
-          <TouchableOpacity style={s.heroAction} onPress={handlePremiumPress} activeOpacity={0.85}>
-            <Text style={s.heroActionText}>
-              {hasPremium
-                ? 'Uyeligimi Yonet'
-                : isLoggedIn
-                  ? "Premium'u Incele"
-                  : 'Premium icin giris yap'}
+            <Text style={s.name} numberOfLines={1}>
+              {userEmail}
             </Text>
-          </TouchableOpacity>
+            {!isLoggedIn ? (
+              <Text style={s.guestHint}>Hesabini bagla</Text>
+            ) : null}
+            <View style={[s.planBadge, hasPremium && s.planBadgePremium]}>
+              <Ionicons
+                name={hasPremium ? 'star' : isLoggedIn ? 'flash-outline' : 'person-circle-outline'}
+                size={13}
+                color={hasPremium ? '#f5b942' : '#a78bfa'}
+              />
+              <Text style={[s.planText, hasPremium && s.planTextPremium]}>
+                {hasPremium ? 'Premium' : isLoggedIn ? 'Ucretsiz Plan' : 'Misafir Modu'}
+              </Text>
+            </View>
+          </View>
+
         </View>
 
+        <View style={[s.streakCard, !isLoggedIn && s.streakCardGuest]}>
+          <View style={s.streakAccentBar} />
+          <View style={s.streakContent}>
+            <View style={s.streakLeft}>
+              <View style={s.streakNumberWrap}>
+                <Text style={[s.streakNumber, !isLoggedIn && s.streakNumberGuest]}>{streakDays}</Text>
+                <Text style={[s.streakNumberLabel, !isLoggedIn && s.streakNumberLabelGuest]}>Gun</Text>
+              </View>
+              <View style={s.streakDivider} />
+              <View>
+                <Text style={s.streakTitle}>
+                  {streakDays > 0 ? 'Seruven Devam Ediyor' : 'Gunluk Seri'}
+                </Text>
+                <Text style={s.streakSubtitle}>
+                  {!isLoggedIn
+                    ? 'Ilk okumani yap ve serini baslat!'
+                    : streakDays > 0
+                      ? `Rekor: ${bestStreakDays} gun`
+                      : 'Ilk okumani yap ve serini baslat!'}
+                </Text>
+              </View>
+            </View>
+            <View style={s.streakBars}>
+              {WEEK_DAYS.map((day, i) => {
+                const activity = activitySummary?.week[i];
+                const factsRead = activity?.factsRead ?? 0;
+                const barPercent = Math.max(15, Math.round((factsRead / weeklyActivityMax) * 100));
+                const isToday = activity?.date === todayKey;
+                return (
+                  <View
+                    key={`${day}-${activity?.date ?? i}`}
+                    style={[
+                      s.streakBar,
+                      { height: `${barPercent}%` },
+                      factsRead > 0 ? s.streakBarActive : null,
+                      isToday && factsRead === 0 ? s.streakBarToday : null,
+                    ]}
+                  />
+                );
+              })}
+            </View>
+          </View>
+        </View>
+
+        <TouchableOpacity style={s.premiumLink} onPress={handlePremiumPress} activeOpacity={0.85}>
+          <Text style={s.premiumLinkText}>
+            {hasPremium
+              ? 'Uyeligimi Yonet'
+              : isLoggedIn
+                ? "Premium'u Incele"
+                : 'Premium icin giris yap'}
+          </Text>
+          <Ionicons name="arrow-forward" size={14} color="#a78bfa" />
+        </TouchableOpacity>
+
         {!isLoggedIn ? (
-          <View style={s.sectionCard}>
-            <Text style={s.sectionTitle}>Hesabini Bagla</Text>
-            <Text style={s.sectionText}>
-              Kaydettiklerin, okuma ilerlemen ve AI gecmisin cihazlar arasinda senkronize olsun.
+          <View style={s.authCard}>
+            <Text style={s.authTitle}>Hesabini Bagla</Text>
+            <Text style={s.authSubtitle}>
+              Ilerlemeni kaydetmek ve tum ozelliklere erismek icin giris yap.
             </Text>
 
             {authFeedback ? (
@@ -528,244 +525,256 @@ export default function ProfileScreen() {
             ) : null}
 
             <TouchableOpacity
-              style={[s.primaryButton, isSubmitting && s.buttonDisabled]}
+              style={[s.googleButton, isSubmitting && s.buttonDisabled]}
               onPress={() => void handleGoogleSignIn()}
               activeOpacity={0.85}
               disabled={isSubmitting}
             >
-              <Ionicons name="logo-google" size={16} color="#fff" />
-              <Text style={s.primaryButtonText}>
+              <Ionicons name="logo-google" size={16} color="#1f2937" />
+              <Text style={s.googleButtonText}>
                 {isSubmitting ? 'Bekleyin...' : 'Google ile Devam Et'}
               </Text>
             </TouchableOpacity>
 
-            <Text style={s.dividerText}>veya e-posta ile</Text>
+            <TouchableOpacity
+              style={[s.emailAuthButton]}
+              onPress={() => setShowEmailForm(!showEmailForm)}
+              activeOpacity={0.85}
+            >
+              <Text style={s.emailAuthButtonText}>
+                {showEmailForm ? 'E-posta Formunu Kapat' : 'E-posta ile Giris Yap'}
+              </Text>
+            </TouchableOpacity>
 
-            <TextInput
-              value={email}
-              onChangeText={(value) => {
-                setEmail(value);
-                clearErrorFeedback();
-              }}
-              placeholder="E-posta"
-              placeholderTextColor="#6b7280"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              style={s.input}
-            />
-            <TextInput
-              value={password}
-              onChangeText={(value) => {
-                setPassword(value);
-                clearErrorFeedback();
-              }}
-              placeholder="Sifre"
-              placeholderTextColor="#6b7280"
-              secureTextEntry
-              style={s.input}
-            />
+            {showEmailForm ? (
+              <>
+                <TextInput
+                  value={email}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    clearErrorFeedback();
+                  }}
+                  placeholder="E-posta"
+                  placeholderTextColor="#6b7280"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  style={s.input}
+                />
+                <TextInput
+                  value={password}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    clearErrorFeedback();
+                  }}
+                  placeholder="Sifre"
+                  placeholderTextColor="#6b7280"
+                  secureTextEntry
+                  style={s.input}
+                />
 
-            <View style={s.inlineActions}>
+                <View style={s.inlineActions}>
+                  <TouchableOpacity
+                    style={[s.primaryButton, s.inlineButton]}
+                    onPress={() => void handleSignIn()}
+                    activeOpacity={0.85}
+                    disabled={isSubmitting}
+                  >
+                    <Text style={s.primaryButtonText}>
+                      {isSubmitting ? 'Bekleyin...' : 'Giris Yap'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.secondaryButton, s.inlineButton]}
+                    onPress={() => void handleSignUp()}
+                    activeOpacity={0.85}
+                    disabled={isSubmitting}
+                  >
+                    <Text style={s.secondaryButtonText}>
+                      {isSubmitting ? 'Bekleyin...' : 'Kayit Ol'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : null}
+          </View>
+        ) : null}
+
+        {isLoggedIn ? (
+          <View style={s.interestsSection}>
+            <Text style={s.sectionHeading}>Ilgi Alanlari</Text>
+            <View style={s.chipWrap}>
+              {shouldShowInterestEditor ? (
+                INTEREST_OPTIONS.map((interest) => {
+                  const isSelected = selectedInterests.includes(interest);
+                  return (
+                    <TouchableOpacity
+                      key={interest}
+                      style={[s.chip, isSelected && s.chipSelected]}
+                      onPress={() => toggleInterest(interest)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
+                        {interest}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })
+              ) : (
+                selectedInterests.map((interest) => (
+                  <View key={interest} style={s.chip}>
+                    <Text style={s.chipText}>{interest}</Text>
+                  </View>
+                ))
+              )}
+              {!shouldShowInterestEditor ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    interestsBackup.current = [...selectedInterests];
+                    setIsEditingInterests(true);
+                  }}
+                  style={s.editChip}
+                  activeOpacity={0.85}
+                >
+                  <Text style={s.editChipText}>Duzenle</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            {shouldShowInterestEditor ? (
+              <View style={s.editorActions}>
+                <TouchableOpacity
+                  style={[s.editorCancelButton]}
+                  onPress={cancelInterestEdit}
+                  activeOpacity={0.85}
+                >
+                  <Text style={s.editorCancelText}>Vazgec</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    s.primaryButton,
+                    { flex: 1 },
+                    (!selectedInterests.length || isSavingInterests) && s.buttonDisabled,
+                  ]}
+                  onPress={() => void handleSaveInterests()}
+                  activeOpacity={0.85}
+                  disabled={!selectedInterests.length || isSavingInterests}
+                >
+                  <Text style={s.primaryButtonText}>
+                    {isSavingInterests ? 'Kaydediliyor...' : 'Kaydet'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {isLoggedIn && shouldShowDailyGoalEditor ? (
+          <View style={s.interestsSection}>
+            <Text style={s.sectionHeading}>Gunluk Hedef</Text>
+            <View style={s.chipWrap}>
+              {DAILY_GOAL_OPTIONS.map((option) => {
+                const label = `${option.value} kart`;
+                const isSelected = isDailyGoalSelected(option);
+                return (
+                  <TouchableOpacity
+                    key={`${option.type}-${option.value}`}
+                    style={[s.chip, isSelected && s.chipSelected]}
+                    onPress={() => setDailyGoal(option)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View style={s.editorActions}>
               <TouchableOpacity
-                style={[s.primaryButton, s.inlineButton]}
-                onPress={() => void handleSignIn()}
+                style={[s.editorCancelButton]}
+                onPress={cancelDailyGoalEdit}
                 activeOpacity={0.85}
-                disabled={isSubmitting}
+              >
+                <Text style={s.editorCancelText}>Vazgec</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.primaryButton, { flex: 1 }, (!dailyGoal || isSavingDailyGoal) && s.buttonDisabled]}
+                onPress={() => void handleSaveDailyGoal()}
+                activeOpacity={0.85}
+                disabled={!dailyGoal || isSavingDailyGoal}
               >
                 <Text style={s.primaryButtonText}>
-                  {isSubmitting ? 'Bekleyin...' : 'Giris Yap'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.secondaryButton, s.inlineButton]}
-                onPress={() => void handleSignUp()}
-                activeOpacity={0.85}
-                disabled={isSubmitting}
-              >
-                <Text style={s.secondaryButtonText}>
-                  {isSubmitting ? 'Bekleyin...' : 'Kayit Ol'}
+                  {isSavingDailyGoal ? 'Kaydediliyor...' : 'Kaydet'}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
-        ) : (
-          <View style={s.sectionCard}>
-            <Text style={s.sectionTitle}>Sana Gore Ayarla</Text>
-            <Text style={s.sectionText}>
-              Kucuk tercihleri burada yonet. Davranisi degistirmeden, deneyimi sana gore
-              sekillendirecegiz.
-            </Text>
+        ) : null}
 
-            <View style={s.preferenceSection}>
-              <View style={s.preferenceHeaderRow}>
-                <View style={s.preferenceHeaderCopy}>
-                  <Text style={s.preferenceTitle}>Ilgi Alanlari</Text>
-                  <Text style={s.preferenceHelp}>
-                    {shouldShowInterestEditor
-                      ? 'En fazla 3 alan sec.'
-                      : selectedInterests.join(', ')}
-                  </Text>
-                </View>
-                {!shouldShowInterestEditor ? (
-                  <TouchableOpacity
-                    onPress={() => setIsEditingInterests(true)}
-                    style={s.smallEditButton}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={s.smallEditButtonText}>Duzenle</Text>
-                  </TouchableOpacity>
-                ) : null}
+        <View style={s.settingsSection}>
+          <Text style={s.sectionHeading}>Ayarlar</Text>
+          <View style={s.settingsCard}>
+            <TouchableOpacity style={s.settingsRow} onPress={handlePremiumPress} activeOpacity={0.8}>
+              <View style={s.settingsIconWrap}>
+                <Ionicons name="star-outline" size={18} color="#f5b942" />
               </View>
-              {shouldShowInterestEditor ? (
-                <>
-                  <View style={s.chipWrap}>
-                    {INTEREST_OPTIONS.map((interest) => {
-                      const isSelected = selectedInterests.includes(interest);
-                      return (
-                        <TouchableOpacity
-                          key={interest}
-                          style={[s.chip, isSelected && s.chipSelected]}
-                          onPress={() => toggleInterest(interest)}
-                          activeOpacity={0.85}
-                        >
-                          <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
-                            {interest}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                  <TouchableOpacity
-                    style={[
-                      s.primaryButton,
-                      (!selectedInterests.length || isSavingInterests) && s.buttonDisabled,
-                    ]}
-                    onPress={() => void handleSaveInterests()}
-                    activeOpacity={0.85}
-                    disabled={!selectedInterests.length || isSavingInterests}
-                  >
-                    <Text style={s.primaryButtonText}>
-                      {isSavingInterests ? 'Kaydediliyor...' : 'Ilgi Alanlarini Kaydet'}
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              ) : null}
-            </View>
+              <Text style={s.settingsLabel}>Premium</Text>
+              <Text style={s.settingsValue}>
+                {hasPremium ? 'Aktif' : isLoggedIn ? 'Yukselt' : 'Kesfet'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color="#4b5563" />
+            </TouchableOpacity>
 
-            <View style={s.preferenceDivider} />
+            <View style={s.settingsDivider} />
 
-            <View style={s.preferenceSection}>
-              <View style={s.preferenceHeaderRow}>
-                <View style={s.preferenceHeaderCopy}>
-                  <Text style={s.preferenceTitle}>Gunluk Hedef</Text>
-                  <Text style={s.preferenceHelp}>{dailyGoalSummary}</Text>
-                </View>
-                {!shouldShowDailyGoalEditor ? (
-                  <TouchableOpacity
-                    onPress={() => setIsEditingDailyGoal(true)}
-                    style={s.smallEditButton}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={s.smallEditButtonText}>Duzenle</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-              {shouldShowDailyGoalEditor ? (
-                <>
-                  <View style={s.chipWrap}>
-                    {DAILY_GOAL_OPTIONS.map((option) => {
-                      const label = `${option.value} kart`;
-                      const isSelected = isDailyGoalSelected(option);
-
-                      return (
-                        <TouchableOpacity
-                          key={`${option.type}-${option.value}`}
-                          style={[s.chip, isSelected && s.chipSelected]}
-                          onPress={() => setDailyGoal(option)}
-                          activeOpacity={0.85}
-                        >
-                          <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
-                            {label}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                  <TouchableOpacity
-                    style={[s.primaryButton, (!dailyGoal || isSavingDailyGoal) && s.buttonDisabled]}
-                    onPress={() => void handleSaveDailyGoal()}
-                    activeOpacity={0.85}
-                    disabled={!dailyGoal || isSavingDailyGoal}
-                  >
-                    <Text style={s.primaryButtonText}>
-                      {isSavingDailyGoal ? 'Kaydediliyor...' : 'Gunluk Hedefi Kaydet'}
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              ) : null}
-            </View>
-
-            <View style={s.preferenceDivider} />
-
-            <TouchableOpacity
-              style={s.inlinePreferenceRow}
-              onPress={() => void handleNotificationPreferencePress()}
-              activeOpacity={0.85}
-              disabled={isSavingNotifications}
-            >
-              <View>
-                <Text style={s.preferenceTitle}>Bildirimler</Text>
-                <Text style={s.preferenceHelp}>
-                  Istersen simdilik tercihini ac; izin ve saat secimi daha sonra gelecek.
-                </Text>
-              </View>
-              <View style={[s.statusPill, notificationsEnabled ? s.statusPillOn : s.statusPillOff]}>
-                <Text
-                  style={[
-                    s.statusPillText,
-                    notificationsEnabled ? s.statusPillTextOn : s.statusPillTextOff,
-                  ]}
+            {isLoggedIn ? (
+              <>
+                <TouchableOpacity
+                  style={s.settingsRow}
+                  onPress={() => {
+                    dailyGoalBackup.current = dailyGoal;
+                    setIsEditingDailyGoal(true);
+                  }}
+                  activeOpacity={0.8}
                 >
-                  {notificationsEnabled ? 'Acik' : 'Kapali'}
-                </Text>
-              </View>
-            </TouchableOpacity>
+                  <View style={s.settingsIconWrap}>
+                    <Ionicons name="flag-outline" size={18} color="#a78bfa" />
+                  </View>
+                  <Text style={s.settingsLabel}>Gunluk Hedef</Text>
+                  <Text style={s.settingsValue}>{dailyGoalSummary}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#4b5563" />
+                </TouchableOpacity>
+
+                <View style={s.settingsDivider} />
+
+                <TouchableOpacity
+                  style={s.settingsRow}
+                  onPress={() => void handleNotificationPreferencePress()}
+                  activeOpacity={0.8}
+                  disabled={isSavingNotifications}
+                >
+                  <View style={s.settingsIconWrap}>
+                    <Ionicons name="notifications-outline" size={18} color="#a78bfa" />
+                  </View>
+                  <Text style={s.settingsLabel}>Bildirimler</Text>
+                  <Text style={s.settingsValue}>{notificationsEnabled ? 'Acik' : 'Kapali'}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#4b5563" />
+                </TouchableOpacity>
+              </>
+            ) : null}
+
+            {isLoggedIn ? (
+              <>
+                <View style={s.settingsDivider} />
+                <TouchableOpacity style={s.settingsRow} onPress={handleSignOut} activeOpacity={0.8}>
+                  <View style={s.settingsIconWrap}>
+                    <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+                  </View>
+                  <Text style={s.settingsLabelDanger}>Cikis Yap</Text>
+                  <Ionicons name="chevron-forward" size={16} color="rgba(239,68,68,0.4)" />
+                </TouchableOpacity>
+              </>
+            ) : null}
           </View>
-        )}
-
-        <View style={s.sectionCard}>
-          <Text style={s.sectionTitle}>Yonetim</Text>
-          <Text style={s.sectionText}>Hesap ve uygulama tercihlerini buradan yonetebilirsin.</Text>
-
-          {managementItems.map((item, index) => (
-            <TouchableOpacity
-              key={item.label}
-              style={[s.managementRow, index < managementItems.length - 1 && s.managementBorder]}
-              activeOpacity={0.8}
-              onPress={
-                item.label === 'Premium'
-                  ? handlePremiumPress
-                  : item.label === 'Cikis Yap'
-                    ? handleSignOut
-                    : undefined
-              }
-            >
-              <View style={s.managementIcon}>
-                <Ionicons
-                  name={item.icon}
-                  size={16}
-                  color={item.label === 'Premium' ? '#f5b942' : '#c4b5fd'}
-                />
-              </View>
-              <Text style={s.managementLabel}>{item.label}</Text>
-              {item.label === 'Premium' ? (
-                <Text style={s.managementValue}>
-                  {hasPremium ? 'Aktif' : isLoggedIn ? 'Yukselt' : 'Giris gerekli'}
-                </Text>
-              ) : null}
-              <Ionicons name="chevron-forward" size={16} color="#3a3a3c" />
-            </TouchableOpacity>
-          ))}
         </View>
       </ScrollView>
     </View>
@@ -773,106 +782,226 @@ export default function ProfileScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  header: { paddingBottom: 12, paddingHorizontal: 20, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#0D0D0D' },
+  header: { paddingBottom: 12, paddingHorizontal: 20, backgroundColor: '#0D0D0D' },
   title: { color: '#fff', fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
   scroll: { paddingTop: 8 },
 
   heroCard: {
     marginHorizontal: 16,
     marginBottom: 14,
-    backgroundColor: '#111827',
-    borderRadius: 22,
-    padding: 18,
-    borderWidth: 0.5,
-    borderColor: 'rgba(167,139,250,0.25)',
   },
-  heroTopRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 },
-  heroContent: { flex: 1 },
-  avatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
-    backgroundColor: '#8b5cf6',
+  heroSection: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    gap: 8,
+  },
+  avatarGlow: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(139,92,246,0.12)',
+    shadowColor: '#8b5cf6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 8,
+    marginBottom: 8,
   },
-  avatarText: { color: '#fff', fontSize: 26, fontWeight: '700' },
-  name: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  planBadge: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
+  avatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#1c1c1e',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: 'rgba(139,92,246,0.15)',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
-  planBadgePremium: { backgroundColor: 'rgba(245,185,66,0.14)' },
-  planText: { color: '#a78bfa', fontSize: 11, fontWeight: '700' },
-  planTextPremium: { color: '#f5b942' },
-  providerPill: {
-    alignSelf: 'flex-start',
+  avatarText: { color: '#d0bcff', fontSize: 34, fontWeight: '700' },
+  name: { color: '#fff', fontSize: 28, fontWeight: '800', letterSpacing: -0.5, textAlign: 'center' },
+  emailText: { color: '#9ca3af', fontSize: 14, textAlign: 'center' },
+  planBadge: {
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 8,
-    paddingHorizontal: 10,
+    marginTop: 4,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: 'rgba(139,92,246,0.16)',
+    backgroundColor: 'rgba(139,92,246,0.1)',
     borderWidth: 0.5,
-    borderColor: 'rgba(167,139,250,0.25)',
+    borderColor: 'rgba(139,92,246,0.25)',
   },
-  providerPillText: { color: '#c4b5fd', fontSize: 12, fontWeight: '700' },
-  guestHint: { color: '#cbd5e1', fontSize: 13, lineHeight: 19, marginTop: 8 },
+  planBadgePremium: {
+    backgroundColor: 'rgba(245,185,66,0.1)',
+    borderColor: 'rgba(245,185,66,0.3)',
+  },
+  planText: { color: '#a78bfa', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase' },
+  planTextPremium: { color: '#f5b942' },
+  guestHint: { color: '#a78bfa', fontSize: 14, textAlign: 'center' },
 
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    backgroundColor: '#0b1120',
+  streakCard: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    overflow: 'hidden',
     borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 18,
-    paddingVertical: 14,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  streakCardGuest: {
+    opacity: 0.7,
+  },
+  streakAccentBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 3,
+    height: '100%',
+    backgroundColor: '#8b5cf6',
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  streakContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 18,
+    paddingLeft: 20,
+  },
+  streakLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  streakNumberWrap: {
+    alignItems: 'center',
+  },
+  streakNumber: {
+    color: '#fff',
+    fontSize: 32,
+    fontWeight: '800',
+    lineHeight: 34,
+  },
+  streakNumberGuest: {
+    color: '#6b7280',
+  },
+  streakNumberLabel: {
+    color: '#a78bfa',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  streakNumberLabelGuest: {
+    color: '#6b7280',
+  },
+  streakDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  streakTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  streakSubtitle: {
+    color: '#9ca3af',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  streakBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 3,
+    height: 32,
+  },
+  streakBar: {
+    width: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(139,92,246,0.2)',
+  },
+  streakBarActive: {
+    backgroundColor: '#8b5cf6',
+  },
+  streakBarToday: {
+    backgroundColor: 'rgba(139,92,246,0.35)',
+  },
+  premiumLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(139,92,246,0.05)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(139,92,246,0.1)',
     marginBottom: 14,
   },
-  summaryBlock: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
-  summaryValue: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  summaryLabel: { color: '#94a3b8', fontSize: 11, marginTop: 4, textAlign: 'center' },
-  summarySubLabel: { color: '#c4b5fd', fontSize: 10, marginTop: 3, textAlign: 'center' },
-  summaryDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.06)' },
+  premiumLinkText: {
+    color: '#a78bfa',
+    fontSize: 12,
+    fontWeight: '700',
+  },
 
-  weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  dayCol: { alignItems: 'center', gap: 5, width: 34 },
-  dayCount: { color: '#64748b', fontSize: 10, fontWeight: '700' },
-  dayCountActive: { color: '#c4b5fd' },
-  dayBarTrack: {
-    width: 18,
-    height: 38,
-    borderRadius: 9,
-    backgroundColor: '#2a2a2c',
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
+  authCard: {
+    marginHorizontal: 16,
+    marginBottom: 14,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 0.5,
+    borderColor: 'rgba(139,92,246,0.2)',
+    gap: 12,
   },
-  dayBarTrackToday: {
-    borderColor: '#a78bfa',
-    borderWidth: 1,
+  authTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
   },
-  dayBarFill: { width: '100%', borderRadius: 9, backgroundColor: '#3a3a3c' },
-  dayBarFillActive: { backgroundColor: '#8b5cf6' },
-  dayLabel: { color: '#6b7280', fontSize: 10, fontWeight: '500' },
-  dayLabelToday: { color: '#c4b5fd', fontWeight: '800' },
-  heroAction: {
-    backgroundColor: '#8b5cf6',
-    borderRadius: 14,
-    paddingVertical: 13,
+  authSubtitle: {
+    color: '#9ca3af',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  googleButton: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
-  heroActionText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  googleButtonText: {
+    color: '#1f2937',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  emailAuthButton: {
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  emailAuthButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
 
   sectionCard: {
     marginHorizontal: 16,
@@ -984,6 +1113,42 @@ const s = StyleSheet.create({
   },
   chipText: { color: '#e5e7eb', fontSize: 13, fontWeight: '600' },
   chipTextSelected: { color: '#c4b5fd' },
+  editChip: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  editChipText: { color: '#9ca3af', fontSize: 13, fontWeight: '600' },
+  editorActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  editorCancelButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  editorCancelText: {
+    color: '#9ca3af',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  interestsSection: {
+    marginHorizontal: 16,
+    marginBottom: 14,
+    gap: 12,
+  },
+  sectionHeading: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '700',
+  },
   inlinePreferenceRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1014,23 +1179,51 @@ const s = StyleSheet.create({
     fontWeight: '800',
   },
 
-  managementRow: {
+  settingsSection: {
+    marginHorizontal: 16,
+    marginBottom: 14,
+    gap: 12,
+  },
+  settingsCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  settingsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  managementBorder: { borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.07)' },
-  managementIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(139,92,246,0.14)',
+  settingsDivider: {
+    height: 0.5,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    marginLeft: 48,
   },
-  managementLabel: { flex: 1, color: '#fff', fontSize: 15, fontWeight: '500' },
-  managementValue: { color: '#94a3b8', fontSize: 12, fontWeight: '700' },
+  settingsIconWrap: {
+    width: 28,
+    alignItems: 'center',
+  },
+  settingsLabel: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  settingsLabelDanger: {
+    flex: 1,
+    color: 'rgba(239,68,68,0.8)',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  settingsValue: {
+    color: '#9ca3af',
+    fontSize: 12,
+    fontWeight: '600',
+  },
 
   webHiddenScreen: { display: 'none' },
 });
