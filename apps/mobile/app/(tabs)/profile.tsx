@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { deleteCurrentAccount } from '../../src/lib/accountDeletion';
 import { promptForAuth } from '../../src/lib/authPrompt';
 import { registerForPushNotifications } from '../../src/lib/notifications';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
@@ -79,11 +81,14 @@ export default function ProfileScreen() {
   const [isSavingDailyGoal, setIsSavingDailyGoal] = useState(false);
   const [isSavingInterests, setIsSavingInterests] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authFeedback, setAuthFeedback] = useState<AuthFeedback>(null);
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
   const [isEditingDailyGoal, setIsEditingDailyGoal] = useState(false);
   const [isEditingInterests, setIsEditingInterests] = useState(false);
+  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
   const [showEmailForm, setShowEmailForm] = useState(false);
 
   const interestsBackup = useRef<string[]>([]);
@@ -272,6 +277,30 @@ export default function ProfileScreen() {
       { text: 'Vazgec', style: 'cancel' },
       { text: 'Cikis Yap', style: 'destructive', onPress: () => void performSignOut() },
     ]);
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteConfirmationText.trim() !== 'SIL') {
+      Alert.alert('Onay gerekli', 'Hesabi silmek icin kutuya SIL yaz.');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    const result = await deleteCurrentAccount();
+
+    setIsDeletingAccount(false);
+
+    if (!result.ok) {
+      Alert.alert('Hesap silinemedi', result.message);
+      return;
+    }
+
+    resetOnboarding();
+    setAuthFeedback(null);
+    setDeleteConfirmationText('');
+    setIsDeleteConfirmVisible(false);
+    Alert.alert('Tamam', 'Hesabin ve verilerin silindi.');
   }
 
   async function handleGoogleSignIn() {
@@ -770,6 +799,20 @@ export default function ProfileScreen() {
             {isLoggedIn ? (
               <>
                 <View style={s.settingsDivider} />
+                <TouchableOpacity
+                  style={s.settingsRow}
+                  onPress={() => setIsDeleteConfirmVisible(true)}
+                  activeOpacity={0.8}
+                  disabled={isDeletingAccount}
+                >
+                  <View style={s.settingsIconWrap}>
+                    <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                  </View>
+                  <Text style={s.settingsLabelDanger}>Hesabimi ve Verilerimi Sil</Text>
+                  <Ionicons name="chevron-forward" size={16} color="rgba(239,68,68,0.4)" />
+                </TouchableOpacity>
+
+                <View style={s.settingsDivider} />
                 <TouchableOpacity style={s.settingsRow} onPress={handleSignOut} activeOpacity={0.8}>
                   <View style={s.settingsIconWrap}>
                     <Ionicons name="log-out-outline" size={18} color="#ef4444" />
@@ -782,6 +825,67 @@ export default function ProfileScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        onRequestClose={() => {
+          if (!isDeletingAccount) {
+            setDeleteConfirmationText('');
+            setIsDeleteConfirmVisible(false);
+          }
+        }}
+        transparent
+        visible={isDeleteConfirmVisible}
+      >
+        <View style={s.deleteModalBackdrop}>
+          <View style={s.deleteModalSheet}>
+            <View style={s.deleteModalIconWrap}>
+              <Ionicons name="trash-outline" size={22} color="#ef4444" />
+            </View>
+            <Text style={s.deleteModalTitle}>Hesap kalici olarak silinsin mi?</Text>
+            <Text style={s.deleteWarningText}>
+              Bu islem hesabini, okuma ilerlemeni, yer imlerini ve AI sohbetlerini kalici olarak
+              siler. Devam etmek icin SIL yaz.
+            </Text>
+            <TextInput
+              value={deleteConfirmationText}
+              onChangeText={setDeleteConfirmationText}
+              placeholder="SIL"
+              placeholderTextColor="#6b7280"
+              autoCapitalize="characters"
+              style={s.input}
+              editable={!isDeletingAccount}
+            />
+            <View style={s.deleteActions}>
+              <TouchableOpacity
+                style={s.editorCancelButton}
+                onPress={() => {
+                  setDeleteConfirmationText('');
+                  setIsDeleteConfirmVisible(false);
+                }}
+                activeOpacity={0.85}
+                disabled={isDeletingAccount}
+              >
+                <Text style={s.editorCancelText}>Vazgec</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  s.dangerButton,
+                  (deleteConfirmationText.trim() !== 'SIL' || isDeletingAccount) &&
+                    s.buttonDisabled,
+                ]}
+                onPress={() => void handleDeleteAccount()}
+                activeOpacity={0.85}
+                disabled={deleteConfirmationText.trim() !== 'SIL' || isDeletingAccount}
+              >
+                <Text style={s.dangerButtonText}>
+                  {isDeletingAccount ? 'Siliniyor...' : 'Kalici Olarak Sil'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1095,6 +1199,15 @@ const s = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
   },
   secondaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  dangerButton: {
+    backgroundColor: '#ef4444',
+    borderRadius: 14,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+  },
+  dangerButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
   buttonDisabled: { opacity: 0.55 },
 
   preferenceSection: { gap: 12 },
@@ -1240,6 +1353,47 @@ const s = StyleSheet.create({
     color: '#9ca3af',
     fontSize: 12,
     fontWeight: '600',
+  },
+  deleteModalBackdrop: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.68)',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  deleteModalSheet: {
+    backgroundColor: '#111827',
+    borderColor: 'rgba(239,68,68,0.26)',
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: 12,
+    maxWidth: 420,
+    padding: 18,
+    width: '100%',
+  },
+  deleteModalIconWrap: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(239,68,68,0.12)',
+    borderRadius: 999,
+    height: 42,
+    justifyContent: 'center',
+    width: 42,
+  },
+  deleteModalTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  deleteWarningText: {
+    color: '#fca5a5',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  deleteActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
 
   webHiddenScreen: { display: 'none' },

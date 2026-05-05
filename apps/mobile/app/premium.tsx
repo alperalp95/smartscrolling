@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -10,7 +11,13 @@ import {
   Text,
   View,
 } from 'react-native';
-import { getPremiumEntitlementStatus, restorePurchasesSafe } from '../src/lib/purchases';
+import type { PurchasesPackage } from 'react-native-purchases';
+import {
+  getCurrentOfferingSafe,
+  getPremiumEntitlementStatus,
+  purchasePackageSafe,
+  restorePurchasesSafe,
+} from '../src/lib/purchases';
 import { useAuthStore } from '../src/store/authStore';
 
 const BENEFITS: {
@@ -40,27 +47,53 @@ const BENEFITS: {
   },
 ];
 
-// TODO: RevenueCat entegrasyonu yapildiginda gercek fiyat buradan gelecek
-const PLACEHOLDER_PRICE = '149.99 TL';
+const FALLBACK_PRICE = '49.99 TL';
 
 export default function PremiumScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setHasPremium = useAuthStore((state) => state.setHasPremium);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lifetimePackage, setLifetimePackage] = useState<PurchasesPackage | null>(null);
+  const [priceLabel, setPriceLabel] = useState(FALLBACK_PRICE);
 
-  // TODO: RevenueCat entegrasyonu yapildiginda gercek purchase akisi buraya gelecek
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      const offering = await getCurrentOfferingSafe(user?.id);
+
+      if (cancelled) return;
+
+      const pkg = offering?.availablePackages?.find((p) => {
+        const id = p.identifier.toLowerCase();
+        return id.includes('life') || id === '$rc_lifetime';
+      }) ?? null;
+
+      if (pkg) {
+        setLifetimePackage(pkg);
+        setPriceLabel(pkg.product.priceString);
+      }
+
+      setIsLoading(false);
+    })();
+
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
   const handlePurchase = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || !lifetimePackage) return;
     setIsSubmitting(true);
 
-    // Placeholder — gercek purchasePackageSafe cagrisi eklenecek
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const customerInfo = await purchasePackageSafe(lifetimePackage, user?.id);
+    const hasPremium = customerInfo ? await getPremiumEntitlementStatus(user?.id) : false;
 
-    const hasPremium = await getPremiumEntitlementStatus(user?.id);
     if (hasPremium) {
       setHasPremium(true);
       router.back();
+    } else {
+      Alert.alert('Satin alma', 'Islem tamamlanamadi. Tekrar dene veya geri yuklemeyi dene.');
     }
 
     setIsSubmitting(false);
@@ -70,7 +103,15 @@ export default function PremiumScreen() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     await restorePurchasesSafe(user?.id);
-    setHasPremium(await getPremiumEntitlementStatus(user?.id));
+    const hasPremium = await getPremiumEntitlementStatus(user?.id);
+    setHasPremium(hasPremium);
+
+    if (hasPremium) {
+      router.back();
+    } else {
+      Alert.alert('Geri yukleme', 'Aktif bir satin alma bulunamadi.');
+    }
+
     setIsSubmitting(false);
   };
 
@@ -117,18 +158,18 @@ export default function PremiumScreen() {
               <Text style={s.priceSubLabel}>Tek seferlik odeme, abonelik yok</Text>
             </View>
             <View style={s.priceRight}>
-              <Text style={s.priceAmount}>{PLACEHOLDER_PRICE}</Text>
+              <Text style={s.priceAmount}>{priceLabel}</Text>
               <Text style={s.priceOnce}>bir kerelik</Text>
             </View>
           </View>
         </View>
 
         <Pressable
-          disabled={isSubmitting}
+          disabled={isSubmitting || isLoading || !lifetimePackage}
           onPress={() => void handlePurchase()}
-          style={[s.ctaButton, isSubmitting && s.ctaButtonDisabled]}
+          style={[s.ctaButton, (isSubmitting || isLoading || !lifetimePackage) && s.ctaButtonDisabled]}
         >
-          {isSubmitting ? (
+          {isSubmitting || isLoading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <Text style={s.ctaButtonText}>Premium'a Gec</Text>
