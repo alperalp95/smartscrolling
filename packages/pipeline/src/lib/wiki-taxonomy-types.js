@@ -4,6 +4,9 @@ export const WIKI_THEME_SEQUENCE = [
   'philosophy',
   'technology',
   'health',
+  'environment',
+  'art_culture',
+  'sports',
   'biography',
 ];
 

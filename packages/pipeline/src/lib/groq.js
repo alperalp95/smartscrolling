@@ -25,6 +25,9 @@ const CATEGORY_MAP = {
   philosophy: '\u{1F9E0} FELSEFE',
   technology: '\u{1F4BB} TEKNOLOJ\u0130',
   health: '\u{1F331} SA\u011ELIK',
+  environment: '\u{1F30D} \u00C7EVRE',
+  art_culture: '\u{1F3A8} SANAT & K\u00DCLT\u00DCR',
+  sports: '\u{1F3C6} SPOR',
   biography: '\u{1F464} B\u0130YOGRAF\u0130',
 };
 
@@ -59,6 +62,24 @@ const CATEGORY_PROMPT_MAP = {
 - sansasyonel veya kesin tibbi iddia gibi yazma
 - dil sakin, guvenli ve bilgilendirici olmali
 - kaynakta olmayan tibbi yorum, tavsiye veya kesinlik ekleme`,
+  environment: `CEVRE kartlari:
+- once dogal sureci, ekosistem etkisini veya cevresel mekanizmayi acikla
+- olay gunluk haber gibi degil, neden-sonuc ve bilimsel baglam gibi okunmali
+- iklim, kirlilik, biyocesitlilik veya ekosistem etkisi somutlasmali
+- suclayici, politik slogan veya panik dili kullanma
+- kaynakta olmayan cevresel sonuc, oran veya gelecek tahmini ekleme`,
+  art_culture: `SANAT VE KULTUR kartlari:
+- once eserin, akimin veya sanatcinin kalici kulturel etkisini kur
+- kuru kimdir ozeti yazma; bir donusum, teknik, akim veya miras acisi sec
+- magazinel, hayran dili veya liste gibi kariyer anlatimindan kacin
+- kullaniciya sanat/kultur tarihinde neden onemli oldugunu hissettir
+- kaynakta olmayan niyet, psikoloji veya estetik yorum uydurma`,
+  sports: `SPOR kartlari:
+- sadece rekor, oyun tarzini degistiren etki, tarihsel donum noktasi veya kalici miras varsa kartlastir
+- mac sonucu, transfer, siradan kariyer ozeti veya taraftar dili yazma
+- sayisal rekorlari yalnizca kaynakta acikca varsa kullan
+- sporcunun neden spor tarihinde iz biraktigini somut bir aciyla anlat
+- abarti, magazin veya karsilastirma uydurma`,
   biography: `BIYOGRAFI kartlari:
 - sadece tarihe, bilime, sanata, spora veya kulture damga vurmus kisileri kartlastir
 - ilk cumlede kisinin neden onemli oldugunu somut etkiyle kur
@@ -388,7 +409,7 @@ Anahtarlar: title, content, category, tags, read_time_sq
 Kurallar:
 - JSON disinda hicbir sey yazma
 - Icerikte cift tirnak kullanma, gerekiyorsa alintiyi kaldir
-- category su degerlerden biri olmali: "${CATEGORY_MAP.science}", "${CATEGORY_MAP.history}", "${CATEGORY_MAP.philosophy}", "${CATEGORY_MAP.technology}", "${CATEGORY_MAP.health}", "${CATEGORY_MAP.biography}"
+- category su degerlerden biri olmali: "${CATEGORY_MAP.science}", "${CATEGORY_MAP.history}", "${CATEGORY_MAP.philosophy}", "${CATEGORY_MAP.technology}", "${CATEGORY_MAP.health}", "${CATEGORY_MAP.environment}", "${CATEGORY_MAP.art_culture}", "${CATEGORY_MAP.sports}", "${CATEGORY_MAP.biography}"
 - tags bir string array olmali
 - read_time_sq sayi olmali`;
 
@@ -554,7 +575,7 @@ CIKTI KURALLARI:
 - content: Ikinci cumlede basligin acmis oldugu bilgiyi dogrudan cevapla.
 - content: Sonraki cumlelerde baglam, neden onemli oldugu veya neyi degistirdigi netlesmeli.
 - content: Metin icinde cift tirnak kullanmaktan kacin. Eser veya kavram adlarini dogrudan acikla.
-- category: Yalnizca su kategorilerden biri olmali: "${CATEGORY_MAP.science}", "${CATEGORY_MAP.history}", "${CATEGORY_MAP.philosophy}", "${CATEGORY_MAP.technology}", "${CATEGORY_MAP.health}", "${CATEGORY_MAP.biography}"
+- category: Yalnizca su kategorilerden biri olmali: "${CATEGORY_MAP.science}", "${CATEGORY_MAP.history}", "${CATEGORY_MAP.philosophy}", "${CATEGORY_MAP.technology}", "${CATEGORY_MAP.health}", "${CATEGORY_MAP.environment}", "${CATEGORY_MAP.art_culture}", "${CATEGORY_MAP.sports}", "${CATEGORY_MAP.biography}"
 - tags: 3-5 adet kisa etiket olmali.
 - read_time_sq: 15 ile 28 arasinda tahmini okuma suresi.
 

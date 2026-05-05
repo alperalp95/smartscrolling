@@ -4,6 +4,9 @@ const ALLOWED_CATEGORIES = new Set([
   '🧠 FELSEFE',
   '💻 TEKNOLOJİ',
   '🌱 SAĞLIK',
+  '🌍 ÇEVRE',
+  '🎨 SANAT & KÜLTÜR',
+  '🏆 SPOR',
   '👤 BİYOGRAFİ',
 ]);
 
@@ -526,7 +529,9 @@ export function evaluateFactQuality(fact) {
   const sourceExcerpt = (fact._source_excerpt ?? '').trim();
   const tags = Array.isArray(fact.tags) ? fact.tags.filter(Boolean) : [];
   const isPdfCurated = sourceKind === 'pdf_curated';
-  const isBiography = fact.category === '👤 BİYOGRAFİ';
+  const isHighImpactPersonCategory = ['👤 BİYOGRAFİ', '🎨 SANAT & KÜLTÜR', '🏆 SPOR'].includes(
+    fact.category,
+  );
 
   if (!title || title.length < 12 || title.length > 80) {
     return { ok: false, reason: 'invalid_title_length' };
@@ -591,7 +596,7 @@ export function evaluateFactQuality(fact) {
     pattern.test(sourceTopicText),
   );
 
-  if (hasLowValueSourceTopic && !(isBiography && hasHighImpactBiographySignal)) {
+  if (hasLowValueSourceTopic && !(isHighImpactPersonCategory && hasHighImpactBiographySignal)) {
     return { ok: false, reason: 'low_value_source_topic' };
   }
 

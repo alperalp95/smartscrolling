@@ -897,6 +897,50 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
   }
 
   // ── BİYOGRAFİ ───────────────────────────────────────────────────────────
+  if (normalizedCategory.includes('cevre')) {
+    if (includesAny(topicText, ['iklim', 'climate', 'sera gazi', 'kuresel isinma', 'karbon'])) {
+      return 'science-earth';
+    }
+
+    if (
+      includesAny(topicText, [
+        'deniz',
+        'okyanus',
+        'mercan',
+        'musilaj',
+        'mucilage',
+        'ocean',
+        'coral',
+      ])
+    ) {
+      return 'science-ocean';
+    }
+
+    return 'science-nature';
+  }
+
+  if (normalizedCategory.includes('sanat') || normalizedCategory.includes('kultur')) {
+    if (
+      includesAny(topicText, [
+        'muzik',
+        'music',
+        'singer',
+        'composer',
+        'mozart',
+        'beethoven',
+        'jackson',
+      ])
+    ) {
+      return 'editorial-culture';
+    }
+
+    return 'history-culture';
+  }
+
+  if (normalizedCategory.includes('spor')) {
+    return 'history-culture';
+  }
+
   if (normalizedCategory.includes('biyografi')) {
     if (
       includesAny(topicText, [

@@ -380,6 +380,12 @@ export function evaluateWikipediaTaxonomyDecision({
     ? enrichment.categories.join(' ')
     : '';
   const contentText = `${preferredData?.title ?? ''} ${preferredData?.description ?? ''} ${preferredData?.extract ?? ''} ${entity?.description ?? ''} ${enrichmentCategories}`;
+  const isHighImpactPersonCategory = ['biography', 'art_culture', 'sports'].includes(
+    taxonomy?.category,
+  );
+  const targetsHighImpactPersonCategory = ['biography', 'art_culture', 'sports'].includes(
+    targetCategory,
+  );
   const isBiographyCandidate = taxonomy?.category === 'biography' || targetCategory === 'biography';
   const hasHighImpactPersonSignal = HIGH_IMPACT_PERSON_SIGNALS.some((pattern) =>
     pattern.test(contentText),
@@ -387,7 +393,7 @@ export function evaluateWikipediaTaxonomyDecision({
 
   if (
     LOW_VALUE_TOPIC_PATTERNS.some((pattern) => pattern.test(contentText)) &&
-    !(isBiographyCandidate && hasHighImpactPersonSignal)
+    !((isHighImpactPersonCategory || targetsHighImpactPersonCategory) && hasHighImpactPersonSignal)
   ) {
     reasons.push('low_value_topic');
   }
@@ -402,7 +408,7 @@ export function evaluateWikipediaTaxonomyDecision({
       (pattern) =>
         pattern.test(preferredData?.extract ?? '') || pattern.test(entity?.canonicalTitle ?? ''),
     ) ||
-    (isBiographyCandidate && hasHighImpactPersonSignal);
+    ((isHighImpactPersonCategory || targetsHighImpactPersonCategory) && hasHighImpactPersonSignal);
 
   if (personLikeTitle && looksLikePersonSummary && !hasHighValuePersonSignal) {
     reasons.push('low_value_person');

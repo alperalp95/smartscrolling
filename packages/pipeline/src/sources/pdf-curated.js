@@ -102,7 +102,19 @@ function cleanPdfExtract(text, sourceTitle) {
 function normalizeCategory(category) {
   const normalized = typeof category === 'string' ? category.trim().toLowerCase() : '';
 
-  if (['science', 'history', 'philosophy', 'technology', 'health'].includes(normalized)) {
+  if (
+    [
+      'science',
+      'history',
+      'philosophy',
+      'technology',
+      'health',
+      'environment',
+      'art_culture',
+      'sports',
+      'biography',
+    ].includes(normalized)
+  ) {
     return normalized;
   }
 
