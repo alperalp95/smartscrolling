@@ -1,5 +1,29 @@
 # P1-15q - Groq Free-Tier Production Fallback ve Limit Guard
 
+## Kapanis Notu - 2026-05-05
+
+Durum: production fallback uygulanmayacak, task deferred.
+
+Deneme sonucu:
+
+- Free-tier icinde diger Groq modelleri token darbogazini guvenli sekilde cozmedi.
+- GPT-OSS 20B JSON mode ile guvenilir degil.
+- Qwen 32B yavas ve retry/JSON davranisi kirilgan.
+- Fallback acmak batch kapasitesini artirmak yerine hata ve kalite riski ekleyebilir.
+
+Karar:
+
+- Production fallback simdilik kapali kalacak.
+- `FACT_LLM_FALLBACKS` production env'de bos tutulmali.
+- 1500 fact hedefi icin kisa vadeli yol: 8B primary, kucuk batch, kalite tuning, PDF curated devam.
+- Token darbogazini gercekten cozmek icin Groq paid/developer tier degerlendirilecek.
+
+Bu task tekrar acilirsa on kosul:
+
+- Paid tier veya daha yuksek limitler netlesmeli.
+- Fallback modeli sabit fixture benchmark'ta JSON, latency ve kalite acisindan 8B kadar guvenilir gorunmeli.
+- Fallback sadece `rate_limit`, `timeout`, `provider_5xx` gibi altyapi hatalarinda calismali; quality reject'leri maskelenmemeli.
+
 ## Amac
 
 Gunluk/haftalik fact uretiminde Groq free-tier rate/token limitine takilinca job'un kirilmadan, kontrollu sekilde diger allowlist Groq modellerini denemesini saglamak.

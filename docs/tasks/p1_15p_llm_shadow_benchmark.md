@@ -1,5 +1,27 @@
 # P1-15p - Groq Model Shadow Benchmark ve Fixture Audit
 
+## Kapanis Notu - 2026-05-05
+
+Durum: kismen tamamlandi, fixture kismi release sonrasi veya paid-tier kararindan sonra.
+
+Uygulananlar:
+
+- `packages/pipeline/src/runners/test-fact-llm-shadow.js` eklendi.
+- Live Wikipedia adaylari uzerinde 8B, GPT-OSS 20B ve Qwen 32B karsilastirildi.
+- DB insert kapali tutuldu; kalite, consistency ve conversion failure nedenleri audit edildi.
+
+Sonuc:
+
+- `groq:llama-3.1-8b-instant` en stabil model.
+- `groq:openai/gpt-oss-20b` JSON validation hatasina dustu.
+- `groq:qwen/qwen3-32b` bazi iyi cevaplar uretti ama yavas ve retry/JSON tarafinda kirilgan.
+- Diger Groq modelleri su an release production kapasitesine pratik katki saglamadi.
+
+Karar:
+
+- Shadow runner repo'da kalsin; gereksiz kod degil, ileride prompt/model denemeleri icin audit araci.
+- Sabit JSONL fixture simdilik ertelendi. Asil release yolu 8B + kucuk batch + kalite tuning + PDF curated.
+
 ## Amac
 
 Groq icindeki aday modelleri production insert akisina almadan once ayni sabit kaynak batch'i uzerinde karsilastirmak.

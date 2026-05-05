@@ -1,5 +1,23 @@
 # P1-15o - Groq Multi-Model Resolver
 
+## Kapanis Notu - 2026-05-05
+
+Durum: tamamlandi.
+
+Uygulananlar:
+
+- `packages/pipeline/src/lib/llm-model-policy.js` ile Groq model resolver eklendi.
+- Default production modeli `groq:llama-3.1-8b-instant` olarak korundu.
+- `test:wikipedia-groq` runner'i `--llm` override alabilir hale geldi.
+- Unsupported model id'leri Groq'a istek atmadan erken reddediliyor.
+- Groq client import aninda degil, ilk gercek request'te olusuyor.
+
+Karar:
+
+- 8B model production primary olarak kalacak.
+- `groq:openai/gpt-oss-20b` ve `groq:qwen/qwen3-32b` production fallback degil, sadece dry-run/benchmark adayi olarak tutulacak.
+- Bu task token limit darbogazini cozmedi; sadece model secimini ve audit edilebilir denemeyi guvenli hale getirdi.
+
 ## Amac
 
 Mevcut `convertToFact()` davranisini, prompt'unu ve JSON output contract'ini bozmadan Groq icindeki iyi aday modelleri secilebilir hale getirmek.
