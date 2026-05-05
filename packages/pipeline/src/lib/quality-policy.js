@@ -533,7 +533,9 @@ export function evaluateFactQuality(fact) {
     fact.category,
   );
 
-  if (!title || title.length < 12 || title.length > 80) {
+  const maxTitleLength = isPdfCurated ? 80 : 58;
+
+  if (!title || title.length < 12 || title.length > maxTitleLength) {
     return { ok: false, reason: 'invalid_title_length' };
   }
 
