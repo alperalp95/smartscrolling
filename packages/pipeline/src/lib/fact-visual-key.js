@@ -310,7 +310,6 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
       includesAny(topicText, [
         'fizik',
         'enerji',
-        'isi',
         'sicaklik',
         'ses',
         'titresim',

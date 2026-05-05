@@ -101,7 +101,11 @@ for (const article of articles) {
     article.category,
     article.imageUrl,
     article.title,
-    { wikiContext: article.wikiContext ?? null, llmModel: resolvedLlm.providerModel },
+    {
+      wikiContext: article.wikiContext ?? null,
+      llmModel: resolvedLlm.providerModel,
+      returnFailureReason: true,
+    },
   );
 
   console.log(

@@ -448,6 +448,11 @@ function isGroqRateLimitError(err) {
   );
 }
 
+function isGroqJsonValidateError(err) {
+  const message = String(err?.message ?? '').toLowerCase();
+  return message.includes('json_validate_failed') || message.includes('failed to validate json');
+}
+
 function buildWikiContextBlock(wikiContext) {
   if (!isWikipediaGroqContextPilotEnabled() || !wikiContext) {
     return '';
@@ -679,26 +684,32 @@ ${JSON.stringify(firstPass)}
 
 Sadece yeni JSON objesini uret.`;
 
-      const secondPassStartedAt = Date.now();
-      const secondPass = await requestFactJsonWithRecovery(
-        systemPrompt,
-        retryPrompt,
-        normalizedCategoryHint,
-        llmModel,
-      );
-      console.log(
-        `[Groq] second_pass model=${llmModel.providerModel} source="${sourceTitle || sourceLabel}" duration=${formatDuration(secondPassStartedAt)}`,
-      );
-
-      if (secondPass) {
-        fact = normalizeFactPayload(
-          secondPass,
+      try {
+        const secondPassStartedAt = Date.now();
+        const secondPass = await requestFactJsonWithRecovery(
+          systemPrompt,
+          retryPrompt,
           normalizedCategoryHint,
-          sourceLabel,
-          sourceUrl,
-          imageUrl,
-          sourceTitle,
-          rawText,
+          llmModel,
+        );
+        console.log(
+          `[Groq] second_pass model=${llmModel.providerModel} source="${sourceTitle || sourceLabel}" duration=${formatDuration(secondPassStartedAt)}`,
+        );
+
+        if (secondPass) {
+          fact = normalizeFactPayload(
+            secondPass,
+            normalizedCategoryHint,
+            sourceLabel,
+            sourceUrl,
+            imageUrl,
+            sourceTitle,
+            rawText,
+          );
+        }
+      } catch (retryErr) {
+        console.warn(
+          `[Groq] second_pass failed; keeping first_pass model=${llmModel.providerModel} source="${sourceTitle || sourceLabel}" error=${retryErr.message}`,
         );
       }
     }
@@ -720,7 +731,15 @@ Sadece yeni JSON objesini uret.`;
       return { _conversion_failed: true, _conversion_reason: 'rate_limit' };
     }
 
-    console.error('[Groq] Donusturme hatasi:', err.message);
+    const conversionReason = isGroqJsonValidateError(err)
+      ? 'json_validate_failed'
+      : 'conversion_error';
+    console.error(`[Groq] Donusturme hatasi reason=${conversionReason}:`, err.message);
+
+    if (options.returnFailureReason) {
+      return { _conversion_failed: true, _conversion_reason: conversionReason };
+    }
+
     return null;
   }
 }
