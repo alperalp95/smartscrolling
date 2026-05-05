@@ -3,8 +3,21 @@
 import Groq from 'groq-sdk';
 import { evaluateFactMedia, normalizeFactMediaUrl } from './fact-media-policy.js';
 import { deriveFactVisualKey } from './fact-visual-key.js';
+import { resolveFactLlmModel } from './llm-model-policy.js';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let groqClient;
+
+function getGroqClient() {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error('GROQ_API_KEY missing');
+  }
+
+  if (!groqClient) {
+    groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+
+  return groqClient;
+}
 
 const CATEGORY_MAP = {
   science: '\u{1F52C} B\u0130L\u0130M',
@@ -348,9 +361,9 @@ function extractFailedGeneration(err) {
   }
 }
 
-async function requestFactJson(systemPrompt, userPrompt) {
-  const response = await groq.chat.completions.create({
-    model: 'llama-3.1-8b-instant',
+async function requestFactJson(systemPrompt, userPrompt, llmModel) {
+  const response = await getGroqClient().chat.completions.create({
+    model: llmModel.model,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
@@ -368,7 +381,7 @@ async function requestFactJson(systemPrompt, userPrompt) {
   return JSON.parse(raw);
 }
 
-async function repairFailedGeneration(failedGeneration, categoryHint) {
+async function repairFailedGeneration(failedGeneration, categoryHint, llmModel) {
   const repairSystemPrompt = `Sen bozuk JSON'u gecerli JSON'a ceviren bir duzeltme katmanisin.
 Sadece gecerli bir JSON objesi dondur.
 Anahtarlar: title, content, category, tags, read_time_sq
@@ -386,21 +399,21 @@ ${failedGeneration}
 ---`;
 
   try {
-    return await requestFactJson(repairSystemPrompt, repairUserPrompt);
+    return await requestFactJson(repairSystemPrompt, repairUserPrompt, llmModel);
   } catch (repairErr) {
     console.error('[Groq] JSON repair hatasi:', repairErr.message);
     return null;
   }
 }
 
-async function requestFactJsonWithRecovery(systemPrompt, userPrompt, categoryHint) {
+async function requestFactJsonWithRecovery(systemPrompt, userPrompt, categoryHint, llmModel) {
   try {
-    return await requestFactJson(systemPrompt, userPrompt);
+    return await requestFactJson(systemPrompt, userPrompt, llmModel);
   } catch (err) {
     const failedGeneration = extractFailedGeneration(err);
 
     if (failedGeneration) {
-      const repaired = await repairFailedGeneration(failedGeneration, categoryHint);
+      const repaired = await repairFailedGeneration(failedGeneration, categoryHint, llmModel);
 
       if (repaired) {
         console.warn('[Groq] failed_generation recover edildi.');
@@ -508,6 +521,7 @@ export async function convertToFact(
   const sourceGuidance = getSourcePromptGuidance(sourceLabel);
   const normalizedCategoryHint = normalizeCategoryHint(categoryHint);
   const sourceKind = detectSourceKind(sourceLabel);
+  const llmModel = resolveFactLlmModel(options.llmModel);
   const rawTextLimit = sourceKind === 'wikipedia' ? 2600 : 5000;
   const sourceContext = buildSourceContext(
     rawText,
@@ -591,9 +605,10 @@ Detayli hap bilgi JSON'unu uret.`;
       systemPrompt,
       userPrompt,
       normalizedCategoryHint,
+      llmModel,
     );
     console.log(
-      `[Groq] first_pass source="${sourceTitle || sourceLabel}" duration=${formatDuration(firstPassStartedAt)}`,
+      `[Groq] first_pass model=${llmModel.providerModel} source="${sourceTitle || sourceLabel}" duration=${formatDuration(firstPassStartedAt)}`,
     );
 
     if (!firstPass) {
@@ -669,9 +684,10 @@ Sadece yeni JSON objesini uret.`;
         systemPrompt,
         retryPrompt,
         normalizedCategoryHint,
+        llmModel,
       );
       console.log(
-        `[Groq] second_pass source="${sourceTitle || sourceLabel}" duration=${formatDuration(secondPassStartedAt)}`,
+        `[Groq] second_pass model=${llmModel.providerModel} source="${sourceTitle || sourceLabel}" duration=${formatDuration(secondPassStartedAt)}`,
       );
 
       if (secondPass) {
