@@ -66,10 +66,11 @@ export default function PremiumScreen() {
 
       if (cancelled) return;
 
-      const pkg = offering?.availablePackages?.find((p) => {
-        const id = p.identifier.toLowerCase();
-        return id.includes('life') || id === '$rc_lifetime';
-      }) ?? null;
+      const pkg =
+        offering?.availablePackages?.find((p) => {
+          const id = p.identifier.toLowerCase();
+          return id.includes('life') || id === '$rc_lifetime';
+        }) ?? null;
 
       if (pkg) {
         setLifetimePackage(pkg);
@@ -79,7 +80,9 @@ export default function PremiumScreen() {
       setIsLoading(false);
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const handlePurchase = async () => {
@@ -167,7 +170,10 @@ export default function PremiumScreen() {
         <Pressable
           disabled={isSubmitting || isLoading || !lifetimePackage}
           onPress={() => void handlePurchase()}
-          style={[s.ctaButton, (isSubmitting || isLoading || !lifetimePackage) && s.ctaButtonDisabled]}
+          style={[
+            s.ctaButton,
+            (isSubmitting || isLoading || !lifetimePackage) && s.ctaButtonDisabled,
+          ]}
         >
           {isSubmitting || isLoading ? (
             <ActivityIndicator color="#fff" size="small" />

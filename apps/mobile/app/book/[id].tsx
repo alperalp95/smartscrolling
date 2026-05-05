@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AiChatMessage } from '../../src/lib/aiChat';
+import { type AiContentReportReason, submitAiContentReport } from '../../src/lib/aiContentReports';
 import { promptForAuth } from '../../src/lib/authPrompt';
 import { type ReaderDefinition, getReaderSlice } from '../../src/lib/bookContent';
 import {
@@ -35,6 +36,13 @@ import { useReaderProgress } from '../../src/lib/useReaderProgress';
 import { useAuthStore } from '../../src/store/authStore';
 import type { BookType } from '../../src/types';
 
+const AI_REPORT_REASONS: Array<{ label: string; value: AiContentReportReason }> = [
+  { label: 'Yanlis bilgi', value: 'wrong_information' },
+  { label: 'Sakincali', value: 'harmful_or_uncomfortable' },
+  { label: 'Baglama uymuyor', value: 'out_of_book_context' },
+  { label: 'Diger', value: 'other' },
+];
+
 export default function BookReaderScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -46,6 +54,14 @@ export default function BookReaderScreen() {
   >({});
   const [textSections, setTextSections] = useState<ReaderTextSection[]>([]);
   const [sectionsLoading, setSectionsLoading] = useState(true);
+  const [reportTargetIndex, setReportTargetIndex] = useState<number | null>(null);
+  const [selectedReportReason, setSelectedReportReason] =
+    useState<AiContentReportReason>('wrong_information');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportFeedback, setReportFeedback] = useState<{
+    message: string;
+    tone: 'error' | 'success';
+  } | null>(null);
   const chatScrollRef = useRef<ScrollView | null>(null);
   const lastSyncedChatRef = useRef('');
   const bookId = typeof id === 'string' ? id : Array.isArray(id) ? (id[0] ?? '') : '';
@@ -247,6 +263,8 @@ export default function BookReaderScreen() {
   const closeChat = () => {
     setIsChatOpen(false);
     resetChatLoading();
+    setReportTargetIndex(null);
+    setReportFeedback(null);
   };
 
   const sendChatMessage = (overrideQuestion?: string) => {
@@ -267,6 +285,37 @@ export default function BookReaderScreen() {
     }
 
     void sendMessage(question);
+  };
+
+  const openReportPanel = (index: number) => {
+    setReportTargetIndex(index);
+    setSelectedReportReason('wrong_information');
+    setReportFeedback(null);
+  };
+
+  const submitReport = async (message: AiChatMessage) => {
+    if (message.role !== 'assistant' || isSubmittingReport) {
+      return;
+    }
+
+    setIsSubmittingReport(true);
+
+    const result = await submitAiContentReport({
+      assistantMessage: message.content,
+      bookId,
+      bookTitle,
+      reason: selectedReportReason,
+    });
+
+    setIsSubmittingReport(false);
+
+    if (!result.reported) {
+      setReportFeedback({ tone: 'error', message: 'Rapor gonderilemedi. Lutfen tekrar dene.' });
+      return;
+    }
+
+    setReportTargetIndex(null);
+    setReportFeedback({ tone: 'success', message: 'Rapor alindi. Tesekkurler.' });
   };
 
   useEffect(() => {
@@ -451,13 +500,6 @@ export default function BookReaderScreen() {
                     { height: readerHeight, paddingBottom: Math.max(insets.bottom + 80, 100) },
                   ]}
                 >
-                  {item.title || item.summary ? (
-                    <View style={s.sectionScreenHeader}>
-                      {item.title ? <Text style={s.sectionTitle}>{item.title}</Text> : null}
-                      {item.summary ? <Text style={s.sectionSummary}>{item.summary}</Text> : null}
-                    </View>
-                  ) : null}
-
                   <Text style={s.sectionBodyText}>
                     {(item.parts ?? []).map((part: ReaderSectionPart, index: number) => {
                       const partKey = `${item.id}-${part.type}-${part.word ?? part.text}-${index}`;
@@ -609,19 +651,99 @@ export default function BookReaderScreen() {
                   }}
                   showsVerticalScrollIndicator={false}
                 >
-                  {chatMessages.map((message, index) => (
-                    <View
-                      key={`${message.role}-${index}`}
-                      style={[
-                        s.chatBubble,
-                        message.role === 'user' ? s.chatBubbleUser : s.chatBubbleAssistant,
-                      ]}
-                    >
-                      <Text style={s.chatBubbleText}>{message.content}</Text>
-                    </View>
-                  ))}
+                  {chatMessages.map((message, index) => {
+                    const isAssistantMessage = message.role === 'assistant';
+                    const isReportPanelOpen = reportTargetIndex === index;
+
+                    return (
+                      <View
+                        key={`${message.role}-${index}`}
+                        style={[
+                          s.chatBubble,
+                          message.role === 'user' ? s.chatBubbleUser : s.chatBubbleAssistant,
+                        ]}
+                      >
+                        <Text style={s.chatBubbleText}>{message.content}</Text>
+                        {isAssistantMessage ? (
+                          <>
+                            <TouchableOpacity
+                              style={s.reportButton}
+                              onPress={() => openReportPanel(index)}
+                              activeOpacity={0.85}
+                              disabled={isSubmittingReport}
+                            >
+                              <Text style={s.reportButtonText}>Yanlis Icerigi Raporla</Text>
+                            </TouchableOpacity>
+                            {isReportPanelOpen ? (
+                              <View style={s.reportPanel}>
+                                <View style={s.reportReasonGrid}>
+                                  {AI_REPORT_REASONS.map((reason) => {
+                                    const isSelected = selectedReportReason === reason.value;
+                                    return (
+                                      <TouchableOpacity
+                                        key={reason.value}
+                                        style={[
+                                          s.reportReasonChip,
+                                          isSelected ? s.reportReasonChipSelected : null,
+                                        ]}
+                                        onPress={() => setSelectedReportReason(reason.value)}
+                                        activeOpacity={0.85}
+                                        disabled={isSubmittingReport}
+                                      >
+                                        <Text
+                                          style={[
+                                            s.reportReasonText,
+                                            isSelected ? s.reportReasonTextSelected : null,
+                                          ]}
+                                        >
+                                          {reason.label}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    );
+                                  })}
+                                </View>
+                                <View style={s.reportActions}>
+                                  <TouchableOpacity
+                                    style={s.reportCancelButton}
+                                    onPress={() => setReportTargetIndex(null)}
+                                    activeOpacity={0.85}
+                                    disabled={isSubmittingReport}
+                                  >
+                                    <Text style={s.reportCancelText}>Vazgec</Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={[
+                                      s.reportSubmitButton,
+                                      isSubmittingReport ? s.reportSubmitButtonDisabled : null,
+                                    ]}
+                                    onPress={() => void submitReport(message)}
+                                    activeOpacity={0.85}
+                                    disabled={isSubmittingReport}
+                                  >
+                                    <Text style={s.reportSubmitText}>
+                                      {isSubmittingReport ? 'Gonderiliyor...' : 'Gonder'}
+                                    </Text>
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+                            ) : null}
+                          </>
+                        ) : null}
+                      </View>
+                    );
+                  })}
                   {isChatLoading && <Text style={s.chatLoading}>Yanit hazirlaniyor...</Text>}
                 </ScrollView>
+                {reportFeedback ? (
+                  <Text
+                    style={[
+                      s.reportFeedback,
+                      reportFeedback.tone === 'error' ? s.reportFeedbackError : null,
+                    ]}
+                  >
+                    {reportFeedback.message}
+                  </Text>
+                ) : null}
                 <View style={s.readyQuestionsWrap}>
                   <Text style={s.readyQuestionsLabel}>Hazir sorular</Text>
                   <ScrollView
@@ -935,6 +1057,83 @@ const s = StyleSheet.create({
     backgroundColor: '#2c2c2e',
   },
   chatBubbleText: { color: '#fff', fontSize: 14, lineHeight: 20 },
+  reportButton: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+  },
+  reportButtonText: {
+    color: '#c4b5fd',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  reportPanel: {
+    gap: 10,
+    marginTop: 10,
+  },
+  reportReasonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  reportReasonChip: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  reportReasonChipSelected: {
+    backgroundColor: 'rgba(167,139,250,0.18)',
+    borderColor: 'rgba(196,181,253,0.35)',
+  },
+  reportReasonText: {
+    color: '#d1d5db',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  reportReasonTextSelected: {
+    color: '#e9d5ff',
+  },
+  reportActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  reportCancelButton: {
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  reportCancelText: {
+    color: '#9ca3af',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  reportSubmitButton: {
+    backgroundColor: '#8b5cf6',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  reportSubmitButtonDisabled: {
+    opacity: 0.55,
+  },
+  reportSubmitText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  reportFeedback: {
+    color: '#86efac',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: -8,
+  },
+  reportFeedbackError: {
+    color: '#fca5a5',
+  },
   chatLoading: { color: '#8e8e93', fontSize: 12, marginTop: 4 },
   chatComposer: {
     alignItems: 'center',

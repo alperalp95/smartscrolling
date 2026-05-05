@@ -6,6 +6,31 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.31] - 2026-05-05
+
+#### P6-09b App Store Compliance Baslangici
+- `docs/tasks/p6_09b_app_store_compliance.md` ile Apple App Store release blocker isi kucuk, onayli alt tasklara ayrildi.
+- Kapsam iki ana dilim olarak netlestirildi: profil uzerinden hesap/veri silme ve Reader AI Chat icinden yanlis/sakincali icerik raporlama.
+- Bu adimda kod degisikligi yapilmadi; sonraki adim backend karar notu olarak ayrildi.
+- Karar notu eklendi: hesap silme gercek Edge Function + service role akisiyle yapilacak; user-owned tablolar temizlenecek; AI report auth zorunlu olmayacak ve `ai_content_reports` tablosuna yazilacak.
+- Hesap silme backend dilimi eklendi: `delete-account` Edge Function session dogruluyor, user-owned tabloları temizliyor, auth kullanicisini siliyor ve mobil `deleteCurrentAccount()` helper'i basarili silme sonrasi sign-out yapiyor.
+- Profil Ayarlar bolumune iki adimli hesap/veri silme UI'i eklendi; kullanici `SIL` yazmadan kalici silme butonu aktif olmuyor.
+- AI report storage modeli eklendi: `ai_content_reports` nullable `user_id`, kitap baglami, assistant mesaj metni, sebep kodu ve opsiyonel not tutuyor; RLS insert-only olarak kuruldu.
+- Mobil AI report storage helper'i eklendi: `submitAiContentReport()` guest/auth kullanicilar icin raporu `ai_content_reports` tablosuna insert ediyor.
+- Reader AI Chat sheet'inde assistant mesajlarina `Yanlis Icerigi Raporla` aksiyonu, sebep secimi ve gonderim geri bildirimi eklendi.
+- Final local verification gecti: `npm run lint`, `npm run typecheck` ve `npm run check:edge-functions`.
+- Remote Supabase apply/deploy tamamlandi: `ai_content_reports` migration'i remote'a uygulandi, `delete-account` Edge Function deploy edildi ve migration/function listeleriyle dogrulandi.
+- Emulator smoke test listesi task dosyasina eklendi; roadmap kapanisi kullanici emulator smoke sonucundan sonra yapilacak.
+- Smoke bulgulari incelendi: storage'da kitap dosyalari duruyor, remote DB'de `books`, `book_sections`, `book_highlights` bos. Profil tercih kaydi `upsert` ile guclendirildi ve hesap silme ikinci onayi modal popup'a tasindi.
+- Library DB recovery yapildi: storage'daki dolu kitap dosyalarindan 9 kitap ve 4009 `book_sections` kaydi remote DB'ye geri basildi; anon REST Library sorgusu 200 OK ile dogrulandi.
+
+#### P6 Book Catalog ve Highlight Recovery Baslangici
+- `docs/tasks/p6_book_catalog_highlight_recovery.md` ile free kitap, reader baslik kaldirma ve highlight recovery isi kucuk alt tasklara ayrildi.
+- Reader sayfalarinda section baslik/summary bloğu kaldirildi; scroll/paging davranisi korunuyor.
+- Highlight matcher kelime baslangici ve kelime sonu boundary kontrolu yapacak sekilde dar kapsamla guclendirildi.
+- Kalici migration seed eklendi ve remote'a uygulandi: `Kendime Dusunceler` kaldirildi, `Homo Deus` free yapildi, 8 kitap icin 3723 section ve 360 highlight seed edildi.
+- Library kitap grid basligi `Kütüphane` olarak sadeleştirildi; free anchor kitap gridde en ust sol kartta gorunecek sekilde siralama sabitlendi.
+
 ### [v1.30] - 2026-05-05
 
 #### P6-14 Lint ve Typecheck Recovery Baslangici

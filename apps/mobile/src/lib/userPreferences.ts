@@ -53,8 +53,7 @@ export async function updateUserInterests(userId: string, interests: string[]) {
 
   const { data, error } = await supabase
     .from('users')
-    .update({ interests: normalizedInterests })
-    .eq('id', userId)
+    .upsert({ id: userId, interests: normalizedInterests }, { onConflict: 'id' })
     .select('interests')
     .single();
 
@@ -68,11 +67,14 @@ export async function updateUserInterests(userId: string, interests: string[]) {
 export async function updateUserDailyGoal(userId: string, dailyGoal: DailyGoalPreference) {
   const { data, error } = await supabase
     .from('users')
-    .update({
-      daily_goal_type: dailyGoal?.type ?? null,
-      daily_goal_value: dailyGoal?.value ?? null,
-    })
-    .eq('id', userId)
+    .upsert(
+      {
+        id: userId,
+        daily_goal_type: dailyGoal?.type ?? null,
+        daily_goal_value: dailyGoal?.value ?? null,
+      },
+      { onConflict: 'id' },
+    )
     .select('daily_goal_type, daily_goal_value')
     .single();
 
@@ -86,10 +88,13 @@ export async function updateUserDailyGoal(userId: string, dailyGoal: DailyGoalPr
 export async function updateNotificationPreference(userId: string, enabled: boolean) {
   const { data, error } = await supabase
     .from('users')
-    .update({
-      notifications_enabled: enabled,
-    })
-    .eq('id', userId)
+    .upsert(
+      {
+        id: userId,
+        notifications_enabled: enabled,
+      },
+      { onConflict: 'id' },
+    )
     .select('notifications_enabled')
     .single();
 

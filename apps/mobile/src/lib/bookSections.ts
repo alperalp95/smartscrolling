@@ -50,7 +50,10 @@ export function buildHighlightedSectionParts(
         const idx = lowerText.indexOf(lowerTerm, searchFrom);
         if (idx === -1) break;
         const prevChar = idx > 0 ? plainText[idx - 1] : '';
-        if (!/[\w\u00C0-\u024F]/.test(prevChar)) {
+        const nextChar = plainText[idx + lowerTerm.length] ?? '';
+        const hasValidStartBoundary = !/[\w\u00C0-\u024F]/.test(prevChar);
+        const hasValidEndBoundary = !/[\w\u00C0-\u024F]/.test(nextChar);
+        if (hasValidStartBoundary && hasValidEndBoundary) {
           boundaryIndex = idx;
           break;
         }

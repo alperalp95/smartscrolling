@@ -135,6 +135,20 @@ export default function LibraryScreen() {
     () => savedFacts.filter((fact) => savedIds.includes(fact.id)),
     [savedFacts, savedIds],
   );
+  const libraryBooks = useMemo(
+    () =>
+      [...books].sort((first, second) => {
+        const firstIsFree = first.accessTier === 'free_anchor' || first.isPremium === false;
+        const secondIsFree = second.accessTier === 'free_anchor' || second.isPremium === false;
+
+        if (firstIsFree === secondIsFree) {
+          return 0;
+        }
+
+        return firstIsFree ? -1 : 1;
+      }),
+    [books],
+  );
 
   const clearOpenBookLock = useCallback(() => {
     openBookLockedRef.current = false;
@@ -408,13 +422,13 @@ export default function LibraryScreen() {
           })()}
 
         <View style={[s.sectionHeader, { marginTop: 24 }]}>
-          <Text style={s.sectionTitle}>10 Kitaplik Ogrenme Kutuphanesi</Text>
+          <Text style={s.sectionTitle}>Kütüphane</Text>
           <TouchableOpacity>
-            <Text style={s.sectionMore}>{books.length} kitap</Text>
+            <Text style={s.sectionMore}>{libraryBooks.length} kitap</Text>
           </TouchableOpacity>
         </View>
         <View style={s.grid}>
-          {books.map((book) => {
+          {libraryBooks.map((book) => {
             const access = resolveBookAccess(book, {
               hasPremium,
               isAuthenticated: Boolean(user),

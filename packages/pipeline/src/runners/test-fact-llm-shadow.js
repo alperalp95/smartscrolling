@@ -173,7 +173,9 @@ for (const article of articles) {
 
     stats.generated += 1;
     const quality = evaluateFactQuality(fact);
-    const consistency = quality.ok ? evaluateFactConsistency(fact) : { ok: true, reason: 'skipped' };
+    const consistency = quality.ok
+      ? evaluateFactConsistency(fact)
+      : { ok: true, reason: 'skipped' };
 
     if (!quality.ok) {
       stats.qualityRejected += 1;
@@ -210,5 +212,9 @@ for (const article of articles) {
 
 console.log(
   '[Fact LLM Shadow] summary',
-  JSON.stringify([...statsByModel.values()].map((stats) => summarizeStats(stats)), null, 2),
+  JSON.stringify(
+    [...statsByModel.values()].map((stats) => summarizeStats(stats)),
+    null,
+    2,
+  ),
 );

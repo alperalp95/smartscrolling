@@ -63,7 +63,9 @@ if (!process.env.GROQ_API_KEY) {
   process.exit(1);
 }
 
-console.log(`[Wikipedia Groq Dry Run] lang=${lang} count=${count} llm=${resolvedLlm.providerModel}`);
+console.log(
+  `[Wikipedia Groq Dry Run] lang=${lang} count=${count} llm=${resolvedLlm.providerModel}`,
+);
 
 const articles = await fetchWikipediaArticles(lang, count);
 

@@ -86,6 +86,7 @@ Not:
 - [ ] **P1-15q** LLM production fallback ve budget guard: rate/token limitte kontrollu fallback, run-level max fallback ve gunluk/aylik cost guard davranisini tanimla (`docs/tasks/p1_15q_llm_production_fallback_ops.md`)
 - [ ] **P1-16** NASA APOD aktif hattini koru; ArXiv / PubMed backlog'unun yanina Turkce kaynak genislemesi icin `Khan Academy Turkce`, `TUBITAK Bilim Genc`, `TDV Islam Ansiklopedisi` ve uygun olursa `Saglik Bakanligi / Saglikli Bilgi` adaylarini degerlendir
 - [x] **P1-17** Public domain / acik lisansli kitaplik ilk gercek katalogu Supabase `books` tablosuna yuklendi; `p3_05b_real_books_catalog`, `p3_27_learning_library_shortlist`, `p3_10c_full_readable_sections_phase1` migration'lari uygulandı; 10 kitaplik katalog aktif
+- [x] **P1-17b** P6 catalog recovery: `Homo Deus` free anchor yapildi, `Kendime Dusunceler` kaldirildi, Library grid basligi sadeleştirildi ve free kitap gridde ilk kart olarak sabitlendi
 - [x] **P1-18** Kitap erisim katmani `access_tier` alani (`free_anchor` / `premium`) ve `resolveBookAccess()` fonksiyonu ile runtime'a tasindi; `p3_26_book_access_policy` migration'i uygulandı
 - [ ] **P1-19** Icerik yasam dongusu ekle: `draft/review/approved/published` status modeli (MVP sonrasi operasyon olgunlastirma; otomatik pipeline yeterli gelmezse devreye alinacak)
 - [ ] **P1-19b** Gutenberg kitap akisi: `Storage`ta raw EN source, `book_sections` icinde TR reader edition stratejisini ilk kitapta apply et
@@ -246,7 +247,8 @@ Not:
 - [ ] **P6-07** Beta kullanici grubu olustur ve geri bildirim topla
 - [ ] **P6-08** App Store Optimization (ASO)
 - [ ] **P6-09** KVKK / GDPR uyumluluk kontrolu (Gizlilik Sozlesmesi Onaylama Adimlari)
-- [ ] **P6-09b** Apple App Store Yasal Zorunluluklari: Profilde aninda isleyen "Hesabi ve Verilerimi Sil" butonu ve AI Chat ekraninda "Yanlis Icerigi Raporla" butonlarinin zorunlu entegrasyonu
+- [ ] **P6-09b** Apple App Store Yasal Zorunluluklari: Profilde aninda isleyen "Hesabi ve Verilerimi Sil" butonu ve AI Chat ekraninda "Yanlis Icerigi Raporla" butonlarinin zorunlu entegrasyonu (`docs/tasks/p6_09b_app_store_compliance.md`) - implementation + remote apply/deploy tamam, emulator smoke bekliyor
+- [x] **P6-09c** Kitap katalog/highlight recovery: `Homo Deus` free anchor yapildi, `Kendime Dusunceler` kaldirildi, reader section basliklari kaldirildi ve highlight seed remote'a uygulandi (`docs/tasks/p6_book_catalog_highlight_recovery.md`)
 - [ ] **P6-10** Crash reporting kurulumu (Sentry)
 - [ ] **P6-11** Backend CI/CD: Supabase prod auto-deploy GitHub Action betiginin yazilmasi
 - [ ] **P6-12** Analytics (Metrik) Entegrasyonu: PostHog veya Mixpanel ile "Event Taxonomy"nin (swipe_fact, read_book vb.) baglanmasi
