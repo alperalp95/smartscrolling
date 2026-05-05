@@ -75,9 +75,7 @@ export async function getExistingWikipediaSourceTitles() {
   }
 
   return new Set(
-    (data ?? [])
-      .map((row) => wikipediaTitleFromSourceUrl(row.source_url))
-      .filter(Boolean),
+    (data ?? []).map((row) => wikipediaTitleFromSourceUrl(row.source_url)).filter(Boolean),
   );
 }
 
@@ -221,11 +219,7 @@ export async function insertBook({
     total_pages: totalPages,
   };
 
-  const { data, error } = await supabase
-    .from('books')
-    .insert(payload)
-    .select('id')
-    .single();
+  const { data, error } = await supabase.from('books').insert(payload).select('id').single();
 
   if (error) {
     throw new Error(`[Supabase] insertBook failed: ${error.message}`);

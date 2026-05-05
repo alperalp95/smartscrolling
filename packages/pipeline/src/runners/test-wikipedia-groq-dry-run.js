@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import 'dotenv/config';
-import { convertToFact } from '../lib/groq.js';
 import { evaluateFactMedia } from '../lib/fact-media-policy.js';
+import { convertToFact } from '../lib/groq.js';
 import { fetchWikipediaArticles } from '../sources/wikipedia.js';
 
 const lang = process.argv[2] ?? 'tr';
@@ -22,20 +22,26 @@ for (const article of articles) {
     mediaUrl: article.imageUrl,
   });
 
-  console.log(JSON.stringify({
-    sourceTitle: article.title,
-    sourceCategory: article.category,
-    discoveryScore: article.discoveryScore,
-    imageUrl: article.imageUrl ?? null,
-    mediaPolicy,
-    wikiContext: article.wikiContext
-      ? {
-          canonicalTitle: article.wikiContext.canonicalTitle,
-          normalizedCategory: article.wikiContext.normalizedCategory,
-          categorySignals: article.wikiContext.categories?.slice(0, 4) ?? [],
-        }
-      : null,
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        sourceTitle: article.title,
+        sourceCategory: article.category,
+        discoveryScore: article.discoveryScore,
+        imageUrl: article.imageUrl ?? null,
+        mediaPolicy,
+        wikiContext: article.wikiContext
+          ? {
+              canonicalTitle: article.wikiContext.canonicalTitle,
+              normalizedCategory: article.wikiContext.normalizedCategory,
+              categorySignals: article.wikiContext.categories?.slice(0, 4) ?? [],
+            }
+          : null,
+      },
+      null,
+      2,
+    ),
+  );
 
   const fact = await convertToFact(
     article.extract,
@@ -47,14 +53,20 @@ for (const article of articles) {
     { wikiContext: article.wikiContext ?? null },
   );
 
-  console.log(JSON.stringify({
-    generated: Boolean(fact),
-    title: fact?.title ?? null,
-    category: fact?.category ?? null,
-    tags: fact?.tags ?? [],
-    media_url: fact?.media_url ?? null,
-    media_policy_reason: fact?._media_policy_reason ?? null,
-    visual_key: fact?.visual_key ?? null,
-    contentPreview: fact?.content?.slice(0, 280) ?? null,
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        generated: Boolean(fact),
+        title: fact?.title ?? null,
+        category: fact?.category ?? null,
+        tags: fact?.tags ?? [],
+        media_url: fact?.media_url ?? null,
+        media_policy_reason: fact?._media_policy_reason ?? null,
+        visual_key: fact?.visual_key ?? null,
+        contentPreview: fact?.content?.slice(0, 280) ?? null,
+      },
+      null,
+      2,
+    ),
+  );
 }

@@ -428,7 +428,11 @@ function isWikipediaGroqContextPilotEnabled() {
 
 function isGroqRateLimitError(err) {
   const message = String(err?.message ?? '').toLowerCase();
-  return err?.status === 429 || message.includes('rate_limit_exceeded') || message.includes('rate limit reached');
+  return (
+    err?.status === 429 ||
+    message.includes('rate_limit_exceeded') ||
+    message.includes('rate limit reached')
+  );
 }
 
 function buildWikiContextBlock(wikiContext) {
@@ -683,8 +687,13 @@ Sadece yeni JSON objesini uret.`;
       }
     }
 
-    if (sourceKind === 'wikipedia' && !hasSourceContentAlignment(sourceTitle, fact.title, fact.content)) {
-      console.warn(`[Groq] source alignment failed after retry: "${sourceTitle}" -> "${fact.title}"`);
+    if (
+      sourceKind === 'wikipedia' &&
+      !hasSourceContentAlignment(sourceTitle, fact.title, fact.content)
+    ) {
+      console.warn(
+        `[Groq] source alignment failed after retry: "${sourceTitle}" -> "${fact.title}"`,
+      );
       return null;
     }
 

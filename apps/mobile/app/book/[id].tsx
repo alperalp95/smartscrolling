@@ -21,7 +21,11 @@ import {
   getSectionScopedDefinitions,
 } from '../../src/lib/bookHighlights';
 import { buildSectionScopedContext, getNeighborSections } from '../../src/lib/bookSectionContext';
-import { type ReaderSectionPart, type ReaderTextSection, fetchBookSections } from '../../src/lib/bookSections';
+import {
+  type ReaderSectionPart,
+  type ReaderTextSection,
+  fetchBookSections,
+} from '../../src/lib/bookSections';
 import { fetchBookById, resolveBookAccess } from '../../src/lib/books';
 import { fetchLatestChatSession, saveChatSession } from '../../src/lib/chatSessions';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
@@ -59,12 +63,14 @@ export default function BookReaderScreen() {
   const flatListRef = useRef<FlatList>(null);
   const updateFromSectionIndexRef = useRef<(index: number) => void>(() => {});
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 });
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
-    const index = viewableItems[0]?.index;
-    if (typeof index === 'number') {
-      updateFromSectionIndexRef.current(index);
-    }
-  });
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
+      const index = viewableItems[0]?.index;
+      if (typeof index === 'number') {
+        updateFromSectionIndexRef.current(index);
+      }
+    },
+  );
 
   const {
     activeSectionIndex,
@@ -94,7 +100,7 @@ export default function BookReaderScreen() {
         animated: false,
       });
     }
-  }, [progressHydrated, readerHeight]);
+  }, [activeSectionIndex, progressHydrated, readerHeight]);
 
   const { activeSection, nextSection, previousSection } = getNeighborSections(
     textSections,
@@ -215,7 +221,7 @@ export default function BookReaderScreen() {
     return () => {
       cancelled = true;
     };
-  }, [bookId, setActiveSectionIndex, user]);
+  }, [bookId, hasPremium, setActiveSectionIndex, user]);
 
   const openChat = () => {
     if (!popup) {
@@ -445,7 +451,7 @@ export default function BookReaderScreen() {
                     { height: readerHeight, paddingBottom: Math.max(insets.bottom + 80, 100) },
                   ]}
                 >
-                  {(item.title || item.summary) ? (
+                  {item.title || item.summary ? (
                     <View style={s.sectionScreenHeader}>
                       {item.title ? <Text style={s.sectionTitle}>{item.title}</Text> : null}
                       {item.summary ? <Text style={s.sectionSummary}>{item.summary}</Text> : null}

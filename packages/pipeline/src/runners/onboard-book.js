@@ -13,6 +13,7 @@ import {
 
 const BUCKET = 'book-files';
 const FOLDER = 'tr-books';
+const COMBINING_MARKS_PATTERN = /\p{M}/gu;
 
 function parseArgs(argv) {
   const args = {
@@ -31,18 +32,49 @@ function parseArgs(argv) {
     const token = argv[i];
     const next = argv[i + 1];
 
-    if (token === '--apply') { args.apply = true; continue; }
-    if (token === '--file'        && next) { args.file        = next; i += 1; continue; }
-    if (token === '--title'       && next) { args.title       = next; i += 1; continue; }
-    if (token === '--author'      && next) { args.author      = next; i += 1; continue; }
-    if (token === '--tier'        && next) { args.tier        = next; i += 1; continue; }
-    if (token === '--category'    && next) { args.category    = next; i += 1; continue; }
-    if (token === '--description' && next) { args.description = next; i += 1; continue; }
-    if (token === '--cover'       && next) { args.cover       = next; i += 1; continue; }
-    if (token === '--max-words'   && next) {
+    if (token === '--apply') {
+      args.apply = true;
+      continue;
+    }
+    if (token === '--file' && next) {
+      args.file = next;
+      i += 1;
+      continue;
+    }
+    if (token === '--title' && next) {
+      args.title = next;
+      i += 1;
+      continue;
+    }
+    if (token === '--author' && next) {
+      args.author = next;
+      i += 1;
+      continue;
+    }
+    if (token === '--tier' && next) {
+      args.tier = next;
+      i += 1;
+      continue;
+    }
+    if (token === '--category' && next) {
+      args.category = next;
+      i += 1;
+      continue;
+    }
+    if (token === '--description' && next) {
+      args.description = next;
+      i += 1;
+      continue;
+    }
+    if (token === '--cover' && next) {
+      args.cover = next;
+      i += 1;
+      continue;
+    }
+    if (token === '--max-words' && next) {
       const parsed = Number.parseInt(next, 10);
       if (Number.isFinite(parsed) && parsed > 0) args.maxWords = parsed;
-      i += 1; continue;
+      i += 1;
     }
   }
 
@@ -61,7 +93,8 @@ function isHeadingLine(line) {
 
   if (/^[IVXLCDM]+$/i.test(line.trim())) return true;
 
-  if (/^(bölüm|bolum|kısım|kisim|giriş|giris|önsöz|onsoz|sonuç|sonuc|fasıl|fasil)\b/i.test(line)) return true;
+  if (/^(bölüm|bolum|kısım|kisim|giriş|giris|önsöz|onsoz|sonuç|sonuc|fasıl|fasil)\b/i.test(line))
+    return true;
 
   return words.length <= 6 && /^[A-ZÇĞİÖŞÜ"']/.test(line) && !/[.!?,;:]$/.test(line);
 }
@@ -118,9 +151,13 @@ function slugify(text) {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[ğ]/g, 'g').replace(/[ü]/g, 'u').replace(/[ş]/g, 's')
-    .replace(/[ı]/g, 'i').replace(/[ö]/g, 'o').replace(/[ç]/g, 'c')
+    .replace(COMBINING_MARKS_PATTERN, '')
+    .replace(/[ğ]/g, 'g')
+    .replace(/[ü]/g, 'u')
+    .replace(/[ş]/g, 's')
+    .replace(/[ı]/g, 'i')
+    .replace(/[ö]/g, 'o')
+    .replace(/[ç]/g, 'c')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
@@ -133,9 +170,18 @@ function estimateTotalPages(sections) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
-  if (!args.file)   { console.error('--file gerekli'); process.exit(1); }
-  if (!args.title)  { console.error('--title gerekli'); process.exit(1); }
-  if (!args.author) { console.error('--author gerekli'); process.exit(1); }
+  if (!args.file) {
+    console.error('--file gerekli');
+    process.exit(1);
+  }
+  if (!args.title) {
+    console.error('--title gerekli');
+    process.exit(1);
+  }
+  if (!args.author) {
+    console.error('--author gerekli');
+    process.exit(1);
+  }
 
   const validTiers = ['free_anchor', 'premium'];
   if (!validTiers.includes(args.tier)) {
@@ -166,10 +212,10 @@ async function main() {
   console.log(`  apply    : ${args.apply}`);
 
   console.log('\n--- Ilk 5 bolum ---');
-  sections.slice(0, 5).forEach((s) => {
+  for (const s of sections.slice(0, 5)) {
     console.log(`  [${s.sectionOrder}] ${s.title ?? '(basliksiz)'} — ${s.wordCount} kelime`);
     console.log(`         ${s.plainText.slice(0, 80).replace(/\n/g, ' ')}...`);
-  });
+  }
 
   if (!args.apply) {
     console.log('\nDry-run tamamlandi. Kaydetmek icin --apply ekle.');
@@ -179,7 +225,7 @@ async function main() {
   console.log('\nStorage bucket kontrol ediliyor...');
   await ensureStorageBucket(BUCKET);
 
-  console.log('Metin storage\'a yukleniyor...');
+  console.log("Metin storage'a yukleniyor...");
   await uploadBookSourceText(BUCKET, storagePath, rawText);
 
   console.log('books tablosuna kayit ekleniyor...');

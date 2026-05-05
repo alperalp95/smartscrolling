@@ -6,6 +6,21 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.30] - 2026-05-05
+
+#### P6-14 Lint ve Typecheck Recovery Baslangici
+- `docs/tasks/p6_14_lint_typecheck_recovery.md` ile lint/typecheck toparlama isi kucuk, onayli alt tasklara ayrildi.
+- Baslangic durumu kayda alindi: `npm run typecheck` ve `npm run check:edge-functions` geciyor; `npm run lint` Biome tarafinda 59 hata ile kaliyor.
+- Kurallar netlestirildi: over-engineering yok, refactor yok, task disi kod yok, her alt task kullanici onayi ile ilerleyecek.
+- Biome'un `format` olarak isaretledigi 45 dosyada hedefli format duzeltmesi yapildi; format diagnostigi kalmadi.
+- Verification: `npm run lint` 14 format-disi hata ile kaliyor; `npm run typecheck` gecti.
+- `library.tsx` ve `book/[id].tsx` icindeki `useEffect` dependency uyarilari kucuk kapsamla giderildi.
+- Verification: hedefli Biome lint, `npm run typecheck` ve `npm run check:edge-functions` gecti; tam `npm run lint` 11 pipeline/import/regex uyarisi ile kaliyor.
+- 4 pipeline dosyasinda import siralama uyarilari davranis degistirmeden giderildi.
+- Verification: hedefli Biome lint, `npm run typecheck` ve `npm run check:edge-functions` gecti; tam `npm run lint` 7 correctness/suspicious uyarisi ile kaliyor.
+- Kalan 7 Biome correctness/suspicious uyarisi kucuk kapsamla giderildi: gereksiz `continue`, `forEach` preview loop'lari ve combining mark regex kullanimi.
+- Final verification: `npm run lint`, `npm run typecheck` ve `npm run check:edge-functions` gecti.
+
 ### [v1.29] - 2026-05-02
 
 #### P35-06d Feed Collapsed Safe Layout

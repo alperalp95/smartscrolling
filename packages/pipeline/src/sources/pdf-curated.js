@@ -55,7 +55,10 @@ function cleanPdfExtract(text, sourceTitle) {
     merged.push(t);
   }
 
-  let full = merged.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  let full = merged
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 
   // Step 2: Remove title repetition at start
   // OCR splits the title itself across lines, so compare ignoring all whitespace.

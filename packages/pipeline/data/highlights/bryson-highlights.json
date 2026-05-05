@@ -1,35 +1,167 @@
 [
-  { "word": "kuantum mekaniği", "type": "Kavram", "definition": "Atom altı parçacıkların davranışını tanımlayan fizik teorisi; parçacıkların aynı anda birden fazla durumda bulunabildiği, gözlemin sonucu değiştirebildiği garip bir dünyayı ortaya koyar. Bryson, bu teorinin sezgiye aykırı ama kesin biçimde doğrulanmış sonuçlarını eğlenceli bir dille anlatır." },
-  { "word": "izafiyet teorisi", "type": "Kavram", "definition": "Einstein'ın uzay ve zamanı birleştiren teorisi; kütle çekiminin uzay-zamanı büktüğünü, ışık hızının sabit olduğunu ve kütlenin enerjiyle dönüşümlü olduğunu (E=mc²) öngörür. GPS uyduları bu teorinin pratik uygulamasına örnek teşkil eder." },
-  { "word": "plaka tektoniği", "type": "Kavram", "definition": "Yerküre'nin dış katmanının hareketli levhalardan oluştuğunu ve bu levhaların birbirinden uzaklaştığını, yaklaştığını ya da birbirinin üzerinden geçtiğini açıklayan jeolojik kuram. Dağların oluşumu, depremler ve volkanlar bu sürecin sonuçlarıdır." },
-  { "word": "Big Bang", "type": "Kavram", "definition": "Evrenin yaklaşık 13,8 milyar yıl önce son derece sıcak ve yoğun bir noktadan genişlemeye başladığını öne süren kozmolojik kuram. Bryson, bu olayın boyutunu ve ardından gerçekleşen olaylar zincirini sıradan okuyucunun anlayabileceği benzetmelerle açıklar." },
-  { "word": "atom", "type": "Kavram", "definition": "Maddenin temel yapı taşı; bir çekirdek (proton ve nötrondan oluşan) ile etrafında dönen elektronlardan oluşur. Bryson, atom boyutunu şöyle canlandırır: bir elmanın hücrelerine büyütülmüş bir elma, orijinal elmanın Dünya boyutuna getirilmiş haliyle karşılaştırılabilir." },
-  { "word": "evrim", "type": "Kavram", "definition": "Canlı türlerinin nesiller boyunca doğal seçilim, mutasyon ve genetik sürüklenme yoluyla değişim geçirdiği süreç. Bryson, evrimsel tarihin yalnızca son anlık diliminde insanlığın sahneye çıktığını anlaşılır biçimde aktarır." },
-  { "word": "doğal seçilim", "type": "Kavram", "definition": "Çevreye uygun kalıtsal özelliklere sahip bireylerin daha fazla üreyerek o özellikleri gelecek nesillere aktarmasını tanımlayan evrimsel mekanizma. Darwin'in tanımladığı bu süreç, canlı çeşitliliğini açıklayan temel ilkedir." },
-  { "word": "fotosintez", "type": "Kavram", "definition": "Bitkilerin, alglerin ve bazı bakterilerin güneş ışığını, suyu ve karbondioksiti kullanarak şeker ürettiği ve oksijen saldığı süreç. Bryson, fotosentezin yaklaşık 2,7 milyar yıl önce atmosfere oksijen katarak karmaşık yaşamın önünü açtığını vurgular." },
-  { "word": "DNA", "type": "Kavram", "definition": "Canlılarda genetik bilgiyi taşıyan çift sarmal molekül; her hücrenin nasıl büyüyüp işlev göreceğini kodlar. Bryson, insan genomundaki tüm DNA'yı düzleştirsek bunun yaklaşık 2 metre uzunluğunda olacağını ama bir hücre çekirdeğinde sıkıştırılmış halde bulunduğunu aktarır." },
-  { "word": "fosil", "type": "Kavram", "definition": "Kayaç içinde korunmuş bitki veya hayvan kalıntısı ya da izi; evrim tarihinin ve geçmiş iklim koşullarının temel kanıtı. Bryson, fosil kaydının ne kadar eksik ve şans eseri oluştuğunu; canlıların ezici çoğunluğunun hiçbir iz bırakmadığını aktarır." },
-  { "word": "asteroid", "type": "Kavram", "definition": "Güneş sisteminde dolaşan, gezegenlerin oluşumundan arta kalan kayaç ve metal parçaları. Bryson, 65 milyon yıl önce Yucatan yarımadasına çarpan asteroidin dinozorları nasıl yok ettiğini ve bunun memeli evrimine nasıl zemin hazırladığını aktarır." },
-  { "word": "mitokondri", "type": "Kavram", "definition": "Hücrelere ATP biçiminde enerji üreten organeller; mitokondri DNA'sı yalnızca anneden miras alınır ve evrimsel akrabalıkları izlemek için kullanılır. Bryson, mitokondrinin milyarlarca yıl önce bir bakteri olduğunu ve hücrelerle ortak yaşama geçtiğini anlatır." },
-  { "word": "karanlık madde", "type": "Kavram", "definition": "Evrenin kütlesinin yaklaşık %27'sini oluşturduğu tahmin edilen, ışık yayıp yaymayan ve doğrudan gözlenemeyen madde türü. Varlığı yalnızca galaksilerin beklenmedik dönüş hızları gibi dolaylı etkilerle çıkarımlanmaktadır." },
-  { "word": "periyodik tablo", "type": "Kavram", "definition": "Kimyasal elementlerin atom numarasına göre sıralandığı ve artan sırayla gruplandırıldığı standart tablo. Rus kimyacı Mendeleev'in 1869'da oluşturduğu bu tablo, o sırada keşfedilmemiş elementlerin varlığını önceden öngörmüştür." },
-  { "word": "dinozor", "type": "Kavram", "definition": "Mesozoyik Çağ'da (yaklaşık 252-66 milyon yıl önce) yaşayan, çeşitli boyutlarda ve biçimlerde sürüngenlerin büyük grubu. Bryson, dinozorların kitlesel yok oluşunun bir felaket olmaktan çok memelilere açılan fırsatın kapısı olduğunu vurgular." },
-  { "word": "jeolojik zaman", "type": "Kavram", "definition": "Dünya'nın yaklaşık 4,5 milyar yıllık tarihi; Hadean, Arkeyan, Proterozoik ve Fanerozoik gibi eonlar, dönemler ve çağlarla bölümlenir. İnsan tarihi bu ölçekte son saniyenin yalnızca küçük bir kesrine karşılık gelir." },
-  { "word": "hücre", "type": "Kavram", "definition": "Tüm canlıların temel yapı ve işlev birimi. İnsan vücudunda yaklaşık 37 trilyon hücre bulunur; her biri dakikada yaklaşık 2 milyon protein üretir ve sürekli iletişim halindedir. Bryson, hücrenin karmaşıklığını bir şehirle kıyaslar." },
-  { "word": "kara delik", "type": "Kavram", "definition": "Kütlesinin sonsuz yoğunluktaki bir nokta (tekil nokta) etrafında toplandığı, kaçış hızının ışık hızını aştığı ve hiçbir şeyin dışarı çıkamadığı uzay nesnesi. Bryson, kara deliklerin galaksi oluşumunda merkezi rol oynadığını aktarır." },
-  { "word": "atmosfer", "type": "Kavram", "definition": "Dünya'yı çevreleyen gaz katmanı; troposfer, stratosfer, mezosfer ve termosferden oluşur. Ozon tabakası zararlı ultraviyole ışınımını engeller; Bryson, bu katmanın yaşam için ne kadar kırılgan bir denge olduğunu vurgular." },
-  { "word": "Büyük Patlama", "type": "Kavram", "definition": "Big Bang'in Türkçe karşılığı; evrenin tüm madde, enerji, uzay ve zamanının son derece sıcak ve yoğun bir başlangıç noktasından hızla genişlemeye başladığı an. Mikrodalga arka plan ışıması bu olayın en önemli gözlemsel kanıtıdır." },
-  { "word": "nöron", "type": "Kavram", "definition": "Sinir sisteminin temel işlevsel birimi olan sinir hücresi; elektrik ve kimyasal sinyallerle bilgi iletir. İnsan beyninde yaklaşık 86 milyar nöron ve her biri binlerce sinaptik bağlantı içerir." },
-  { "word": "Einstein", "type": "Referans", "definition": "Alman asıllı teorik fizikçi Albert Einstein (1879-1955); özel ve genel izafiyet teorileri ile fotoelektrik etki üzerine yaptığı çalışmalarla modern fiziği dönüştürdü ve 1921 Nobel Fizik Ödülü'nü kazandı. Bryson, Einstein'ı bilim tarihinin en özgün düşünürlerinden biri olarak ele alır." },
-  { "word": "Darwin", "type": "Referans", "definition": "İngiliz doğabilimci Charles Darwin (1809-1882); doğal seçilim yoluyla evrim teorisini 1859'da 'Türlerin Kökeni'nde yayımladı. Bryson, Darwin'in gözlemciliğini ve teorisini kamuoyuna açıklamaktaki çekingen yapısını anlaşılır bir karakterizasyonla aktarır." },
-  { "word": "Newton", "type": "Referans", "definition": "İngiliz matematikçi ve fizikçi Isaac Newton (1643-1727); yerçekimi yasası, hareket yasaları ve diferansiyel hesabı geliştirdi. Bryson, Newton'ın çalışmasının üç yüz yıl boyunca evreni anlamamızın temelini oluşturduğunu ve bugün hâlâ gündelik ölçeklerde geçerli olduğunu aktarır." },
-  { "word": "Mendeleev", "type": "Referans", "definition": "Rus kimyacı Dmitri Mendeleev (1834-1907); 1869'da kimyasal elementleri sistematik biçimde düzenleyen periyodik tabloyu oluşturdu ve o sırada keşfedilmemiş elementlerin varlığını öngördü. Kehanetlerinin gerçekleşmesi onu kimya tarihinin en öngörülü isimlerinden biri yaptı." },
-  { "word": "Hubble", "type": "Referans", "definition": "Amerikalı gökbilimci Edwin Hubble (1889-1953); galaksilerin Samanyolu dışında bağımsız sistemler olduğunu kanıtladı ve evrenin genişlediğini gösteren Hubble Yasası'nı keşfetti. Uzaya fırlatılan uzay teleskobu onun adını taşımaktadır." },
-  { "word": "Curie", "type": "Referans", "definition": "Polonyalı-Fransız fizikçi Marie Curie (1867-1934); radyoaktivite üzerine öncü araştırmalar yaptı, polonyum ve radyumu keşfetti ve iki farklı bilim dalında (fizik ve kimya) Nobel Ödülü alan ilk kişi oldu." },
-  { "word": "plankton", "type": "Kavram", "definition": "Okyanus ve göllerde sürüklenen, büyük çoğunluğu mikroskobik canlılar topluluğu; besin zincirinin temelini oluşturur ve Dünya'nın oksijeninin yaklaşık yarısını üretir. Bryson, planktonun görünmez ama hayati önemini vurgular." },
-  { "word": "ışık yılı", "type": "Kavram", "definition": "Işığın bir yılda kat ettiği mesafe: yaklaşık 9,46 trilyon kilometre. Bryson, bu kavramı evreni ifade etmek için küçük kalan diğer ölçü birimlerini gülünç kılacak kadar büyük kozmik mesafeleri aktarmak için kullanır." },
-  { "word": "simbiyoz", "type": "Kavram", "definition": "İki farklı türün birbirinden fayda sağladığı (mutualizm) ya da birinin fayda, diğerinin ise zarar görmediği (kommensalizm) yakın birliktelik. Mitokondri ve kloroplastların milyarlarca yıl önce bağımsız bakteriler iken hücrelerle girdiği birliktelik bunun en çarpıcı örneğidir." },
-  { "word": "radyoaktivite", "type": "Kavram", "definition": "Kararsız atom çekirdeklerinin parçacık veya ışıma yayarak daha kararlı bir duruma geçme süreci. Bryson, radyoaktif bozunmanın yarılanma ömrü kavramını fosillerin ve kayaçların yaşlandırılmasında nasıl kullanıldığını anlaşılır biçimde açıklar." },
-  { "word": "süpernova", "type": "Kavram", "definition": "Büyük kütleli yıldızların ömürlerinin sonunda gerçekleştirdiği devasa patlama; evrendeki en şiddetli olaylardan biri. Bryson, güneş sistemimizdeki ağır elementlerin büyük bölümünün eski süpernovalar tarafından üretildiğini vurgular." },
-  { "word": "manyetik alan", "type": "Kavram", "definition": "Elektrik akımları ve manyetik maddeler tarafından oluşturulan, diğer manyetik materyalleri veya hareketli yüklü parçacıkları etkileyen kuvvet alanı. Dünya'nın manyetik alanı zararlı güneş rüzgarlarına karşı yaşamı koruyan kalkan görevini üstlenir." }
+  {
+    "word": "kuantum mekaniği",
+    "type": "Kavram",
+    "definition": "Atom altı parçacıkların davranışını tanımlayan fizik teorisi; parçacıkların aynı anda birden fazla durumda bulunabildiği, gözlemin sonucu değiştirebildiği garip bir dünyayı ortaya koyar. Bryson, bu teorinin sezgiye aykırı ama kesin biçimde doğrulanmış sonuçlarını eğlenceli bir dille anlatır."
+  },
+  {
+    "word": "izafiyet teorisi",
+    "type": "Kavram",
+    "definition": "Einstein'ın uzay ve zamanı birleştiren teorisi; kütle çekiminin uzay-zamanı büktüğünü, ışık hızının sabit olduğunu ve kütlenin enerjiyle dönüşümlü olduğunu (E=mc²) öngörür. GPS uyduları bu teorinin pratik uygulamasına örnek teşkil eder."
+  },
+  {
+    "word": "plaka tektoniği",
+    "type": "Kavram",
+    "definition": "Yerküre'nin dış katmanının hareketli levhalardan oluştuğunu ve bu levhaların birbirinden uzaklaştığını, yaklaştığını ya da birbirinin üzerinden geçtiğini açıklayan jeolojik kuram. Dağların oluşumu, depremler ve volkanlar bu sürecin sonuçlarıdır."
+  },
+  {
+    "word": "Big Bang",
+    "type": "Kavram",
+    "definition": "Evrenin yaklaşık 13,8 milyar yıl önce son derece sıcak ve yoğun bir noktadan genişlemeye başladığını öne süren kozmolojik kuram. Bryson, bu olayın boyutunu ve ardından gerçekleşen olaylar zincirini sıradan okuyucunun anlayabileceği benzetmelerle açıklar."
+  },
+  {
+    "word": "atom",
+    "type": "Kavram",
+    "definition": "Maddenin temel yapı taşı; bir çekirdek (proton ve nötrondan oluşan) ile etrafında dönen elektronlardan oluşur. Bryson, atom boyutunu şöyle canlandırır: bir elmanın hücrelerine büyütülmüş bir elma, orijinal elmanın Dünya boyutuna getirilmiş haliyle karşılaştırılabilir."
+  },
+  {
+    "word": "evrim",
+    "type": "Kavram",
+    "definition": "Canlı türlerinin nesiller boyunca doğal seçilim, mutasyon ve genetik sürüklenme yoluyla değişim geçirdiği süreç. Bryson, evrimsel tarihin yalnızca son anlık diliminde insanlığın sahneye çıktığını anlaşılır biçimde aktarır."
+  },
+  {
+    "word": "doğal seçilim",
+    "type": "Kavram",
+    "definition": "Çevreye uygun kalıtsal özelliklere sahip bireylerin daha fazla üreyerek o özellikleri gelecek nesillere aktarmasını tanımlayan evrimsel mekanizma. Darwin'in tanımladığı bu süreç, canlı çeşitliliğini açıklayan temel ilkedir."
+  },
+  {
+    "word": "fotosintez",
+    "type": "Kavram",
+    "definition": "Bitkilerin, alglerin ve bazı bakterilerin güneş ışığını, suyu ve karbondioksiti kullanarak şeker ürettiği ve oksijen saldığı süreç. Bryson, fotosentezin yaklaşık 2,7 milyar yıl önce atmosfere oksijen katarak karmaşık yaşamın önünü açtığını vurgular."
+  },
+  {
+    "word": "DNA",
+    "type": "Kavram",
+    "definition": "Canlılarda genetik bilgiyi taşıyan çift sarmal molekül; her hücrenin nasıl büyüyüp işlev göreceğini kodlar. Bryson, insan genomundaki tüm DNA'yı düzleştirsek bunun yaklaşık 2 metre uzunluğunda olacağını ama bir hücre çekirdeğinde sıkıştırılmış halde bulunduğunu aktarır."
+  },
+  {
+    "word": "fosil",
+    "type": "Kavram",
+    "definition": "Kayaç içinde korunmuş bitki veya hayvan kalıntısı ya da izi; evrim tarihinin ve geçmiş iklim koşullarının temel kanıtı. Bryson, fosil kaydının ne kadar eksik ve şans eseri oluştuğunu; canlıların ezici çoğunluğunun hiçbir iz bırakmadığını aktarır."
+  },
+  {
+    "word": "asteroid",
+    "type": "Kavram",
+    "definition": "Güneş sisteminde dolaşan, gezegenlerin oluşumundan arta kalan kayaç ve metal parçaları. Bryson, 65 milyon yıl önce Yucatan yarımadasına çarpan asteroidin dinozorları nasıl yok ettiğini ve bunun memeli evrimine nasıl zemin hazırladığını aktarır."
+  },
+  {
+    "word": "mitokondri",
+    "type": "Kavram",
+    "definition": "Hücrelere ATP biçiminde enerji üreten organeller; mitokondri DNA'sı yalnızca anneden miras alınır ve evrimsel akrabalıkları izlemek için kullanılır. Bryson, mitokondrinin milyarlarca yıl önce bir bakteri olduğunu ve hücrelerle ortak yaşama geçtiğini anlatır."
+  },
+  {
+    "word": "karanlık madde",
+    "type": "Kavram",
+    "definition": "Evrenin kütlesinin yaklaşık %27'sini oluşturduğu tahmin edilen, ışık yayıp yaymayan ve doğrudan gözlenemeyen madde türü. Varlığı yalnızca galaksilerin beklenmedik dönüş hızları gibi dolaylı etkilerle çıkarımlanmaktadır."
+  },
+  {
+    "word": "periyodik tablo",
+    "type": "Kavram",
+    "definition": "Kimyasal elementlerin atom numarasına göre sıralandığı ve artan sırayla gruplandırıldığı standart tablo. Rus kimyacı Mendeleev'in 1869'da oluşturduğu bu tablo, o sırada keşfedilmemiş elementlerin varlığını önceden öngörmüştür."
+  },
+  {
+    "word": "dinozor",
+    "type": "Kavram",
+    "definition": "Mesozoyik Çağ'da (yaklaşık 252-66 milyon yıl önce) yaşayan, çeşitli boyutlarda ve biçimlerde sürüngenlerin büyük grubu. Bryson, dinozorların kitlesel yok oluşunun bir felaket olmaktan çok memelilere açılan fırsatın kapısı olduğunu vurgular."
+  },
+  {
+    "word": "jeolojik zaman",
+    "type": "Kavram",
+    "definition": "Dünya'nın yaklaşık 4,5 milyar yıllık tarihi; Hadean, Arkeyan, Proterozoik ve Fanerozoik gibi eonlar, dönemler ve çağlarla bölümlenir. İnsan tarihi bu ölçekte son saniyenin yalnızca küçük bir kesrine karşılık gelir."
+  },
+  {
+    "word": "hücre",
+    "type": "Kavram",
+    "definition": "Tüm canlıların temel yapı ve işlev birimi. İnsan vücudunda yaklaşık 37 trilyon hücre bulunur; her biri dakikada yaklaşık 2 milyon protein üretir ve sürekli iletişim halindedir. Bryson, hücrenin karmaşıklığını bir şehirle kıyaslar."
+  },
+  {
+    "word": "kara delik",
+    "type": "Kavram",
+    "definition": "Kütlesinin sonsuz yoğunluktaki bir nokta (tekil nokta) etrafında toplandığı, kaçış hızının ışık hızını aştığı ve hiçbir şeyin dışarı çıkamadığı uzay nesnesi. Bryson, kara deliklerin galaksi oluşumunda merkezi rol oynadığını aktarır."
+  },
+  {
+    "word": "atmosfer",
+    "type": "Kavram",
+    "definition": "Dünya'yı çevreleyen gaz katmanı; troposfer, stratosfer, mezosfer ve termosferden oluşur. Ozon tabakası zararlı ultraviyole ışınımını engeller; Bryson, bu katmanın yaşam için ne kadar kırılgan bir denge olduğunu vurgular."
+  },
+  {
+    "word": "Büyük Patlama",
+    "type": "Kavram",
+    "definition": "Big Bang'in Türkçe karşılığı; evrenin tüm madde, enerji, uzay ve zamanının son derece sıcak ve yoğun bir başlangıç noktasından hızla genişlemeye başladığı an. Mikrodalga arka plan ışıması bu olayın en önemli gözlemsel kanıtıdır."
+  },
+  {
+    "word": "nöron",
+    "type": "Kavram",
+    "definition": "Sinir sisteminin temel işlevsel birimi olan sinir hücresi; elektrik ve kimyasal sinyallerle bilgi iletir. İnsan beyninde yaklaşık 86 milyar nöron ve her biri binlerce sinaptik bağlantı içerir."
+  },
+  {
+    "word": "Einstein",
+    "type": "Referans",
+    "definition": "Alman asıllı teorik fizikçi Albert Einstein (1879-1955); özel ve genel izafiyet teorileri ile fotoelektrik etki üzerine yaptığı çalışmalarla modern fiziği dönüştürdü ve 1921 Nobel Fizik Ödülü'nü kazandı. Bryson, Einstein'ı bilim tarihinin en özgün düşünürlerinden biri olarak ele alır."
+  },
+  {
+    "word": "Darwin",
+    "type": "Referans",
+    "definition": "İngiliz doğabilimci Charles Darwin (1809-1882); doğal seçilim yoluyla evrim teorisini 1859'da 'Türlerin Kökeni'nde yayımladı. Bryson, Darwin'in gözlemciliğini ve teorisini kamuoyuna açıklamaktaki çekingen yapısını anlaşılır bir karakterizasyonla aktarır."
+  },
+  {
+    "word": "Newton",
+    "type": "Referans",
+    "definition": "İngiliz matematikçi ve fizikçi Isaac Newton (1643-1727); yerçekimi yasası, hareket yasaları ve diferansiyel hesabı geliştirdi. Bryson, Newton'ın çalışmasının üç yüz yıl boyunca evreni anlamamızın temelini oluşturduğunu ve bugün hâlâ gündelik ölçeklerde geçerli olduğunu aktarır."
+  },
+  {
+    "word": "Mendeleev",
+    "type": "Referans",
+    "definition": "Rus kimyacı Dmitri Mendeleev (1834-1907); 1869'da kimyasal elementleri sistematik biçimde düzenleyen periyodik tabloyu oluşturdu ve o sırada keşfedilmemiş elementlerin varlığını öngördü. Kehanetlerinin gerçekleşmesi onu kimya tarihinin en öngörülü isimlerinden biri yaptı."
+  },
+  {
+    "word": "Hubble",
+    "type": "Referans",
+    "definition": "Amerikalı gökbilimci Edwin Hubble (1889-1953); galaksilerin Samanyolu dışında bağımsız sistemler olduğunu kanıtladı ve evrenin genişlediğini gösteren Hubble Yasası'nı keşfetti. Uzaya fırlatılan uzay teleskobu onun adını taşımaktadır."
+  },
+  {
+    "word": "Curie",
+    "type": "Referans",
+    "definition": "Polonyalı-Fransız fizikçi Marie Curie (1867-1934); radyoaktivite üzerine öncü araştırmalar yaptı, polonyum ve radyumu keşfetti ve iki farklı bilim dalında (fizik ve kimya) Nobel Ödülü alan ilk kişi oldu."
+  },
+  {
+    "word": "plankton",
+    "type": "Kavram",
+    "definition": "Okyanus ve göllerde sürüklenen, büyük çoğunluğu mikroskobik canlılar topluluğu; besin zincirinin temelini oluşturur ve Dünya'nın oksijeninin yaklaşık yarısını üretir. Bryson, planktonun görünmez ama hayati önemini vurgular."
+  },
+  {
+    "word": "ışık yılı",
+    "type": "Kavram",
+    "definition": "Işığın bir yılda kat ettiği mesafe: yaklaşık 9,46 trilyon kilometre. Bryson, bu kavramı evreni ifade etmek için küçük kalan diğer ölçü birimlerini gülünç kılacak kadar büyük kozmik mesafeleri aktarmak için kullanır."
+  },
+  {
+    "word": "simbiyoz",
+    "type": "Kavram",
+    "definition": "İki farklı türün birbirinden fayda sağladığı (mutualizm) ya da birinin fayda, diğerinin ise zarar görmediği (kommensalizm) yakın birliktelik. Mitokondri ve kloroplastların milyarlarca yıl önce bağımsız bakteriler iken hücrelerle girdiği birliktelik bunun en çarpıcı örneğidir."
+  },
+  {
+    "word": "radyoaktivite",
+    "type": "Kavram",
+    "definition": "Kararsız atom çekirdeklerinin parçacık veya ışıma yayarak daha kararlı bir duruma geçme süreci. Bryson, radyoaktif bozunmanın yarılanma ömrü kavramını fosillerin ve kayaçların yaşlandırılmasında nasıl kullanıldığını anlaşılır biçimde açıklar."
+  },
+  {
+    "word": "süpernova",
+    "type": "Kavram",
+    "definition": "Büyük kütleli yıldızların ömürlerinin sonunda gerçekleştirdiği devasa patlama; evrendeki en şiddetli olaylardan biri. Bryson, güneş sistemimizdeki ağır elementlerin büyük bölümünün eski süpernovalar tarafından üretildiğini vurgular."
+  },
+  {
+    "word": "manyetik alan",
+    "type": "Kavram",
+    "definition": "Elektrik akımları ve manyetik maddeler tarafından oluşturulan, diğer manyetik materyalleri veya hareketli yüklü parçacıkları etkileyen kuvvet alanı. Dünya'nın manyetik alanı zararlı güneş rüzgarlarına karşı yaşamı koruyan kalkan görevini üstlenir."
+  }
 ]

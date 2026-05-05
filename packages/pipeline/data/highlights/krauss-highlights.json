@@ -1,33 +1,157 @@
 [
-  { "word": "kuantum vakumu", "type": "Kavram", "definition": "Klasik anlamda 'boş' olan uzayın kuantum mekaniği çerçevesinde enerjiden yoksun olmadığı durum; sanal parçacıklar sürekli oluşup yok olur. Krauss, evrenin 'hiçlikten' ortaya çıkışını bu kuantum boşluğunun belirsizlikleriyle açıklar." },
-  { "word": "karanlık enerji", "type": "Kavram", "definition": "Evrenin genişlemesini hızlandırdığı öngörülen, kaynağı henüz anlaşılamayan enerji bileşeni; evrenin toplam enerji-kütle bütçesinin yaklaşık %68'ini oluşturur. 1998'deki tip Ia süpernova gözlemleriyle keşfedilmiş, Krauss'u derinden etkileyen bu bulgu Nobel Ödülü'ne yol açtı." },
-  { "word": "karanlık madde", "type": "Kavram", "definition": "Işık yayıp yakalamayan, yalnızca kütleçekim etkisiyle varlığı çıkarımlanan madde türü; evrenin kütlesinin yaklaşık %27'sini oluşturur. Galaksilerin dönüş hızları ve gravitasyonel mercekleme etkileri bu maddenin dolaylı kanıtlarıdır." },
-  { "word": "genişleyen evren", "type": "Kavram", "definition": "Galaksilerin birbirinden uzaklaştığı gözlemine dayanan kozmolojik olgu; büyük ölçeklerde uzay-zamanın kendisi genişlemektedir. Hubble'ın 1929'daki keşfinden sonra evrenin statik olmadığı kanıtlandı; Krauss, bu genişlemenin giderek hızlandığını tartışır." },
-  { "word": "kozmoloji", "type": "Kavram", "definition": "Evrenin kökeni, yapısı, evrimi ve nihai kaderiyle ilgilenen astrofizik dalı. Krauss, kozmolojinin yalnızca gözleme değil, parçacık fiziği ve kuantum mekaniğine de dayandığını ve 21. yüzyılda devrimci bir aşamada olduğunu vurgular." },
-  { "word": "çoklu evren", "type": "Kavram", "definition": "Kendi fizik yasalarına sahip pek çok birbirinden bağımsız evrenin var olduğunu öne süren teori. Krauss, enflasyonun doğal sonucu olarak ortaya çıkan 'sonsuz evrenler köpüğü' senaryosunu tartışır; varoluşumuzun neden bu kadar özel göründüğünü açıklayabilir." },
-  { "word": "enflasyon teorisi", "type": "Kavram", "definition": "Evrenin Big Bang'den hemen sonra ışık hızının çok üzerinde üstel biçimde genişlediğini öne süren kozmolojik teori. Alan Guth tarafından geliştirilen bu model, evrenin büyük ölçekte neden bu kadar homojen ve düz göründüğünü açıklar." },
-  { "word": "antimadde", "type": "Kavram", "definition": "Her temel parçacığın kütlece özdeş ancak yükleri zıt muadili; madde ile antimadde temas ettiğinde karşılıklı olarak yok olur ve enerji açığa çıkar. Evrenin neden antimaddeden değil maddeden oluştuğu sorusu — baryogenez problemi — henüz tam yanıt beklemektedir." },
-  { "word": "büyük birleşme", "type": "Kavram", "definition": "Elektromanyetik, zayıf nükleer ve güçlü nükleer kuvvetleri tek bir teorik çerçevede birleştirme girişimi. Krauss, bu kuvvetlerin evrenin erken döneminde tek bir kuvvet olduğunu ve evren soğudukça bunların ayrıştığını; ancak henüz tam bir büyük birleşme teorisinin bulunmadığını açıklar." },
-  { "word": "madde-enerji eşdeğerliği", "type": "Kavram", "definition": "Einstein'ın E=mc² denkleminin ifadesi: kütlenin, ışık hızının karesiyle çarpılarak muazzam miktarda enerjiye dönüşebileceği ilkesi. Krauss, evrenin erken döneminde tüm maddenin yoğun enerji olduğunu ve soğuyarak madde formuna geçtiğini aktarır." },
-  { "word": "nükleer füzyon", "type": "Kavram", "definition": "Hafif atom çekirdeklerinin birleşerek daha ağır çekirdekler oluşturması ve bu süreçte muazzam enerji açığa çıkarması. Güneş'in enerji kaynağı olan bu süreç, yıldızlar içinde hidrojenin helyuma, helyumun daha ağır elementlere dönüşmesini sağlar." },
-  { "word": "yıldız oluşumu", "type": "Kavram", "definition": "Gaz ve toz bulutlarının (nebula) kendi kütleçekimleriyle çöküp yeterli sıcaklık ve basınca ulaştığında nükleer füzyonun başlamasıyla yıldız haline gelmesi süreci. Krauss, ilk yıldızların Big Bang'den yaklaşık 100-200 milyon yıl sonra oluştuğunu aktarır." },
-  { "word": "kozmolojik sabit", "type": "Kavram", "definition": "Einstein'ın Genel Görelilik denklemlerine eklediği, uzayın doğasında var olan bir enerji yoğunluğunu temsil eden terim. Başlangıçta evrenin statik kalması için eklenen bu sabit, karanlık enerjiyi tanımlamak için günümüzde yeniden hayata geçirilmiştir." },
-  { "word": "nötrino", "type": "Kavram", "definition": "Hemen hiçbir şeyle etkileşime girmeyen, son derece hafif veya kütlesiz parçacık; her saniye güneşten milyarlarcası vücudumuzdan geçer. Krauss, nötrinoların erken evrende madde-antimadde asimetrisinin oluşumuna katkıda bulunmuş olabileceğini tartışır." },
-  { "word": "kozmik mikrodalga fonu", "type": "Kavram", "definition": "Big Bang'den yaklaşık 380.000 yıl sonra, evrenin soğuyarak atomların oluşmasıyla yayılan ışınımın günümüzde gözlemlenen kalıntısı; evrenin bebek fotoğrafı olarak adlandırılır. 1964'te tesadüfen keşfedilmiş, Big Bang teorisinin en güçlü kanıtlarından biridir." },
-  { "word": "kuvantum belirsizliği", "type": "Kavram", "definition": "Heisenberg'in belirsizlik ilkesi: bir parçacığın konumu ve momentumu eş zamanlı olarak keyfi bir hassasiyetle belirlenemez. Krauss, bu temel belirsizliğin 'hiçlikten' kuantum dalgalanmalarının doğmasını mümkün kıldığını; dolayısıyla evrenin kendisinin bu ilkeden ortaya çıkmış olabileceğini savunur." },
-  { "word": "entropi", "type": "Kavram", "definition": "Bir sistemin düzensizlik ya da dağılma derecesi; termodinamiğin ikinci yasasına göre kapalı bir sistemde entropi asla azalmaz. Krauss, evrenin nihai kaderinin maksimum entropi durumu — tüm enerjinin eşit yayıldığı 'ısı ölümü' — olduğunu aktarır." },
-  { "word": "karadelik", "type": "Kavram", "definition": "Kaçış hızının ışık hızını aştığı, olaya ufku ile sınırlanan yoğun uzay nesnesi. Krauss, galaksi merkezlerindeki süper kütleli kara deliklerin galaksi oluşumunda belirleyici rol oynadığını ve Hawking radyasyonu aracılığıyla yavaşça buharlaşabileceğini tartışır." },
-  { "word": "sicim teorisi", "type": "Kavram", "definition": "Temel parçacıkların nokta değil, titreşen enerji iplikleri (sicimleri) olduğunu öne süren kuantum kütleçekim teorisi adayı. Krauss, sicim teorisinin matematiksel olarak cazip olduğunu ancak gözlemsel kanıt açısından zayıf kaldığını eleştirel biçimde değerlendirir." },
-  { "word": "Hawking", "type": "Referans", "definition": "İngiliz teorik fizikçi Stephen Hawking (1942-2018); kara deliklerin ısıl ışıma yayarak yavaşça buharlaşabileceğini (Hawking radyasyonu) öngördü, Big Bang tekilliği üzerine önemli çalışmalar yaptı. Krauss, Hawking'in kozmoloji ve kuantum yerçekimi alanlarındaki katkılarına sıklıkla atıfta bulunur." },
-  { "word": "Hubble", "type": "Referans", "definition": "Amerikalı gökbilimci Edwin Hubble (1889-1953); Samanyolu dışında bağımsız galaksilerin varlığını kanıtladı ve galaksilerin uzaklıklarıyla orantılı hızlarda uzaklaştığını gösteren Hubble Yasası'nı keşfetti. Bu keşif genişleyen evren anlayışının temelini oluşturur." },
-  { "word": "Einstein", "type": "Referans", "definition": "Alman asıllı teorik fizikçi Albert Einstein (1879-1955); özel ve genel izafiyet teorileriyle uzay, zaman ve kütleçekimi anlayışını devrimleştirdi. Krauss, evrenin başlangıcı ve karanlık enerji sorununun anlaşılmasında Einstein denklemlerinin hâlâ temel çerçeveyi sağladığını vurgular." },
-  { "word": "Guth", "type": "Referans", "definition": "Amerikalı fizikçi Alan Guth (doğumu 1947); 1980'de kozmik enflasyon teorisini geliştirdi. Bu teori, evrenin Big Bang'den hemen sonra anlık bir süre içinde astronomik biçimde genişlediğini öngörür ve ufuk ile düzlük problemlerini zarif biçimde çözer." },
-  { "word": "Feynman", "type": "Referans", "definition": "Amerikalı teorik fizikçi Richard Feynman (1918-1988); kuantum elektrodinamiği (QED) üzerindeki çalışmaları için 1965'te Nobel Ödülü aldı. Krauss, Feynman'ın parçacık etkileşimlerini görselleştiren diyagramlarını ve gerçekliğin olasılıksal doğasına ilişkin derin sezgilerini referans olarak kullanır." },
-  { "word": "bozon", "type": "Kavram", "definition": "Tamsayılı spin taşıyan ve kuvvetleri ileten parçacık sınıfı; foton, W ve Z bozonları, gluon ve Higgs bozonu bu sınıfın üyeleridir. Krauss, Higgs bozonunun diğer parçacıklara kütle kazandıran alanın uyarılmış hali olduğunu anlaşılır biçimde anlatır." },
-  { "word": "standart model", "type": "Kavram", "definition": "Temel parçacıkları ve aralarındaki elektromanyetik, zayıf nükleer ve güçlü nükleer kuvvetleri tanımlayan kuantum alan teorisi. Krauss, bu modelin inanılmaz ölçüde başarılı olmakla birlikte kütleçekimi içermediğini ve 'tam teori'nin hâlâ arayışta olduğunu vurgular." },
-  { "word": "termodinamik", "type": "Kavram", "definition": "Isı, iş ve enerji dönüşümlerini inceleyen fizik dalı. Krauss, termodinamiğin ikinci yasasının — entropinin daima artacağı — evrenin uzak geleceğini anlamamızda kilit rol oynadığını; nihayetinde evrenin 'ısı ölümü' denilen maksimum düzensizlik durumuna ulaşacağını aktarır." },
-  { "word": "elektromanyetizma", "type": "Kavram", "definition": "Elektrik ve manyetik kuvvetlerin birleşimi; Maxwell'in denklemleriyle tanımlanır ve fotonların etkileşimiyle aktarılır. Krauss, elektromanyetik kuvvetin gündelik hayatın fiziksel yapısını belirleyen temel kuvvet olduğunu ve zayıf nükleer kuvvetle 'elektrozayıf' çerçevesinde birleştirildiğini açıklar." },
-  { "word": "evrenin ölümü", "type": "Kavram", "definition": "Evrenin çok uzak bir gelecekte maksimum entropiye ulaşarak her türlü yapı ve düzenin yok olacağı 'ısı ölümü' senaryosu. Krauss, karanlık enerjinin ivmeli genişlemenin de galaksileri nihayetinde birbirinden o kadar uzaklaştıracağını; enerjinin kullanılamaz hale geleceğini anlatır." },
-  { "word": "fotoelektrik etki", "type": "Kavram", "definition": "Işığın metal yüzeye çarpmasıyla elektron koparması olgusu; Einstein'ın bu etkiyi fotonlarla açıklaması kuantum mekaniğinin temel taşlarından biri oldu ve 1921 Nobel Fizik Ödülü'ne layık görüldü. Krauss, bu olgunun ışığın hem parçacık hem dalga özelliği gösterdiğini doğruladığını aktarır." },
-  { "word": "görünür evren", "type": "Kavram", "definition": "Işığın Big Bang'den bu yana ulaşabildiği, yaklaşık 93 milyar ışık yılı çapındaki uzay küre. Krauss, bu ufkun ötesinde var olabilecek bölgelerin gözlemlenemeyeceğini; ancak fiziğin aynı yasaların geçerli olduğunu öne sürdüğünü tartışır." }
+  {
+    "word": "kuantum vakumu",
+    "type": "Kavram",
+    "definition": "Klasik anlamda 'boş' olan uzayın kuantum mekaniği çerçevesinde enerjiden yoksun olmadığı durum; sanal parçacıklar sürekli oluşup yok olur. Krauss, evrenin 'hiçlikten' ortaya çıkışını bu kuantum boşluğunun belirsizlikleriyle açıklar."
+  },
+  {
+    "word": "karanlık enerji",
+    "type": "Kavram",
+    "definition": "Evrenin genişlemesini hızlandırdığı öngörülen, kaynağı henüz anlaşılamayan enerji bileşeni; evrenin toplam enerji-kütle bütçesinin yaklaşık %68'ini oluşturur. 1998'deki tip Ia süpernova gözlemleriyle keşfedilmiş, Krauss'u derinden etkileyen bu bulgu Nobel Ödülü'ne yol açtı."
+  },
+  {
+    "word": "karanlık madde",
+    "type": "Kavram",
+    "definition": "Işık yayıp yakalamayan, yalnızca kütleçekim etkisiyle varlığı çıkarımlanan madde türü; evrenin kütlesinin yaklaşık %27'sini oluşturur. Galaksilerin dönüş hızları ve gravitasyonel mercekleme etkileri bu maddenin dolaylı kanıtlarıdır."
+  },
+  {
+    "word": "genişleyen evren",
+    "type": "Kavram",
+    "definition": "Galaksilerin birbirinden uzaklaştığı gözlemine dayanan kozmolojik olgu; büyük ölçeklerde uzay-zamanın kendisi genişlemektedir. Hubble'ın 1929'daki keşfinden sonra evrenin statik olmadığı kanıtlandı; Krauss, bu genişlemenin giderek hızlandığını tartışır."
+  },
+  {
+    "word": "kozmoloji",
+    "type": "Kavram",
+    "definition": "Evrenin kökeni, yapısı, evrimi ve nihai kaderiyle ilgilenen astrofizik dalı. Krauss, kozmolojinin yalnızca gözleme değil, parçacık fiziği ve kuantum mekaniğine de dayandığını ve 21. yüzyılda devrimci bir aşamada olduğunu vurgular."
+  },
+  {
+    "word": "çoklu evren",
+    "type": "Kavram",
+    "definition": "Kendi fizik yasalarına sahip pek çok birbirinden bağımsız evrenin var olduğunu öne süren teori. Krauss, enflasyonun doğal sonucu olarak ortaya çıkan 'sonsuz evrenler köpüğü' senaryosunu tartışır; varoluşumuzun neden bu kadar özel göründüğünü açıklayabilir."
+  },
+  {
+    "word": "enflasyon teorisi",
+    "type": "Kavram",
+    "definition": "Evrenin Big Bang'den hemen sonra ışık hızının çok üzerinde üstel biçimde genişlediğini öne süren kozmolojik teori. Alan Guth tarafından geliştirilen bu model, evrenin büyük ölçekte neden bu kadar homojen ve düz göründüğünü açıklar."
+  },
+  {
+    "word": "antimadde",
+    "type": "Kavram",
+    "definition": "Her temel parçacığın kütlece özdeş ancak yükleri zıt muadili; madde ile antimadde temas ettiğinde karşılıklı olarak yok olur ve enerji açığa çıkar. Evrenin neden antimaddeden değil maddeden oluştuğu sorusu — baryogenez problemi — henüz tam yanıt beklemektedir."
+  },
+  {
+    "word": "büyük birleşme",
+    "type": "Kavram",
+    "definition": "Elektromanyetik, zayıf nükleer ve güçlü nükleer kuvvetleri tek bir teorik çerçevede birleştirme girişimi. Krauss, bu kuvvetlerin evrenin erken döneminde tek bir kuvvet olduğunu ve evren soğudukça bunların ayrıştığını; ancak henüz tam bir büyük birleşme teorisinin bulunmadığını açıklar."
+  },
+  {
+    "word": "madde-enerji eşdeğerliği",
+    "type": "Kavram",
+    "definition": "Einstein'ın E=mc² denkleminin ifadesi: kütlenin, ışık hızının karesiyle çarpılarak muazzam miktarda enerjiye dönüşebileceği ilkesi. Krauss, evrenin erken döneminde tüm maddenin yoğun enerji olduğunu ve soğuyarak madde formuna geçtiğini aktarır."
+  },
+  {
+    "word": "nükleer füzyon",
+    "type": "Kavram",
+    "definition": "Hafif atom çekirdeklerinin birleşerek daha ağır çekirdekler oluşturması ve bu süreçte muazzam enerji açığa çıkarması. Güneş'in enerji kaynağı olan bu süreç, yıldızlar içinde hidrojenin helyuma, helyumun daha ağır elementlere dönüşmesini sağlar."
+  },
+  {
+    "word": "yıldız oluşumu",
+    "type": "Kavram",
+    "definition": "Gaz ve toz bulutlarının (nebula) kendi kütleçekimleriyle çöküp yeterli sıcaklık ve basınca ulaştığında nükleer füzyonun başlamasıyla yıldız haline gelmesi süreci. Krauss, ilk yıldızların Big Bang'den yaklaşık 100-200 milyon yıl sonra oluştuğunu aktarır."
+  },
+  {
+    "word": "kozmolojik sabit",
+    "type": "Kavram",
+    "definition": "Einstein'ın Genel Görelilik denklemlerine eklediği, uzayın doğasında var olan bir enerji yoğunluğunu temsil eden terim. Başlangıçta evrenin statik kalması için eklenen bu sabit, karanlık enerjiyi tanımlamak için günümüzde yeniden hayata geçirilmiştir."
+  },
+  {
+    "word": "nötrino",
+    "type": "Kavram",
+    "definition": "Hemen hiçbir şeyle etkileşime girmeyen, son derece hafif veya kütlesiz parçacık; her saniye güneşten milyarlarcası vücudumuzdan geçer. Krauss, nötrinoların erken evrende madde-antimadde asimetrisinin oluşumuna katkıda bulunmuş olabileceğini tartışır."
+  },
+  {
+    "word": "kozmik mikrodalga fonu",
+    "type": "Kavram",
+    "definition": "Big Bang'den yaklaşık 380.000 yıl sonra, evrenin soğuyarak atomların oluşmasıyla yayılan ışınımın günümüzde gözlemlenen kalıntısı; evrenin bebek fotoğrafı olarak adlandırılır. 1964'te tesadüfen keşfedilmiş, Big Bang teorisinin en güçlü kanıtlarından biridir."
+  },
+  {
+    "word": "kuvantum belirsizliği",
+    "type": "Kavram",
+    "definition": "Heisenberg'in belirsizlik ilkesi: bir parçacığın konumu ve momentumu eş zamanlı olarak keyfi bir hassasiyetle belirlenemez. Krauss, bu temel belirsizliğin 'hiçlikten' kuantum dalgalanmalarının doğmasını mümkün kıldığını; dolayısıyla evrenin kendisinin bu ilkeden ortaya çıkmış olabileceğini savunur."
+  },
+  {
+    "word": "entropi",
+    "type": "Kavram",
+    "definition": "Bir sistemin düzensizlik ya da dağılma derecesi; termodinamiğin ikinci yasasına göre kapalı bir sistemde entropi asla azalmaz. Krauss, evrenin nihai kaderinin maksimum entropi durumu — tüm enerjinin eşit yayıldığı 'ısı ölümü' — olduğunu aktarır."
+  },
+  {
+    "word": "karadelik",
+    "type": "Kavram",
+    "definition": "Kaçış hızının ışık hızını aştığı, olaya ufku ile sınırlanan yoğun uzay nesnesi. Krauss, galaksi merkezlerindeki süper kütleli kara deliklerin galaksi oluşumunda belirleyici rol oynadığını ve Hawking radyasyonu aracılığıyla yavaşça buharlaşabileceğini tartışır."
+  },
+  {
+    "word": "sicim teorisi",
+    "type": "Kavram",
+    "definition": "Temel parçacıkların nokta değil, titreşen enerji iplikleri (sicimleri) olduğunu öne süren kuantum kütleçekim teorisi adayı. Krauss, sicim teorisinin matematiksel olarak cazip olduğunu ancak gözlemsel kanıt açısından zayıf kaldığını eleştirel biçimde değerlendirir."
+  },
+  {
+    "word": "Hawking",
+    "type": "Referans",
+    "definition": "İngiliz teorik fizikçi Stephen Hawking (1942-2018); kara deliklerin ısıl ışıma yayarak yavaşça buharlaşabileceğini (Hawking radyasyonu) öngördü, Big Bang tekilliği üzerine önemli çalışmalar yaptı. Krauss, Hawking'in kozmoloji ve kuantum yerçekimi alanlarındaki katkılarına sıklıkla atıfta bulunur."
+  },
+  {
+    "word": "Hubble",
+    "type": "Referans",
+    "definition": "Amerikalı gökbilimci Edwin Hubble (1889-1953); Samanyolu dışında bağımsız galaksilerin varlığını kanıtladı ve galaksilerin uzaklıklarıyla orantılı hızlarda uzaklaştığını gösteren Hubble Yasası'nı keşfetti. Bu keşif genişleyen evren anlayışının temelini oluşturur."
+  },
+  {
+    "word": "Einstein",
+    "type": "Referans",
+    "definition": "Alman asıllı teorik fizikçi Albert Einstein (1879-1955); özel ve genel izafiyet teorileriyle uzay, zaman ve kütleçekimi anlayışını devrimleştirdi. Krauss, evrenin başlangıcı ve karanlık enerji sorununun anlaşılmasında Einstein denklemlerinin hâlâ temel çerçeveyi sağladığını vurgular."
+  },
+  {
+    "word": "Guth",
+    "type": "Referans",
+    "definition": "Amerikalı fizikçi Alan Guth (doğumu 1947); 1980'de kozmik enflasyon teorisini geliştirdi. Bu teori, evrenin Big Bang'den hemen sonra anlık bir süre içinde astronomik biçimde genişlediğini öngörür ve ufuk ile düzlük problemlerini zarif biçimde çözer."
+  },
+  {
+    "word": "Feynman",
+    "type": "Referans",
+    "definition": "Amerikalı teorik fizikçi Richard Feynman (1918-1988); kuantum elektrodinamiği (QED) üzerindeki çalışmaları için 1965'te Nobel Ödülü aldı. Krauss, Feynman'ın parçacık etkileşimlerini görselleştiren diyagramlarını ve gerçekliğin olasılıksal doğasına ilişkin derin sezgilerini referans olarak kullanır."
+  },
+  {
+    "word": "bozon",
+    "type": "Kavram",
+    "definition": "Tamsayılı spin taşıyan ve kuvvetleri ileten parçacık sınıfı; foton, W ve Z bozonları, gluon ve Higgs bozonu bu sınıfın üyeleridir. Krauss, Higgs bozonunun diğer parçacıklara kütle kazandıran alanın uyarılmış hali olduğunu anlaşılır biçimde anlatır."
+  },
+  {
+    "word": "standart model",
+    "type": "Kavram",
+    "definition": "Temel parçacıkları ve aralarındaki elektromanyetik, zayıf nükleer ve güçlü nükleer kuvvetleri tanımlayan kuantum alan teorisi. Krauss, bu modelin inanılmaz ölçüde başarılı olmakla birlikte kütleçekimi içermediğini ve 'tam teori'nin hâlâ arayışta olduğunu vurgular."
+  },
+  {
+    "word": "termodinamik",
+    "type": "Kavram",
+    "definition": "Isı, iş ve enerji dönüşümlerini inceleyen fizik dalı. Krauss, termodinamiğin ikinci yasasının — entropinin daima artacağı — evrenin uzak geleceğini anlamamızda kilit rol oynadığını; nihayetinde evrenin 'ısı ölümü' denilen maksimum düzensizlik durumuna ulaşacağını aktarır."
+  },
+  {
+    "word": "elektromanyetizma",
+    "type": "Kavram",
+    "definition": "Elektrik ve manyetik kuvvetlerin birleşimi; Maxwell'in denklemleriyle tanımlanır ve fotonların etkileşimiyle aktarılır. Krauss, elektromanyetik kuvvetin gündelik hayatın fiziksel yapısını belirleyen temel kuvvet olduğunu ve zayıf nükleer kuvvetle 'elektrozayıf' çerçevesinde birleştirildiğini açıklar."
+  },
+  {
+    "word": "evrenin ölümü",
+    "type": "Kavram",
+    "definition": "Evrenin çok uzak bir gelecekte maksimum entropiye ulaşarak her türlü yapı ve düzenin yok olacağı 'ısı ölümü' senaryosu. Krauss, karanlık enerjinin ivmeli genişlemenin de galaksileri nihayetinde birbirinden o kadar uzaklaştıracağını; enerjinin kullanılamaz hale geleceğini anlatır."
+  },
+  {
+    "word": "fotoelektrik etki",
+    "type": "Kavram",
+    "definition": "Işığın metal yüzeye çarpmasıyla elektron koparması olgusu; Einstein'ın bu etkiyi fotonlarla açıklaması kuantum mekaniğinin temel taşlarından biri oldu ve 1921 Nobel Fizik Ödülü'ne layık görüldü. Krauss, bu olgunun ışığın hem parçacık hem dalga özelliği gösterdiğini doğruladığını aktarır."
+  },
+  {
+    "word": "görünür evren",
+    "type": "Kavram",
+    "definition": "Işığın Big Bang'den bu yana ulaşabildiği, yaklaşık 93 milyar ışık yılı çapındaki uzay küre. Krauss, bu ufkun ötesinde var olabilecek bölgelerin gözlemlenemeyeceğini; ancak fiziğin aynı yasaların geçerli olduğunu öne sürdüğünü tartışır."
+  }
 ]

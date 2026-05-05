@@ -10,13 +10,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import {
-  getPremiumEntitlementStatus,
-  restorePurchasesSafe,
-} from '../src/lib/purchases';
+import { getPremiumEntitlementStatus, restorePurchasesSafe } from '../src/lib/purchases';
 import { useAuthStore } from '../src/store/authStore';
 
-const BENEFITS: { icon: React.ComponentProps<typeof Ionicons>['name']; title: string; body: string }[] = [
+const BENEFITS: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  title: string;
+  body: string;
+}[] = [
   {
     icon: 'ban-outline',
     title: 'Reklamsiz Deneyim',

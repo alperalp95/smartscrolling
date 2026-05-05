@@ -76,7 +76,6 @@ function parseArgs(argv) {
     if (arg === '--pdf-curated-offset') {
       overrides.pdfCurated = { ...(overrides.pdfCurated ?? {}), offset: parsed };
     }
-
   }
 
   return {
@@ -306,9 +305,7 @@ async function main() {
 
   console.log(`\nMedlinePlus'tan ${CONFIG.medlineplus.count} makale cekiliyor...`);
   const medlinePlusArticles =
-    CONFIG.medlineplus.count > 0
-      ? await fetchMedlinePlusArticles(CONFIG.medlineplus.count)
-      : [];
+    CONFIG.medlineplus.count > 0 ? await fetchMedlinePlusArticles(CONFIG.medlineplus.count) : [];
   console.log(`   ${medlinePlusArticles.length} saglik verisi alindi, Groq ile isleniyor...`);
   const existingMedlineUrls = await getExistingSourceUrls(
     medlinePlusArticles.map((article) => article.url),

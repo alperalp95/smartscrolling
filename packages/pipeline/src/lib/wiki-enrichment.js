@@ -70,7 +70,11 @@ async function fetchWikipediaCategories(lang, title) {
     const data = await res.json();
     const page = Object.values(data?.query?.pages ?? {})[0];
     return (page?.categories ?? [])
-      .map((category) => String(category.title ?? '').replace(/^Kategori:/i, '').trim())
+      .map((category) =>
+        String(category.title ?? '')
+          .replace(/^Kategori:/i, '')
+          .trim(),
+      )
       .filter(Boolean)
       .filter(isUsefulWikipediaCategory);
   } catch {

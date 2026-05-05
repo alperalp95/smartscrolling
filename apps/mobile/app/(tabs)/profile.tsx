@@ -423,9 +423,7 @@ export default function ProfileScreen() {
             <Text style={s.name} numberOfLines={1}>
               {userEmail}
             </Text>
-            {!isLoggedIn ? (
-              <Text style={s.guestHint}>Hesabini bagla</Text>
-            ) : null}
+            {!isLoggedIn ? <Text style={s.guestHint}>Hesabini bagla</Text> : null}
             <View style={[s.planBadge, hasPremium && s.planBadgePremium]}>
               <Ionicons
                 name={hasPremium ? 'star' : isLoggedIn ? 'flash-outline' : 'person-circle-outline'}
@@ -437,7 +435,6 @@ export default function ProfileScreen() {
               </Text>
             </View>
           </View>
-
         </View>
 
         <View style={[s.streakCard, !isLoggedIn && s.streakCardGuest]}>
@@ -445,8 +442,12 @@ export default function ProfileScreen() {
           <View style={s.streakContent}>
             <View style={s.streakLeft}>
               <View style={s.streakNumberWrap}>
-                <Text style={[s.streakNumber, !isLoggedIn && s.streakNumberGuest]}>{streakDays}</Text>
-                <Text style={[s.streakNumberLabel, !isLoggedIn && s.streakNumberLabelGuest]}>Gun</Text>
+                <Text style={[s.streakNumber, !isLoggedIn && s.streakNumberGuest]}>
+                  {streakDays}
+                </Text>
+                <Text style={[s.streakNumberLabel, !isLoggedIn && s.streakNumberLabelGuest]}>
+                  Gun
+                </Text>
               </View>
               <View style={s.streakDivider} />
               <View>
@@ -603,29 +604,27 @@ export default function ProfileScreen() {
           <View style={s.interestsSection}>
             <Text style={s.sectionHeading}>Ilgi Alanlari</Text>
             <View style={s.chipWrap}>
-              {shouldShowInterestEditor ? (
-                INTEREST_OPTIONS.map((interest) => {
-                  const isSelected = selectedInterests.includes(interest);
-                  return (
-                    <TouchableOpacity
-                      key={interest}
-                      style={[s.chip, isSelected && s.chipSelected]}
-                      onPress={() => toggleInterest(interest)}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
-                        {interest}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })
-              ) : (
-                selectedInterests.map((interest) => (
-                  <View key={interest} style={s.chip}>
-                    <Text style={s.chipText}>{interest}</Text>
-                  </View>
-                ))
-              )}
+              {shouldShowInterestEditor
+                ? INTEREST_OPTIONS.map((interest) => {
+                    const isSelected = selectedInterests.includes(interest);
+                    return (
+                      <TouchableOpacity
+                        key={interest}
+                        style={[s.chip, isSelected && s.chipSelected]}
+                        onPress={() => toggleInterest(interest)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
+                          {interest}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })
+                : selectedInterests.map((interest) => (
+                    <View key={interest} style={s.chip}>
+                      <Text style={s.chipText}>{interest}</Text>
+                    </View>
+                  ))}
               {!shouldShowInterestEditor ? (
                 <TouchableOpacity
                   onPress={() => {
@@ -681,9 +680,7 @@ export default function ProfileScreen() {
                     onPress={() => setDailyGoal(option)}
                     activeOpacity={0.85}
                   >
-                    <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
-                      {label}
-                    </Text>
+                    <Text style={[s.chipText, isSelected && s.chipTextSelected]}>{label}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -697,7 +694,11 @@ export default function ProfileScreen() {
                 <Text style={s.editorCancelText}>Vazgec</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[s.primaryButton, { flex: 1 }, (!dailyGoal || isSavingDailyGoal) && s.buttonDisabled]}
+                style={[
+                  s.primaryButton,
+                  { flex: 1 },
+                  (!dailyGoal || isSavingDailyGoal) && s.buttonDisabled,
+                ]}
                 onPress={() => void handleSaveDailyGoal()}
                 activeOpacity={0.85}
                 disabled={!dailyGoal || isSavingDailyGoal}
@@ -713,7 +714,11 @@ export default function ProfileScreen() {
         <View style={s.settingsSection}>
           <Text style={s.sectionHeading}>Ayarlar</Text>
           <View style={s.settingsCard}>
-            <TouchableOpacity style={s.settingsRow} onPress={handlePremiumPress} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={s.settingsRow}
+              onPress={handlePremiumPress}
+              activeOpacity={0.8}
+            >
               <View style={s.settingsIconWrap}>
                 <Ionicons name="star-outline" size={18} color="#f5b942" />
               </View>
@@ -821,7 +826,13 @@ const s = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.15)',
   },
   avatarText: { color: '#d0bcff', fontSize: 34, fontWeight: '700' },
-  name: { color: '#fff', fontSize: 28, fontWeight: '800', letterSpacing: -0.5, textAlign: 'center' },
+  name: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    textAlign: 'center',
+  },
   emailText: { color: '#9ca3af', fontSize: 14, textAlign: 'center' },
   planBadge: {
     alignSelf: 'center',
@@ -840,7 +851,13 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(245,185,66,0.1)',
     borderColor: 'rgba(245,185,66,0.3)',
   },
-  planText: { color: '#a78bfa', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase' },
+  planText: {
+    color: '#a78bfa',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
   planTextPremium: { color: '#f5b942' },
   guestHint: { color: '#a78bfa', fontSize: 14, textAlign: 'center' },
 

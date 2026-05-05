@@ -1,13 +1,12 @@
 export function resolveWikipediaEntity({ lang = 'tr', summaryData, fallbackUrl }) {
-  const canonicalTitle =
-    summaryData?.titles?.canonical ??
-    summaryData?.title ??
-    '';
+  const canonicalTitle = summaryData?.titles?.canonical ?? summaryData?.title ?? '';
   const displayTitle = summaryData?.titles?.display ?? summaryData?.title ?? canonicalTitle;
   const url =
     summaryData?.content_urls?.desktop?.page ??
     fallbackUrl ??
-    (canonicalTitle ? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(canonicalTitle)}` : '');
+    (canonicalTitle
+      ? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(canonicalTitle)}`
+      : '');
   const description = summaryData?.description ?? '';
   const hasTitle = canonicalTitle.trim().length > 0;
   const hasExtract = (summaryData?.extract ?? '').trim().length > 80;

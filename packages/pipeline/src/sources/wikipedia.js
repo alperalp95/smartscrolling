@@ -1,14 +1,14 @@
 // src/sources/wikipedia.js
 // Wikipedia summary endpoint'inden kalite filtreli makale ozeti ceker.
 import { evaluateFactMedia } from '../lib/fact-media-policy.js';
+import { enrichWikipediaEntity } from '../lib/wiki-enrichment.js';
+import { resolveWikipediaEntity } from '../lib/wiki-entity-resolver.js';
+import { evaluateWikipediaTaxonomyDecision } from '../lib/wiki-quality-guard.js';
 import {
   buildWikipediaSeedQueue,
   isLowValueWikipediaArticle as isLowValueWikipediaArticlePolicy,
   scoreWikipediaCuriositySignals,
 } from '../lib/wiki-source-policy.js';
-import { resolveWikipediaEntity } from '../lib/wiki-entity-resolver.js';
-import { enrichWikipediaEntity } from '../lib/wiki-enrichment.js';
-import { evaluateWikipediaTaxonomyDecision } from '../lib/wiki-quality-guard.js';
 import { normalizeWikipediaEnrichmentToTaxonomy } from '../lib/wiki-taxonomy-normalizer.js';
 import { WIKI_THEME_SEQUENCE } from '../lib/wiki-taxonomy-types.js';
 
@@ -275,7 +275,13 @@ async function parseWikipediaSummary(
     return null;
   }
 
-  if (isLowValueWikipediaArticlePolicy(preferredData.title, preferredData.extract, preferredData.description)) {
+  if (
+    isLowValueWikipediaArticlePolicy(
+      preferredData.title,
+      preferredData.extract,
+      preferredData.description,
+    )
+  ) {
     return null;
   }
 
@@ -324,16 +330,15 @@ async function parseWikipediaSummary(
   }
 
   const wikipediaImageUrl =
-    preferredData.thumbnail?.source ??
-    preferredData.originalimage?.source ??
-    null;
+    preferredData.thumbnail?.source ?? preferredData.originalimage?.source ?? null;
   const mediaPolicy = evaluateFactMedia({
     sourceLabel: 'Wikipedia',
     mediaUrl: wikipediaImageUrl,
   });
-  const imageUrl = mediaPolicy.ok && wikipediaImageUrl
-    ? wikipediaImageUrl
-    : buildUnsplashUrl(preferredData.title, category);
+  const imageUrl =
+    mediaPolicy.ok && wikipediaImageUrl
+      ? wikipediaImageUrl
+      : buildUnsplashUrl(preferredData.title, category);
 
   seenUrls.add(pageUrl);
   return {

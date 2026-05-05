@@ -26,11 +26,7 @@ import {
 import type { ImageSourcePropType, ViewToken } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PremiumUpsellCard } from '../../components/premium-upsell-card';
-import {
-  type FeedAdSlot,
-  getAdAudience,
-  insertFeedAdSlots,
-} from '../../src/lib/ads';
+import { type FeedAdSlot, getAdAudience, insertFeedAdSlots } from '../../src/lib/ads';
 import { promptForAuth } from '../../src/lib/authPrompt';
 import { isBadFactMediaUrl } from '../../src/lib/factVisuals';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
@@ -1597,10 +1593,7 @@ export default function FeedScreen() {
                 <Text style={s.guestHintText}>
                   Misafir modunda kesfet. Kaydetme ve AI gecmisi icin giris yap.
                 </Text>
-                <TouchableOpacity
-                  onPress={() => router.push('/profile')}
-                  style={s.guestHintButton}
-                >
+                <TouchableOpacity onPress={() => router.push('/profile')} style={s.guestHintButton}>
                   <Text style={s.guestHintButtonText}>Hesap Ac</Text>
                 </TouchableOpacity>
               </View>

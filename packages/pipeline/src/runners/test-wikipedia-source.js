@@ -10,9 +10,11 @@ const count = Number.parseInt(process.argv[3] ?? '4', 10);
 async function main() {
   const existingTitles = await getExistingWikipediaSourceTitles();
   const fetchCount = Math.max(count, Math.ceil(count * 6));
-  const articles = (await fetchWikipediaArticles(lang, fetchCount, {
-    excludeTitles: existingTitles,
-  })).slice(0, count);
+  const articles = (
+    await fetchWikipediaArticles(lang, fetchCount, {
+      excludeTitles: existingTitles,
+    })
+  ).slice(0, count);
   const categoryCounts = {};
 
   console.log(
@@ -28,17 +30,23 @@ async function main() {
     console.log(
       `[Wikipedia Source Test] "${article.title}" -> ${article.category} score=${article.discoveryScore} media=${mediaPolicy.reason}`,
     );
-    console.log(JSON.stringify({
-      imageUrl: article.imageUrl ?? null,
-      mediaOk: mediaPolicy.ok,
-      wikiContext: article.wikiContext
-        ? {
-            canonicalTitle: article.wikiContext.canonicalTitle,
-            normalizedCategory: article.wikiContext.normalizedCategory,
-            categorySignals: article.wikiContext.categories?.slice(0, 4) ?? [],
-          }
-        : null,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          imageUrl: article.imageUrl ?? null,
+          mediaOk: mediaPolicy.ok,
+          wikiContext: article.wikiContext
+            ? {
+                canonicalTitle: article.wikiContext.canonicalTitle,
+                normalizedCategory: article.wikiContext.normalizedCategory,
+                categorySignals: article.wikiContext.categories?.slice(0, 4) ?? [],
+              }
+            : null,
+        },
+        null,
+        2,
+      ),
+    );
   }
 
   console.log('[Wikipedia Source Test] category_counts', JSON.stringify(categoryCounts, null, 2));

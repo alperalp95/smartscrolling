@@ -175,7 +175,7 @@ export default function LibraryScreen() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, hasPremium, isFocused]);
+  }, [user?.id, hasPremium]);
 
   useEffect(() => {
     if (!isFocused && !savedIdsVersion) {
@@ -373,35 +373,39 @@ export default function LibraryScreen() {
           </View>
         )}
 
-        {user && continueBooks.length > 0 && (() => {
-          const last = continueBooks[0];
-          return (
-            <>
-              <View style={s.sectionHeader}>
-                <Text style={s.sectionTitle}>Devam Et</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => openBook(last)}
-                style={s.continueFeatureCard}
-                activeOpacity={0.8}
-              >
-                <BookCover book={last} size="sm" />
-                <View style={s.continueFeatureInfo}>
-                  <Text style={s.continueFeatureTitle} numberOfLines={2}>{last.title}</Text>
-                  <Text style={s.continueFeatureAuthor}>{last.author}</Text>
-                  <View style={s.progressBarBg}>
-                    <View style={[s.progressBarFill, { width: `${last.progress}%` }]} />
-                  </View>
-                  <Text style={s.continueFeatureProgress}>%{last.progress} tamamlandi</Text>
-                  <View style={s.continueFeatureBtn}>
-                    <Ionicons name="play" size={12} color="#fff" />
-                    <Text style={s.continueFeatureBtnText}>Devam Et</Text>
-                  </View>
+        {user &&
+          continueBooks.length > 0 &&
+          (() => {
+            const last = continueBooks[0];
+            return (
+              <>
+                <View style={s.sectionHeader}>
+                  <Text style={s.sectionTitle}>Devam Et</Text>
                 </View>
-              </TouchableOpacity>
-            </>
-          );
-        })()}
+                <TouchableOpacity
+                  onPress={() => openBook(last)}
+                  style={s.continueFeatureCard}
+                  activeOpacity={0.8}
+                >
+                  <BookCover book={last} size="sm" />
+                  <View style={s.continueFeatureInfo}>
+                    <Text style={s.continueFeatureTitle} numberOfLines={2}>
+                      {last.title}
+                    </Text>
+                    <Text style={s.continueFeatureAuthor}>{last.author}</Text>
+                    <View style={s.progressBarBg}>
+                      <View style={[s.progressBarFill, { width: `${last.progress}%` }]} />
+                    </View>
+                    <Text style={s.continueFeatureProgress}>%{last.progress} tamamlandi</Text>
+                    <View style={s.continueFeatureBtn}>
+                      <Ionicons name="play" size={12} color="#fff" />
+                      <Text style={s.continueFeatureBtnText}>Devam Et</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </>
+            );
+          })()}
 
         <View style={[s.sectionHeader, { marginTop: 24 }]}>
           <Text style={s.sectionTitle}>10 Kitaplik Ogrenme Kutuphanesi</Text>

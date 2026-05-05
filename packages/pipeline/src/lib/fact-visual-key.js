@@ -29,14 +29,27 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
   if (normalizedSourceLabel.includes('stanford encyclopedia')) {
     if (
       includesAny(topicText, [
-        'ethic', 'moral', 'justice', 'duty', 'responsibility', 'kant', 'rawls',
+        'ethic',
+        'moral',
+        'justice',
+        'duty',
+        'responsibility',
+        'kant',
+        'rawls',
       ])
     ) {
       return 'philosophy-ethics';
     }
     if (
       includesAny(topicText, [
-        'metaphys', 'ontology', 'epistem', 'mind', 'consciousness', 'identity', 'exist', 'religion',
+        'metaphys',
+        'ontology',
+        'epistem',
+        'mind',
+        'consciousness',
+        'identity',
+        'exist',
+        'religion',
       ])
     ) {
       return 'philosophy-metaphysics';
@@ -45,13 +58,55 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
   }
 
   if (normalizedSourceLabel.includes('medlineplus')) {
-    if (includesAny(topicText, ['mental', 'stress', 'sleep', 'anxiety', 'depression', 'mood', 'stres', 'uyku', 'anksiyete'])) {
+    if (
+      includesAny(topicText, [
+        'mental',
+        'stress',
+        'sleep',
+        'anxiety',
+        'depression',
+        'mood',
+        'stres',
+        'uyku',
+        'anksiyete',
+      ])
+    ) {
       return 'health-mind';
     }
-    if (includesAny(topicText, ['diagnos', 'test', 'patient', 'safety', 'rehabilitation', 'medical', 'clinic', 'treatment', 'screening', 'therapy'])) {
+    if (
+      includesAny(topicText, [
+        'diagnos',
+        'test',
+        'patient',
+        'safety',
+        'rehabilitation',
+        'medical',
+        'clinic',
+        'treatment',
+        'screening',
+        'therapy',
+      ])
+    ) {
       return 'health-clinical';
     }
-    if (includesAny(topicText, ['heart', 'liver', 'kidney', 'lung', 'respiratory', 'digest', 'bone', 'muscle', 'blood', 'brain', 'pain', 'arthritis', 'metabolism', 'nutrition'])) {
+    if (
+      includesAny(topicText, [
+        'heart',
+        'liver',
+        'kidney',
+        'lung',
+        'respiratory',
+        'digest',
+        'bone',
+        'muscle',
+        'blood',
+        'brain',
+        'pain',
+        'arthritis',
+        'metabolism',
+        'nutrition',
+      ])
+    ) {
       return 'health-body';
     }
     return 'health-brief';
@@ -62,10 +117,29 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Cosmos / Space
     if (
       includesAny(topicText, [
-        'space', 'galaxy', 'planet', 'orbit', 'moon', 'mars', 'asteroid', 'comet',
-        'nebula', 'telescope', 'cosmic', 'star',
-        'uzay', 'gunes', 'yildiz', 'gezegen', 'galaksi', 'kara delik',
-        'kuyrukluyildiz', 'evren', 'astronot', 'uydu', 'kuyruklu yildiz',
+        'space',
+        'galaxy',
+        'planet',
+        'orbit',
+        'moon',
+        'mars',
+        'asteroid',
+        'comet',
+        'nebula',
+        'telescope',
+        'cosmic',
+        'star',
+        'uzay',
+        'gunes',
+        'yildiz',
+        'gezegen',
+        'galaksi',
+        'kara delik',
+        'kuyrukluyildiz',
+        'evren',
+        'astronot',
+        'uydu',
+        'kuyruklu yildiz',
       ])
     ) {
       return 'science-cosmos';
@@ -74,8 +148,18 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Brain / Psychology
     if (
       includesAny(topicText, [
-        'beyin', 'hafiza', 'bellek', 'psikoloji', 'algi', 'sinir', 'duygu',
-        'bilinc', 'zihin', 'noron', 'hafizamiz', 'zihinsel',
+        'beyin',
+        'hafiza',
+        'bellek',
+        'psikoloji',
+        'algi',
+        'sinir',
+        'duygu',
+        'bilinc',
+        'zihin',
+        'noron',
+        'hafizamiz',
+        'zihinsel',
       ])
     ) {
       return 'science-brain';
@@ -84,9 +168,22 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Human body (organs, senses, physiology)
     if (
       includesAny(topicText, [
-        'vucut', 'parmak', 'kemik', 'kaslar', 'organ', 'goz', 'kulak',
-        'ayak', 'hormon', 'gozyas', 'termometre',
-        'atardamar', 'damar', 'nabiz',  'derisi', 'kandaki',
+        'vucut',
+        'parmak',
+        'kemik',
+        'kaslar',
+        'organ',
+        'goz',
+        'kulak',
+        'ayak',
+        'hormon',
+        'gozyas',
+        'termometre',
+        'atardamar',
+        'damar',
+        'nabiz',
+        'derisi',
+        'kandaki',
       ])
     ) {
       return 'science-human-body';
@@ -95,8 +192,17 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Insects
     if (
       includesAny(topicText, [
-        'bocek', 'arisi', 'karinca', 'kelebek', 'sinek', 'cicek',
-        'petekler', 'petek', 'kovani', 'ari kovani', 'bal arisi',
+        'bocek',
+        'arisi',
+        'karinca',
+        'kelebek',
+        'sinek',
+        'cicek',
+        'petekler',
+        'petek',
+        'kovani',
+        'ari kovani',
+        'bal arisi',
       ])
     ) {
       return 'science-insects';
@@ -105,10 +211,30 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Animals
     if (
       includesAny(topicText, [
-        'hayvan', 'kuslar', 'baliklar', 'kedi', 'kopek', 'memeli', 'surungen',
-        'devekusu', 'atlar', 'filler', 'deve ', 'kaplumbaga', 'domuz', 'tavsan',
-        'aslan', 'kaplan', 'koyun', 'inek', 'kurbaga', 'yunus', 'balina',
-        'animal', 'bird', 'fish',
+        'hayvan',
+        'kuslar',
+        'baliklar',
+        'kedi',
+        'kopek',
+        'memeli',
+        'surungen',
+        'devekusu',
+        'atlar',
+        'filler',
+        'deve ',
+        'kaplumbaga',
+        'domuz',
+        'tavsan',
+        'aslan',
+        'kaplan',
+        'koyun',
+        'inek',
+        'kurbaga',
+        'yunus',
+        'balina',
+        'animal',
+        'bird',
+        'fish',
       ])
     ) {
       return 'science-animals';
@@ -117,8 +243,15 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Evolution
     if (
       includesAny(topicText, [
-        'evrim', 'dogal secim', 'mutasyon', 'evolution', 'natural selection',
-        'darwin', 'atalarimiz', 'fosil', 'fossil',
+        'evrim',
+        'dogal secim',
+        'mutasyon',
+        'evolution',
+        'natural selection',
+        'darwin',
+        'atalarimiz',
+        'fosil',
+        'fossil',
       ])
     ) {
       return 'science-evolution';
@@ -127,8 +260,22 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Biology (molecular / cellular)
     if (
       includesAny(topicText, [
-        'cell', 'dna', 'gene', 'genetic', 'organism', 'immune', 'virus', 'bacteria', 'biology',
-        'hucre', 'gen', 'bakteri', 'kalitim', 'protein', 'enzim', 'hormon',
+        'cell',
+        'dna',
+        'gene',
+        'genetic',
+        'organism',
+        'immune',
+        'virus',
+        'bacteria',
+        'biology',
+        'hucre',
+        'gen',
+        'bakteri',
+        'kalitim',
+        'protein',
+        'enzim',
+        'hormon',
       ])
     ) {
       return 'science-biology';
@@ -137,9 +284,22 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Optics / Light
     if (
       includesAny(topicText, [
-        'isik', 'renk', 'gorme', 'optik', 'lens', 'prizma', 'yansima', 'kirilma',
-        'gokkusagi', 'mor otesi', 'kizilotesi', 'fotokromatik',
-        'light', 'optic', 'colour', 'color',
+        'isik',
+        'renk',
+        'gorme',
+        'optik',
+        'lens',
+        'prizma',
+        'yansima',
+        'kirilma',
+        'gokkusagi',
+        'mor otesi',
+        'kizilotesi',
+        'fotokromatik',
+        'light',
+        'optic',
+        'colour',
+        'color',
       ])
     ) {
       return 'science-optics';
@@ -148,9 +308,26 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Physics / Energy
     if (
       includesAny(topicText, [
-        'fizik', 'enerji', 'isi', 'sicaklik', 'ses', 'titresim', 'elektrik',
-        'manyetik', 'kuvvet', 'ivme', 'hiz', 'basinc', 'vakum', 'radyasyon',
-        'physics', 'energy', 'heat', 'sound', 'electric', 'force',
+        'fizik',
+        'enerji',
+        'isi',
+        'sicaklik',
+        'ses',
+        'titresim',
+        'elektrik',
+        'manyetik',
+        'kuvvet',
+        'ivme',
+        'hiz',
+        'basinc',
+        'vakum',
+        'radyasyon',
+        'physics',
+        'energy',
+        'heat',
+        'sound',
+        'electric',
+        'force',
       ])
     ) {
       return 'science-physics';
@@ -159,9 +336,23 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Chemistry / Materials
     if (
       includesAny(topicText, [
-        'chemistry', 'kimya', 'periodic', 'element', 'molecule', 'compound', 'mendeleyev',
-        'atom', 'molekul', 'madde', 'malzeme', 'polimer', 'metal', 'plastik',
-        'antifriz', 'cozucu', 'reaksiyon',
+        'chemistry',
+        'kimya',
+        'periodic',
+        'element',
+        'molecule',
+        'compound',
+        'mendeleyev',
+        'atom',
+        'molekul',
+        'madde',
+        'malzeme',
+        'polimer',
+        'metal',
+        'plastik',
+        'antifriz',
+        'cozucu',
+        'reaksiyon',
       ])
     ) {
       return 'science-chemistry';
@@ -170,10 +361,30 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Food science
     if (
       includesAny(topicText, [
-        'yiyecek', 'gida', 'yemek', 'pisirme', 'besin', 'vitamin', 'mineral',
-        'kalori', 'protein', 'karbonhidrat', 'tarif', 'mutfak', 'tahil',
-        'sebze', 'meyve', 'et', 'sut', 'peynir', 'ekmek', 'seker', 'tuz',
-        'food', 'nutrition', 'diet',
+        'yiyecek',
+        'gida',
+        'yemek',
+        'pisirme',
+        'besin',
+        'vitamin',
+        'mineral',
+        'kalori',
+        'protein',
+        'karbonhidrat',
+        'tarif',
+        'mutfak',
+        'tahil',
+        'sebze',
+        'meyve',
+        'et',
+        'sut',
+        'peynir',
+        'ekmek',
+        'seker',
+        'tuz',
+        'food',
+        'nutrition',
+        'diet',
       ])
     ) {
       return 'science-food';
@@ -182,8 +393,15 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Ocean / Water
     if (
       includesAny(topicText, [
-        'deniz', 'okyanus', 'su alti', 'dalga', 'akvaryum', 'mercan',
-        'ocean', 'sea', 'underwater',
+        'deniz',
+        'okyanus',
+        'su alti',
+        'dalga',
+        'akvaryum',
+        'mercan',
+        'ocean',
+        'sea',
+        'underwater',
       ])
     ) {
       return 'science-ocean';
@@ -192,8 +410,17 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Nature / Plants / Ecology
     if (
       includesAny(topicText, [
-        'bitki', 'agac', 'orman', 'ekoloji', 'dogal', 'cevresel', 'iklim degisikl',
-        'plant', 'tree', 'forest', 'ecology',
+        'bitki',
+        'agac',
+        'orman',
+        'ekoloji',
+        'dogal',
+        'cevresel',
+        'iklim degisikl',
+        'plant',
+        'tree',
+        'forest',
+        'ecology',
       ])
     ) {
       return 'science-nature';
@@ -202,9 +429,21 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Earth / Geology
     if (
       includesAny(topicText, [
-        'earth', 'geology', 'climate', 'volcano', 'mineral', 'glacier', 'weather',
-        'atmosphere', 'tectonic',
-        'dunya', 'jeoloji', 'volkan', 'deprem', 'atmosfer', 'hava',
+        'earth',
+        'geology',
+        'climate',
+        'volcano',
+        'mineral',
+        'glacier',
+        'weather',
+        'atmosphere',
+        'tectonic',
+        'dunya',
+        'jeoloji',
+        'volkan',
+        'deprem',
+        'atmosfer',
+        'hava',
       ])
     ) {
       return 'science-earth';
@@ -213,8 +452,15 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Discovery / Experiment
     if (
       includesAny(topicText, [
-        'kesis', 'bulus', 'deney', 'laboratuvar', 'nobel', 'arastirma',
-        'discovery', 'experiment', 'research',
+        'kesis',
+        'bulus',
+        'deney',
+        'laboratuvar',
+        'nobel',
+        'arastirma',
+        'discovery',
+        'experiment',
+        'research',
       ])
     ) {
       return 'science-discovery';
@@ -228,8 +474,16 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Inventions / Discoveries
     if (
       includesAny(topicText, [
-        'icat', 'bulus', 'patent', 'mucit', 'muhendis', 'telefon', 'radyo',
-        'invention', 'inventor', 'patent',
+        'icat',
+        'bulus',
+        'patent',
+        'mucit',
+        'muhendis',
+        'telefon',
+        'radyo',
+        'invention',
+        'inventor',
+        'patent',
       ])
     ) {
       return 'history-invention';
@@ -238,9 +492,23 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Culture / Traditions / Customs
     if (
       includesAny(topicText, [
-        'gelenek', 'adet', 'festival', 'toren', 'kutlama', 'bayram', 'dugun',
-        'noel', 'yilbasi', 'dogum gunu', 'dans', 'muzik', 'kultur',
-        'tradition', 'custom', 'festival', 'celebration',
+        'gelenek',
+        'adet',
+        'festival',
+        'toren',
+        'kutlama',
+        'bayram',
+        'dugun',
+        'noel',
+        'yilbasi',
+        'dogum gunu',
+        'dans',
+        'muzik',
+        'kultur',
+        'tradition',
+        'custom',
+        'festival',
+        'celebration',
       ])
     ) {
       return 'history-culture';
@@ -249,8 +517,14 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // History of Science / Scientists
     if (
       includesAny(topicText, [
-        'bilim insani', 'bilim tarihi', 'kesif tarihi', 'fizikci', 'matematikci',
-        'scientist', 'mathematician', 'historian',
+        'bilim insani',
+        'bilim tarihi',
+        'kesif tarihi',
+        'fizikci',
+        'matematikci',
+        'scientist',
+        'mathematician',
+        'historian',
       ])
     ) {
       return 'history-science';
@@ -259,9 +533,26 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Antiquity
     if (
       includesAny(topicText, [
-        'ancient', 'antik', 'rome', 'roman', 'greek', 'egypt', 'archae',
-        'temple', 'ruins', 'medieval', 'dynasty', 'empire', 'cathedral',
-        'roma', 'yunan', 'misir', 'orta cag', 'imparatorluk', 'saray', 'kale',
+        'ancient',
+        'antik',
+        'rome',
+        'roman',
+        'greek',
+        'egypt',
+        'archae',
+        'temple',
+        'ruins',
+        'medieval',
+        'dynasty',
+        'empire',
+        'cathedral',
+        'roma',
+        'yunan',
+        'misir',
+        'orta cag',
+        'imparatorluk',
+        'saray',
+        'kale',
       ])
     ) {
       return 'history-antiquity';
@@ -270,8 +561,18 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Conflict / War
     if (
       includesAny(topicText, [
-        'war', 'battle', 'revolution', 'treaty', 'conflict', 'military',
-        'savas', 'savunma', 'askeri', 'ordu', 'catisma', 'isgal',
+        'war',
+        'battle',
+        'revolution',
+        'treaty',
+        'conflict',
+        'military',
+        'savas',
+        'savunma',
+        'askeri',
+        'ordu',
+        'catisma',
+        'isgal',
       ])
     ) {
       return 'history-conflict';
@@ -280,8 +581,16 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Trade / Economy
     if (
       includesAny(topicText, [
-        'ticaret', 'ekonomi', 'para', 'alim satim', 'borsa', 'piyasa',
-        'trade', 'economy', 'market', 'commerce',
+        'ticaret',
+        'ekonomi',
+        'para',
+        'alim satim',
+        'borsa',
+        'piyasa',
+        'trade',
+        'economy',
+        'market',
+        'commerce',
       ])
     ) {
       return 'history-trade';
@@ -294,8 +603,18 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
   if (normalizedCategory.includes('felsefe')) {
     if (
       includesAny(topicText, [
-        'ethic', 'moral', 'justice', 'duty', 'responsibility', 'utilitarian', 'kant', 'rawls',
-        'etik', 'ahlak', 'adalet', 'sorumluluk',
+        'ethic',
+        'moral',
+        'justice',
+        'duty',
+        'responsibility',
+        'utilitarian',
+        'kant',
+        'rawls',
+        'etik',
+        'ahlak',
+        'adalet',
+        'sorumluluk',
       ])
     ) {
       return 'philosophy-ethics';
@@ -303,9 +622,22 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
     if (
       includesAny(topicText, [
-        'metaphys', 'ontology', 'epistem', 'mind', 'consciousness', 'identity',
-        'exist', 'reality', 'knowledge', 'religion',
-        'metafizik', 'ontoloji', 'epistemoloji', 'bilinc', 'varlik', 'gerceklik',
+        'metaphys',
+        'ontology',
+        'epistem',
+        'mind',
+        'consciousness',
+        'identity',
+        'exist',
+        'reality',
+        'knowledge',
+        'religion',
+        'metafizik',
+        'ontoloji',
+        'epistemoloji',
+        'bilinc',
+        'varlik',
+        'gerceklik',
       ])
     ) {
       return 'philosophy-metaphysics';
@@ -313,8 +645,17 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
     if (
       includesAny(topicText, [
-        'dil', 'anlam', 'sembol', 'iletisim', 'mantik', 'dil felsefesi',
-        'language', 'meaning', 'symbol', 'logic', 'linguistics',
+        'dil',
+        'anlam',
+        'sembol',
+        'iletisim',
+        'mantik',
+        'dil felsefesi',
+        'language',
+        'meaning',
+        'symbol',
+        'logic',
+        'linguistics',
       ])
     ) {
       return 'philosophy-language';
@@ -328,8 +669,15 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // AI / Machine Learning
     if (
       includesAny(topicText, [
-        'yapay zeka', 'makine ogrenmesi', 'derin ogrenme', 'sinir agi', 'otomasyon',
-        'artificial intelligence', 'machine learning', 'deep learning', 'neural',
+        'yapay zeka',
+        'makine ogrenmesi',
+        'derin ogrenme',
+        'sinir agi',
+        'otomasyon',
+        'artificial intelligence',
+        'machine learning',
+        'deep learning',
+        'neural',
       ])
     ) {
       return 'technology-ai';
@@ -338,8 +686,18 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Energy / Power systems
     if (
       includesAny(topicText, [
-        'enerji', 'gunes enerjisi', 'nukler', 'yenilenebilir', 'pil', 'batarya',
-        'energy', 'solar', 'nuclear', 'renewable', 'battery', 'power grid',
+        'enerji',
+        'gunes enerjisi',
+        'nukler',
+        'yenilenebilir',
+        'pil',
+        'batarya',
+        'energy',
+        'solar',
+        'nuclear',
+        'renewable',
+        'battery',
+        'power grid',
       ])
     ) {
       return 'technology-energy';
@@ -348,8 +706,16 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Engineering / Hardware
     if (
       includesAny(topicText, [
-        'muhendislik', 'insaat', 'kopru', 'yapi', 'tasarim mekanik', 'motor',
-        'engineering', 'construction', 'bridge', 'mechanical',
+        'muhendislik',
+        'insaat',
+        'kopru',
+        'yapi',
+        'tasarim mekanik',
+        'motor',
+        'engineering',
+        'construction',
+        'bridge',
+        'mechanical',
       ])
     ) {
       return 'technology-engineering';
@@ -358,10 +724,26 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Computing / Software
     if (
       includesAny(topicText, [
-        'computer', 'software', 'program', 'compiler', 'database', 'algorithm',
-        'encrypt', 'cryptograph', 'cloud', 'search', 'network', 'internet',
-        'distributed', 'digital', 'signal',
-        'bilgisayar', 'yazilim', 'algoritma', 'sifreleme', 'internet',
+        'computer',
+        'software',
+        'program',
+        'compiler',
+        'database',
+        'algorithm',
+        'encrypt',
+        'cryptograph',
+        'cloud',
+        'search',
+        'network',
+        'internet',
+        'distributed',
+        'digital',
+        'signal',
+        'bilgisayar',
+        'yazilim',
+        'algoritma',
+        'sifreleme',
+        'internet',
       ])
     ) {
       return 'technology-computing';
@@ -370,9 +752,21 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
     // Systems / Hardware / Machines
     if (
       includesAny(topicText, [
-        'engine', 'aircraft', 'rocket', 'satellite', 'device', 'hardware',
-        'vehicle', 'robot', 'machine', 'electric',
-        'roket', 'uydu', 'arac', 'makine', 'cihaz',
+        'engine',
+        'aircraft',
+        'rocket',
+        'satellite',
+        'device',
+        'hardware',
+        'vehicle',
+        'robot',
+        'machine',
+        'electric',
+        'roket',
+        'uydu',
+        'arac',
+        'makine',
+        'cihaz',
       ])
     ) {
       return 'technology-systems';
@@ -385,8 +779,18 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
   if (normalizedCategory.includes('saglik')) {
     if (
       includesAny(topicText, [
-        'mental', 'stress', 'sleep', 'anxiety', 'depression', 'mood',
-        'stres', 'uyku', 'anksiyete', 'depresyon', 'mutluluk', 'ruh hali',
+        'mental',
+        'stress',
+        'sleep',
+        'anxiety',
+        'depression',
+        'mood',
+        'stres',
+        'uyku',
+        'anksiyete',
+        'depresyon',
+        'mutluluk',
+        'ruh hali',
       ])
     ) {
       return 'health-mind';
@@ -394,9 +798,21 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
     if (
       includesAny(topicText, [
-        'diagnos', 'test', 'patient', 'safety', 'rehabilitation', 'medical',
-        'clinic', 'treatment', 'screening', 'therapy',
-        'teshis', 'hasta', 'tedavi', 'klinik', 'terapi',
+        'diagnos',
+        'test',
+        'patient',
+        'safety',
+        'rehabilitation',
+        'medical',
+        'clinic',
+        'treatment',
+        'screening',
+        'therapy',
+        'teshis',
+        'hasta',
+        'tedavi',
+        'klinik',
+        'terapi',
       ])
     ) {
       return 'health-clinical';
@@ -404,8 +820,14 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
     if (
       includesAny(topicText, [
-        'genetik', 'dna', 'gen', 'kalitim', 'kromozom',
-        'genetics', 'chromosome', 'heredity',
+        'genetik',
+        'dna',
+        'gen',
+        'kalitim',
+        'kromozom',
+        'genetics',
+        'chromosome',
+        'heredity',
       ])
     ) {
       return 'health-genetics';
@@ -413,8 +835,16 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
     if (
       includesAny(topicText, [
-        'beslenme', 'vitamin', 'mineral', 'diyet', 'besin', 'kalori',
-        'nutrition', 'diet', 'supplement', 'mineral',
+        'beslenme',
+        'vitamin',
+        'mineral',
+        'diyet',
+        'besin',
+        'kalori',
+        'nutrition',
+        'diet',
+        'supplement',
+        'mineral',
       ])
     ) {
       return 'health-nutrition';
@@ -422,8 +852,16 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
     if (
       includesAny(topicText, [
-        'yasam tarzi', 'uyku duzeni', 'spor', 'egzersiz', 'meditasyon', 'stres yonetimi',
-        'lifestyle', 'exercise', 'meditation', 'fitness',
+        'yasam tarzi',
+        'uyku duzeni',
+        'spor',
+        'egzersiz',
+        'meditasyon',
+        'stres yonetimi',
+        'lifestyle',
+        'exercise',
+        'meditation',
+        'fitness',
       ])
     ) {
       return 'health-lifestyle';
@@ -431,9 +869,26 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
     if (
       includesAny(topicText, [
-        'heart', 'liver', 'kidney', 'lung', 'respiratory', 'digest', 'bone',
-        'muscle', 'blood', 'brain', 'pain', 'arthritis', 'metabolism', 'nutrition',
-        'kalp', 'akciger', 'bobrek', 'karaciger', 'sindirim', 'eklem',
+        'heart',
+        'liver',
+        'kidney',
+        'lung',
+        'respiratory',
+        'digest',
+        'bone',
+        'muscle',
+        'blood',
+        'brain',
+        'pain',
+        'arthritis',
+        'metabolism',
+        'nutrition',
+        'kalp',
+        'akciger',
+        'bobrek',
+        'karaciger',
+        'sindirim',
+        'eklem',
       ])
     ) {
       return 'health-body';
@@ -446,9 +901,21 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
   if (normalizedCategory.includes('biyografi')) {
     if (
       includesAny(topicText, [
-        'scientist', 'inventor', 'physicist', 'mathematician', 'engineer',
-        'bilim insani', 'mucit', 'fizikci', 'matematikci', 'muhendis',
-        'tesla', 'edison', 'einstein', 'curie', 'turing',
+        'scientist',
+        'inventor',
+        'physicist',
+        'mathematician',
+        'engineer',
+        'bilim insani',
+        'mucit',
+        'fizikci',
+        'matematikci',
+        'muhendis',
+        'tesla',
+        'edison',
+        'einstein',
+        'curie',
+        'turing',
       ])
     ) {
       return 'history-science';
@@ -456,8 +923,19 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
     if (
       includesAny(topicText, [
-        'football', 'tennis', 'athlete', 'ballon', 'grand slam', 'olympic',
-        'futbol', 'tenis', 'sporcu', 'rekor', 'messi', 'nadal', 'williams',
+        'football',
+        'tennis',
+        'athlete',
+        'ballon',
+        'grand slam',
+        'olympic',
+        'futbol',
+        'tenis',
+        'sporcu',
+        'rekor',
+        'messi',
+        'nadal',
+        'williams',
       ])
     ) {
       return 'history-culture';
@@ -465,8 +943,19 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
     if (
       includesAny(topicText, [
-        'music', 'singer', 'artist', 'painter', 'composer', 'grammy',
-        'muzik', 'sarkici', 'sanatci', 'ressam', 'besteci', 'jackson', 'kahlo',
+        'music',
+        'singer',
+        'artist',
+        'painter',
+        'composer',
+        'grammy',
+        'muzik',
+        'sarkici',
+        'sanatci',
+        'ressam',
+        'besteci',
+        'jackson',
+        'kahlo',
       ])
     ) {
       return 'editorial-culture';
@@ -482,8 +971,15 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
   if (
     includesAny(topicText, [
-      'merak', 'ilginc', 'sasirtici', 'inanilmaz', 'hayret',
-      'curious', 'surprising', 'amazing', 'wonder',
+      'merak',
+      'ilginc',
+      'sasirtici',
+      'inanilmaz',
+      'hayret',
+      'curious',
+      'surprising',
+      'amazing',
+      'wonder',
     ])
   ) {
     return 'editorial-wonder';
@@ -491,8 +987,17 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
   if (
     includesAny(topicText, [
-      'kultur', 'sanat', 'muzik', 'film', 'edebiyat', 'roman', 'sair',
-      'culture', 'art', 'music', 'literature',
+      'kultur',
+      'sanat',
+      'muzik',
+      'film',
+      'edebiyat',
+      'roman',
+      'sair',
+      'culture',
+      'art',
+      'music',
+      'literature',
     ])
   ) {
     return 'editorial-culture';
@@ -500,8 +1005,15 @@ export function deriveFactVisualKey({ sourceLabel, category, title, tags, source
 
   if (
     includesAny(topicText, [
-      'gunluk', 'aliskanlik', 'toplum', 'insanlar', 'neden', 'nasil',
-      'daily', 'habit', 'society',
+      'gunluk',
+      'aliskanlik',
+      'toplum',
+      'insanlar',
+      'neden',
+      'nasil',
+      'daily',
+      'habit',
+      'society',
     ])
   ) {
     return 'editorial-everyday';

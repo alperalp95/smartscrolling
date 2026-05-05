@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 import { evaluateFactMedia } from '../lib/fact-media-policy.js';
-import { resolveWikipediaEntity } from '../lib/wiki-entity-resolver.js';
 import { enrichWikipediaEntity } from '../lib/wiki-enrichment.js';
+import { resolveWikipediaEntity } from '../lib/wiki-entity-resolver.js';
 import { evaluateWikipediaTaxonomyDecision } from '../lib/wiki-quality-guard.js';
 import {
   isLowValueWikipediaArticle,
@@ -44,11 +44,7 @@ async function main() {
       sourceLabel: 'Wikipedia',
       mediaUrl: imageUrl,
     });
-    const sourceLowValue = isLowValueWikipediaArticle(
-      data.title,
-      data.extract,
-      data.description,
-    );
+    const sourceLowValue = isLowValueWikipediaArticle(data.title, data.extract, data.description);
     const curiosityScore = scoreWikipediaCuriositySignals(data.title, data.extract);
     const decision = evaluateWikipediaTaxonomyDecision({
       preferredData: data,
@@ -62,29 +58,36 @@ async function main() {
     const auditReasons = sourceLowValue
       ? ['source_policy_low_value', ...decision.reasons]
       : decision.reasons;
-    const auditKey = decision.accepted && !sourceLowValue ? 'accepted' : auditReasons[0] ?? 'rejected';
+    const auditKey =
+      decision.accepted && !sourceLowValue ? 'accepted' : (auditReasons[0] ?? 'rejected');
     auditCounts[auditKey] = (auditCounts[auditKey] ?? 0) + 1;
 
-    console.log(JSON.stringify({
-      title: data.title,
-      targetCategory,
-      inferredCategory: taxonomy.category ?? 'unknown',
-      confidence: Number((taxonomy.confidence ?? 0).toFixed(2)),
-      accepted: decision.accepted && !sourceLowValue,
-      reasons: auditReasons,
-      curiosityScore,
-      taxonomySignals: taxonomy.signals ?? [],
-      imageUrl,
-      mediaPolicy,
-      wikiContext: {
-        canonicalTitle: entity.canonicalTitle,
-        normalizedCategory: taxonomy.category ?? null,
-        categorySignals: enrichment.categories.slice(0, 6),
-        cacheStatus: enrichment.cacheStatus,
-      },
-      description: data.description ?? '',
-      extractPreview: String(data.extract ?? '').slice(0, 180),
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          title: data.title,
+          targetCategory,
+          inferredCategory: taxonomy.category ?? 'unknown',
+          confidence: Number((taxonomy.confidence ?? 0).toFixed(2)),
+          accepted: decision.accepted && !sourceLowValue,
+          reasons: auditReasons,
+          curiosityScore,
+          taxonomySignals: taxonomy.signals ?? [],
+          imageUrl,
+          mediaPolicy,
+          wikiContext: {
+            canonicalTitle: entity.canonicalTitle,
+            normalizedCategory: taxonomy.category ?? null,
+            categorySignals: enrichment.categories.slice(0, 6),
+            cacheStatus: enrichment.cacheStatus,
+          },
+          description: data.description ?? '',
+          extractPreview: String(data.extract ?? '').slice(0, 180),
+        },
+        null,
+        2,
+      ),
+    );
   }
 
   console.log('[Wikipedia Candidate Review] audit_counts', JSON.stringify(auditCounts, null, 2));

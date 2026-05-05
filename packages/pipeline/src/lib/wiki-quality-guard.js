@@ -314,11 +314,13 @@ const HIGH_IMPACT_PERSON_SIGNALS = [
   /\bodul\b/i,
 ];
 
+const COMBINING_MARKS_PATTERN = /\p{M}/gu;
+
 function normalizeText(value) {
   return String(value ?? '')
     .toLocaleLowerCase('tr-TR')
     .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(COMBINING_MARKS_PATTERN, '')
     .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -339,7 +341,10 @@ function titleSharesSignal(title, signals) {
 }
 
 function isLikelyPersonName(title) {
-  const words = String(title ?? '').trim().split(/\s+/).filter(Boolean);
+  const words = String(title ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
 
   if (words.length < 2 || words.length > 4) {
     return false;
@@ -392,10 +397,12 @@ export function evaluateWikipediaTaxonomyDecision({
     (pattern) =>
       pattern.test(preferredData?.extract ?? '') || pattern.test(entity?.canonicalTitle ?? ''),
   );
-  const hasHighValuePersonSignal = HIGH_VALUE_PERSON_SIGNALS.some(
-    (pattern) =>
-      pattern.test(preferredData?.extract ?? '') || pattern.test(entity?.canonicalTitle ?? ''),
-  ) || (isBiographyCandidate && hasHighImpactPersonSignal);
+  const hasHighValuePersonSignal =
+    HIGH_VALUE_PERSON_SIGNALS.some(
+      (pattern) =>
+        pattern.test(preferredData?.extract ?? '') || pattern.test(entity?.canonicalTitle ?? ''),
+    ) ||
+    (isBiographyCandidate && hasHighImpactPersonSignal);
 
   if (personLikeTitle && looksLikePersonSummary && !hasHighValuePersonSignal) {
     reasons.push('low_value_person');
