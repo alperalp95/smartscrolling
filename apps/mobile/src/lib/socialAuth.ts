@@ -1,3 +1,4 @@
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
@@ -11,6 +12,14 @@ type SocialAuthCallbackResult = {
   handled: boolean;
   error?: string;
 };
+
+function createNonce() {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 function getGoogleRedirectTo() {
   return Linking.createURL(SOCIAL_AUTH_CALLBACK_PATH, {
@@ -45,6 +54,14 @@ export function getSocialAuthRedirectPath() {
 
 export function getGoogleRedirectUri() {
   return getGoogleRedirectTo();
+}
+
+export async function isAppleSignInAvailable() {
+  if (Platform.OS !== 'ios') {
+    return false;
+  }
+
+  return AppleAuthentication.isAvailableAsync();
 }
 
 export async function finalizeSocialAuthFromUrl(url: string): Promise<SocialAuthCallbackResult> {
@@ -145,5 +162,79 @@ export async function signInWithGoogle() {
 
   if (result.type === 'cancel' || result.type === 'dismiss') {
     throw new Error('Google girisi iptal edildi.');
+  }
+}
+
+function getAppleFullNameData(fullName: AppleAuthentication.AppleAuthenticationFullName | null) {
+  if (!fullName) {
+    return null;
+  }
+
+  const fullNameValue = [fullName.givenName, fullName.middleName, fullName.familyName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
+  if (!fullNameValue && !fullName.givenName && !fullName.familyName) {
+    return null;
+  }
+
+  return {
+    full_name: fullNameValue || undefined,
+    given_name: fullName.givenName ?? undefined,
+    family_name: fullName.familyName ?? undefined,
+  };
+}
+
+function isAppleRequestCanceled(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'ERR_REQUEST_CANCELED'
+  );
+}
+
+export async function signInWithApple() {
+  if (Platform.OS !== 'ios') {
+    throw new Error('Apple ile giris yalnizca iOS cihazlarda desteklenir.');
+  }
+
+  const nonce = createNonce();
+
+  try {
+    const credential = await AppleAuthentication.signInAsync({
+      nonce,
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+
+    if (!credential.identityToken) {
+      throw new Error('Apple identity token donmedi.');
+    }
+
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: 'apple',
+      token: credential.identityToken,
+      nonce,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    const nameData = getAppleFullNameData(credential.fullName);
+
+    if (nameData) {
+      await supabase.auth.updateUser({ data: nameData });
+    }
+  } catch (error) {
+    if (isAppleRequestCanceled(error)) {
+      throw new Error('Apple girisi iptal edildi.');
+    }
+
+    throw error;
   }
 }

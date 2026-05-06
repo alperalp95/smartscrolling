@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useIsFocused } from '@react-navigation/native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -21,7 +22,11 @@ import { promptForAuth } from '../../src/lib/authPrompt';
 import { registerForPushNotifications } from '../../src/lib/notifications';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
 import { presentCustomerCenterSafe } from '../../src/lib/purchases';
-import { signInWithGoogle } from '../../src/lib/socialAuth';
+import {
+  isAppleSignInAvailable,
+  signInWithApple,
+  signInWithGoogle,
+} from '../../src/lib/socialAuth';
 import { supabase } from '../../src/lib/supabase';
 import { type ActivitySummary, fetchActivitySummary } from '../../src/lib/userActivity';
 import type { DailyGoalPreference } from '../../src/lib/userPreferences';
@@ -83,6 +88,7 @@ export default function ProfileScreen() {
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [canUseAppleSignIn, setCanUseAppleSignIn] = useState(false);
   const [authFeedback, setAuthFeedback] = useState<AuthFeedback>(null);
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
   const [isEditingDailyGoal, setIsEditingDailyGoal] = useState(false);
@@ -120,9 +126,11 @@ export default function ProfileScreen() {
   const authProviderLabel =
     authProvider === 'google'
       ? 'Google ile bagli'
-      : authProvider === 'email'
-        ? 'E-posta ile bagli'
-        : 'Hesap baglandi';
+      : authProvider === 'apple'
+        ? 'Apple ile bagli'
+        : authProvider === 'email'
+          ? 'E-posta ile bagli'
+          : 'Hesap baglandi';
   const dailyGoalSummary = dailyGoal ? `Her gun ${dailyGoal.value} kart` : 'Henuz hedef secilmedi';
   const todayKey = getTodayKey();
   const streakDays = activitySummary?.streakDays ?? 0;
@@ -155,6 +163,25 @@ export default function ProfileScreen() {
       cancelled = true;
     };
   }, [isFocused, user?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (Platform.OS !== 'ios') {
+      setCanUseAppleSignIn(false);
+      return;
+    }
+
+    void isAppleSignInAvailable().then((isAvailable) => {
+      if (!cancelled) {
+        setCanUseAppleSignIn(isAvailable);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function clearErrorFeedback() {
     setAuthFeedback((current) => (current?.tone === 'error' ? null : current));
@@ -319,6 +346,35 @@ export default function ProfileScreen() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Google ile giris sirasinda bir hata olustu.';
+      setAuthFeedback({
+        tone: 'error',
+        message,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleAppleSignIn() {
+    if (isSubmitting) {
+      return;
+    }
+
+    setAuthFeedback({
+      tone: 'info',
+      message: 'Apple hesabin aciliyor...',
+    });
+    setIsSubmitting(true);
+
+    try {
+      await signInWithApple();
+      setAuthFeedback({
+        tone: 'success',
+        message: 'Apple hesabinla devam ediyoruz...',
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Apple ile giris sirasinda bir hata olustu.';
       setAuthFeedback({
         tone: 'error',
         message,
@@ -565,6 +621,16 @@ export default function ProfileScreen() {
                 {isSubmitting ? 'Bekleyin...' : 'Google ile Devam Et'}
               </Text>
             </TouchableOpacity>
+
+            {canUseAppleSignIn ? (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                cornerRadius={12}
+                onPress={() => void handleAppleSignIn()}
+                style={[s.appleButton, isSubmitting && s.appleButtonDisabled]}
+              />
+            ) : null}
 
             <TouchableOpacity
               style={[s.emailAuthButton]}
@@ -1110,6 +1176,11 @@ const s = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  appleButton: {
+    height: 48,
+    width: '100%',
+  },
+  appleButtonDisabled: { opacity: 0.55 },
   emailAuthButton: {
     borderRadius: 12,
     paddingVertical: 14,

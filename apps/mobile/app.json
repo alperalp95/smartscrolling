@@ -12,6 +12,7 @@
     "ios": {
       "bundleIdentifier": "com.smartscrolling.mobile",
       "supportsTablet": true,
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

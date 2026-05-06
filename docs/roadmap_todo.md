@@ -50,15 +50,25 @@
 - [x] **P1-11e** Progressive profiling: ilgi alani secimi, gunluk hedef ve bildirim tercihi UI'lari `profile.tsx`'e eklendi; `userPreferences.ts` ile Supabase'e persist ediliyor; migration'lar `p1_11e_daily_goal_preference` ve `p1_11e_notification_preference` uygulandı
 - [x] **P1-11f** Guest mode mesajlasmasi: misafir kullanicinin neleri yapabilecegini ve login ile hangi degerleri kazanacagini UI seviyesinde netlestir
 - [x] **P1-12** Veritabani guvenligi: Yeni kullanicilarda `public.users` tablosunu otomatik dolduran Postgres Trigger
-- [ ] **P1-13** Google OAuth ve Apple Sign-In yapilandirmasi (Dashboard provider config + Expo redirect URI + production callback allowlist)
+- [x] **P1-13** Google OAuth ve Apple Sign-In yapilandirmasi (Google provider/callback/allowlist + Android dev build smoke tamam; Apple native foundation tamam, release-oncesi Apple paid team/config/iOS smoke ayrildi)
 - [x] **P1-14** RLS guvenligi: `20260415174141_p1_14_rls_hardening.sql` migration'i ile `reading_progress`, `bookmarks`, `chat_sessions`, `user_activity` tablolarina granular SELECT/INSERT/UPDATE/DELETE politikalari eklendi
 
 Not:
 - `P1-13` icin gap audit cikartildi.
-- Email/sifre auth omurgasi hazir, ancak social auth tarafinda su an hem UI hem callback handling hem de dashboard/provider hizasi eksik.
-- Onerilen sira: once Google OAuth mobil akisini tamamla, sonra Apple Sign-In native entegrasyonuna gec.
-- Google icin ilk kod dilimi eklendi: helper, callback route ve profile button hazir. Kalan kritik kisim dashboard/provider/allowlist hizasi ve smoke test.
-- Apple tarafinda iOS fiziksel cihaz build/test akisi su an hesap bagimli blocker altinda: kullanilan Apple hesabinda developer team bulunmadigi icin EAS credential/provisioning kurulumu ilerleyemedi.
+- Email/sifre auth omurgasi hazir.
+- Google OAuth mobil akisi icin helper, callback route, profile button, Supabase provider config, redirect allowlist ve Google Cloud callback hizasi dogrulandi.
+- Google login dev build uzerinde fiziksel Android cihazda smoke edildi; release oncesi EAS preview/internal veya production candidate build uzerinde tekrar smoke edilecek.
+- Apple icin secilen teknik yol: iOS native `expo-apple-authentication` + Supabase `signInWithIdToken`; Apple private key/client secret mobil koda konmayacak.
+- Apple native foundation eklendi: dependency/config, `socialAuth.ts` helper'i ve profile iOS-only Apple CTA hazir.
+- `P1-13` repo kapsami kapandi; Apple tarafinda iOS fiziksel cihaz build/test akisi release-oncesi hesap bagimli blocker olarak ayrildi.
+- Kullanıcıdan release oncesi beklenenler:
+  - Apple Developer Program odemesi ve paid team erisimi
+  - Team ID ve `com.smartscrolling.mobile` App ID / Sign in with Apple capability kurulumu
+  - gerekirse Services ID, Key ID ve `.p8` private key ile Supabase Apple provider config
+  - EAS iOS credentials/provisioning kurulumu
+  - iOS fiziksel cihazda Apple Sign-In dev/preview build smoke
+  - Google icin EAS preview/internal veya production candidate build uzerinde tekrar fiziksel cihaz smoke
+  - release web/landing domain'i varsa Supabase `Site URL` degerini `http://localhost:3000` yerine gercek domain ile hizalama
 - `P1-11e` altinda sonraki kucuk dilimler ayrildi:
   - preference persistence
   - daily goal preference
@@ -322,15 +332,14 @@ Not:
 ### Kodda mevcut ama urun olarak tamam sayilmamasi gereken alanlar
 - `P35-05`, `P35-01` ve `P35-06` ilk retention dikeyi olarak kapandi; sonraki adim uyarilar/rekor/grace-period veya daha genis hedef UI'i.
 - Profilde gercek seri sayaci ve rekor gosterimi baglandi; kirilma uyarisi push notification dilimine birakildi, grace/freeze davranisi henuz yok. `P35-02` ve `P35-04` acik kalmali.
-- Google OAuth icin mobil helper, callback route ve profil butonu var; Dashboard/provider allowlist smoke ve Apple native akis tamam olmadigi icin `P1-13` acik kalmali.
+- Google OAuth icin mobil helper, callback route, profil butonu, Dashboard/provider allowlist hizasi ve fiziksel Android dev build smoke tamam; Apple native foundation eklendi. `P1-13` kapandi; Apple Developer config ve iOS fiziksel cihaz smoke release-oncesi blocker olarak takip edilecek.
 - RevenueCat/paywall kodu var; reklam tarafinda production AdMob render, consent ve store beyan smoke bekledigi icin `P3-24b` acik kalmali.
 - Supabase Edge Function dosyalari ve CI sanity check var; schema/function prod deploy workflow'u yok. `P6-11` ve Backend Deployment adimlari acik kalmali.
 
 ### Devam icin onerilen sira
-1. `P1-13`: Google OAuth production callback/allowlist smoke + Apple Sign-In native entegrasyonunu kapat.
-2. `P35-10`/`P35-12` ile push notification altyapisini kurarken `P35-02` streak kirilma uyarisi mesajini ele al; `P35-04` grace/freeze davranisini ayri urun karari olarak tut.
-3. `P6-09b`: hesap/veri silme ve AI icerik raporlama akisini release blocker olarak ele al.
-4. `P6-01`/`P6-02`: auth, bookmark, reader progress ve paywall icin minimum unit/e2e smoke seti kur.
-5. `P1-15o`/`P1-15p`/`P1-15q`: LLM provider abstraction, shadow benchmark ve budget guard ile Groq limit riskini operasyonel hale getir.
+1. `P35-10`/`P35-12` ile push notification altyapisini kurarken `P35-02` streak kirilma uyarisi mesajini ele al; `P35-04` grace/freeze davranisini ayri urun karari olarak tut.
+2. `P6-09b`: hesap/veri silme ve AI icerik raporlama akisini release blocker olarak ele al.
+3. `P6-01`/`P6-02`: auth, bookmark, reader progress ve paywall icin minimum unit/e2e smoke seti kur.
+4. `P1-15o`/`P1-15p`/`P1-15q`: LLM provider abstraction, shadow benchmark ve budget guard ile Groq limit riskini operasyonel hale getir.
 
 *Son guncellenme: 2026-05-02 - v0.6*

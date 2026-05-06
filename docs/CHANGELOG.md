@@ -6,6 +6,20 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.32] - 2026-05-06
+
+#### P1-13 Google OAuth Config ve Smoke Kaydi
+- Supabase Google provider config'i dogrulandi: provider aktif, client id/secret girili, nonce skip kapali ve Supabase OAuth callback URL'i mevcut.
+- Supabase redirect allowlist icinde `mobile://auth/callback` oldugu kaydedildi.
+- Google Cloud OAuth client authorized redirect URI listesinde `https://gfbhzvaqngaxucbjljht.supabase.co/auth/v1/callback` oldugu kaydedildi.
+- Google login dev build uzerinde fiziksel Android cihazda smoke edildi; OAuth donusu ve Supabase session olusumu kabul edildi.
+- P1-13 acik kalmaya devam ediyor: Apple Sign-In native foundation, Apple Developer paid team/config ve iOS fiziksel cihaz smoke release oncesi tamamlanacak.
+- Apple Sign-In icin kucuk task bolumu netlestirildi: `expo-apple-authentication`, iOS-only CTA, Supabase `signInWithIdToken` ve Apple Developer hesabina bagli release blocker ayrildi.
+- Apple native foundation eklendi: `expo-apple-authentication@~8.0.8`, `ios.usesAppleSignIn`, `signInWithApple()` helper'i ve profile iOS-only Apple CTA.
+- Apple identity token'i Supabase `signInWithIdToken({ provider: 'apple' })` ile session'a cevrilecek; Apple private key/client secret mobil koda eklenmedi.
+- P1-13 repo kapsami kapatildi; Apple Developer paid team, Supabase Apple provider config, EAS iOS credentials ve iOS fiziksel cihaz smoke release-oncesi dis bagimlilik olarak task/roadmap notlarina tasindi.
+- Kullanıcıdan beklenen release-oncesi isler notlandi: Apple Developer odemesi/team, Team ID, App ID capability, gerekirse Services ID/Key ID/private key, iOS smoke ve Google preview/production candidate smoke tekrari.
+
 ### [v1.31] - 2026-05-05
 
 #### P6-09b App Store Compliance Baslangici

@@ -82,11 +82,32 @@
 - Profil ekranina Google login CTA'si baglandi.
 - `expo-web-browser` plugin config'i `app.json` icine yazildi.
 
-Kalan kritik dis bagimliliklar:
-- Supabase Dashboard > Google provider setup
-- allowed redirect URL listesi
-- Google Cloud tarafinda uygun client id / callback hizasi
-- dev build ve production build uzerinde smoke test
+## Google Config Confirmation - 2026-05-06
+
+- Supabase Dashboard > Google provider aktif.
+- Supabase Google provider client id girilmis durumda.
+- Supabase Google OAuth callback URL'i Google Cloud OAuth client ile hizali:
+  - `https://gfbhzvaqngaxucbjljht.supabase.co/auth/v1/callback`
+- Supabase Dashboard > Authentication > URL Configuration redirect allowlist icinde mobil callback var:
+  - `mobile://auth/callback`
+- Google Cloud OAuth client authorized redirect URI listesinde Supabase callback URL'i var:
+  - `https://gfbhzvaqngaxucbjljht.supabase.co/auth/v1/callback`
+- Mevcut production app identifiers:
+  - Expo scheme: `mobile`
+  - iOS bundle identifier: `com.smartscrolling.mobile`
+  - Android package: `com.smartscrolling.mobile`
+
+## Google Smoke Result - 2026-05-06
+
+- Google login dev build uzerinde fiziksel Android cihazda kullanici tarafindan smoke edildi.
+- Beklenen akis dogrulandi:
+  - Profil ekraninda `Google ile Devam Et`
+  - Google hesap secimi / OAuth akisi
+  - uygulamaya `mobile://auth/callback` ile donus
+  - Supabase session olusumu
+- Google tarafinda kalan release-oncesi kontrol:
+  - ayni smoke akisini EAS preview/internal veya production candidate build uzerinde tekrar et
+  - release domain'i varsa `Site URL` degerini `http://localhost:3000` yerine gercek web/landing URL ile hizala
 
 ## Decision Note
 
@@ -103,10 +124,85 @@ Kalan kritik dis bagimliliklar:
 
 ## Apple Icin Beklenen Sonraki Isler
 
-- Expo/iOS icin secilecek paket kararini netlestir
-- gerekli native dependency ve capability ayarlarini ekle
-- Apple identity token'ini Supabase `signInWithIdToken` ile session'a cevir
-- iOS fiziksel cihaz smoke test'i yap
+- Expo/iOS icin `expo-apple-authentication` kullan.
+- Apple native response icindeki `identityToken` degerini Supabase `signInWithIdToken({ provider: 'apple' })` ile session'a cevir.
+- Apple butonunu yalnizca iOS ve uygun cihazlarda goster; Android/web tarafinda Apple CTA gosterme.
+- Apple full name bilgisinin yalnizca ilk authorization sirasinda gelebilecegini not et; gelirse user metadata'ya kaydet, yoksa akisi bozma.
+- Secret, service role key, Apple private key veya generated client secret mobil koda koyma.
+
+## Apple Foundation Task Split - 2026-05-06
+
+1. Native dependency/config foundation
+   - [x] `expo-apple-authentication` dependency'sini Expo uyumlu surumle ekle.
+   - [x] `apps/mobile/app.json` icinde Apple Sign-In capability icin Expo config'i ekle.
+   - Beklenen config: iOS bundle id `com.smartscrolling.mobile`.
+2. Mobile helper foundation
+   - [x] `socialAuth.ts` icine Apple helper'i ekle.
+   - [x] `AppleAuthentication.signInAsync()` sonucu `identityToken` yoksa kontrollu hata don.
+   - [x] `supabase.auth.signInWithIdToken({ provider: 'apple', token })` ile session olustur.
+3. Profile UI foundation
+   - [x] Google CTA'nin altina iOS-only Apple CTA ekle.
+   - [x] Android/web'de Apple button render etme.
+   - [x] Loading/error feedback'i mevcut auth feedback modeliyle ayni tut.
+4. Verification foundation
+   - [x] `npm run lint`
+   - [x] `npm run typecheck`
+   - [x] `npx expo config --type public`
+   - [x] iOS olmayan platformlarda Apple CTA'nin gorunmedigini statik platform guard ile kontrol et.
+
+## Apple Foundation Implementation - 2026-05-06
+
+- `expo-apple-authentication@~8.0.8` mobile workspace'e eklendi.
+- `apps/mobile/app.json` icinde `ios.usesAppleSignIn = true` eklendi.
+- `apps/mobile/src/lib/socialAuth.ts` icinde `isAppleSignInAvailable()` ve `signInWithApple()` helper'lari eklendi.
+- Apple native sign-in nonce ile baslatiliyor; gelen `identityToken` Supabase `signInWithIdToken({ provider: 'apple' })` ile session'a cevriliyor.
+- Apple full name yalnizca native response'da gelirse user metadata'ya yaziliyor; gelmezse akisi bozmayacak.
+- `apps/mobile/app/(tabs)/profile.tsx` icinde Apple proprietary button yalnizca iOS ve `AppleAuthentication.isAvailableAsync()` true ise render ediliyor.
+- Android/web tarafinda Apple CTA gosterilmiyor.
+- Bu foundation P1-13 kapsamindaki kod isini kapatir; Apple Developer paid team, Supabase Apple provider config ve iOS fiziksel cihaz smoke release-oncesi dis bagimlilik olarak takip edilecek.
+- Verification gecti: `npm run lint`, `npm run typecheck`, `npx expo config --type public`.
+
+## Kullanıcıdan Beklenen Release-Oncesi Isler
+
+- Apple Developer Program odemesini tamamla ve paid team erisimini aktif et.
+- Apple Developer tarafinda Team ID'yi not al.
+- App ID / Bundle ID `com.smartscrolling.mobile` icin Sign in with Apple capability'yi aktif et.
+- EAS iOS credentials/provisioning akisinin paid team ile tamamlanabildigini dogrula.
+- Supabase Dashboard > Apple provider config icin gerekirse Services ID, Key ID ve `.p8` private key hazirla.
+- Apple private key / generated client secret degerlerini mobil koda veya repo dosyalarina koyma; yalnizca Apple Developer / Supabase Dashboard tarafinda kullan.
+- Apple/Supabase callback hizasini release oncesi kontrol et:
+  - `https://gfbhzvaqngaxucbjljht.supabase.co/auth/v1/callback`
+- iOS fiziksel cihazda dev/preview build smoke yap:
+  - Apple button gorunur
+  - native sheet acilir
+  - Supabase session olusur
+  - app restart sonrasi session korunur
+  - sign out calisir
+- Google icin release oncesi EAS preview/internal veya production candidate build uzerinde bir kez daha fiziksel cihaz smoke yap.
+- Gercek web/landing domain yayina alinacaksa Supabase `Site URL` degerini `http://localhost:3000` yerine release domain'iyle hizala.
+
+## Apple Dashboard / Developer Release Blocker
+
+- Kullanici henuz paid Apple Developer Program hesabina sahip degil.
+- Bu nedenle Apple release smoke su an hesap/yetki bagimliligi nedeniyle beklemede.
+- Release oncesi tamamlanmasi gereken dis config:
+  - Apple Developer paid team
+  - Team ID
+  - App ID / Bundle ID: `com.smartscrolling.mobile`
+  - Sign in with Apple capability
+  - Gerekirse Services ID
+  - Gerekirse Key ID ve `.p8` private key ile Supabase Apple provider secret kurulumu
+  - Supabase Dashboard > Apple provider config
+  - Apple/Supabase callback hizasi: `https://gfbhzvaqngaxucbjljht.supabase.co/auth/v1/callback`
+  - iOS fiziksel cihazda dev/preview build smoke
+- Apple final smoke kabul kriterleri:
+  - Apple button iOS cihazda gorunur
+  - Sign in with Apple native sheet acilir
+  - kullanici izin verir
+  - Supabase session olusur
+  - profil auth provider Apple olarak gorunur veya hesap bagli duruma gecer
+  - app restart sonrasi session korunur
+  - sign out calisir
 
 ## Apple Build / Test Blocker
 
@@ -122,8 +218,8 @@ Kalan kritik dis bagimliliklar:
 
 ## Sonuc
 
-- Sosyal auth tarafinda sorun "kucuk bir eksik ayar" degil.
-- Su an Google ve Apple icin hem UI hem helper hem callback hem de dashboard hizasi eksik.
-- En dusuk riskli yol:
-  - once Google
-  - sonra Apple
+- P1-13 uygulama/repo kapsami 2026-05-06 itibariyla kapatildi.
+- Google OAuth kodu, Supabase provider config'i, redirect allowlist'i, Google Cloud callback hizasi ve fiziksel Android dev build smoke tamam.
+- Apple Sign-In native foundation tamam: Expo dependency/config, iOS-only CTA ve Supabase `signInWithIdToken` helper'i hazir.
+- P1-13 kapanisi Apple Developer odemesi yapilmadan alindi; Apple paid team/config ve iOS fiziksel cihaz smoke release-oncesi dis bagimlilik olarak ayrildi.
+- Son verification: `npm run lint`, `npm run typecheck`, `npx expo config --type public`.
