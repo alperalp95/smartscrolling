@@ -100,7 +100,11 @@ async function fetchSeededWikipediaArticles(lang, count, options = {}) {
   const excludedTitles = new Set(
     [...(options.excludeTitles ?? [])].map((title) => normalizeSeedTitle(title)),
   );
-  const seedQueue = buildWikipediaSeedQueue(Math.max(count * 4, 30), lang);
+  const seedQueueMultiplier = options.seedQueueMultiplier ?? 4;
+  const seedQueue = buildWikipediaSeedQueue(
+    Math.max(Math.ceil(count * seedQueueMultiplier), 30),
+    lang,
+  );
 
   for (const seed of seedQueue) {
     if (articles.length >= count) {
@@ -141,9 +145,11 @@ async function fetchWikipediaArticlesInternal(
   const candidatePool = [];
   const seenUrls = new Set(inheritedSeenUrls ?? []);
   let attempts = 0;
-  const maxAttempts = count * 40;
+  const poolMultiplier = options.randomPoolMultiplier ?? 4;
+  const candidatePoolTarget = Math.max(count, Math.ceil(count * poolMultiplier));
+  const maxAttempts = count * (options.randomAttemptMultiplier ?? 40);
 
-  while (candidatePool.length < count * 4 && attempts < maxAttempts) {
+  while (candidatePool.length < candidatePoolTarget && attempts < maxAttempts) {
     attempts += 1;
     const targetCategory = WIKI_THEME_SEQUENCE[attempts % WIKI_THEME_SEQUENCE.length];
     const isRelaxedPass = attempts > maxAttempts / 2;

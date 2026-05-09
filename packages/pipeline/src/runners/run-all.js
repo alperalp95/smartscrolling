@@ -239,6 +239,9 @@ async function main() {
       ? await fetchWikipediaArticles(CONFIG.wikipedia.lang, wikipediaFetchCount, {
           excludeTitles: existingWikipediaSourceTitles,
           allowRandomFallback: CONFIG.run.targetSaved !== null,
+          seedQueueMultiplier: CONFIG.run.targetSaved !== null ? 2 : 4,
+          randomPoolMultiplier: CONFIG.run.targetSaved !== null ? 1.25 : 4,
+          randomAttemptMultiplier: CONFIG.run.targetSaved !== null ? 16 : 40,
         })
       : [];
   console.log(
