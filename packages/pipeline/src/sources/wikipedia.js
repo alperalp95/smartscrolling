@@ -70,7 +70,7 @@ export async function fetchWikipediaArticles(lang = 'en', count = 20, options = 
     return seededArticles.slice(0, count);
   }
 
-  if (lang === 'tr' && seededArticles.length > 0) {
+  if (lang === 'tr' && seededArticles.length > 0 && options.allowRandomFallback !== true) {
     return seededArticles;
   }
 

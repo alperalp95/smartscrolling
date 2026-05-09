@@ -23,7 +23,13 @@ const DEFAULT_CONFIG = {
   medlineplus: { count: 4 },
   nasa: { count: 30 },
   pdfCurated: { count: 0, filePath: null, offset: 0 },
+  run: { targetSaved: null, maxCandidates: null, maxGroq: null },
 };
+
+function parseNonNegativeInt(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) || parsed < 0 ? null : parsed;
+}
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -47,9 +53,9 @@ function parseArgs(argv) {
       continue;
     }
 
-    const parsed = Number.parseInt(nextValue, 10);
+    const parsed = parseNonNegativeInt(nextValue);
 
-    if (Number.isNaN(parsed) || parsed < 0) {
+    if (parsed === null) {
       continue;
     }
 
@@ -76,6 +82,18 @@ function parseArgs(argv) {
     if (arg === '--pdf-curated-offset') {
       overrides.pdfCurated = { ...(overrides.pdfCurated ?? {}), offset: parsed };
     }
+
+    if (arg === '--target-saved') {
+      overrides.run = { ...(overrides.run ?? {}), targetSaved: parsed };
+    }
+
+    if (arg === '--max-candidates') {
+      overrides.run = { ...(overrides.run ?? {}), maxCandidates: parsed };
+    }
+
+    if (arg === '--max-groq') {
+      overrides.run = { ...(overrides.run ?? {}), maxGroq: parsed };
+    }
   }
 
   return {
@@ -84,11 +102,13 @@ function parseArgs(argv) {
     medlineplus: { ...DEFAULT_CONFIG.medlineplus, ...(overrides.medlineplus ?? {}) },
     nasa: { ...DEFAULT_CONFIG.nasa, ...(overrides.nasa ?? {}) },
     pdfCurated: { ...DEFAULT_CONFIG.pdfCurated, ...(overrides.pdfCurated ?? {}) },
+    run: { ...DEFAULT_CONFIG.run, ...(overrides.run ?? {}) },
   };
 }
 
 function createRunStats() {
   return {
+    candidates_seen: 0,
     processed: 0,
     saved: 0,
     duplicate_source_url: 0,
@@ -98,6 +118,8 @@ function createRunStats() {
     consistency_rejected: 0,
     insert_error: 0,
     groq_failed: 0,
+    groq_attempted: 0,
+    rate_limited: 0,
     verified_true: 0,
   };
 }
@@ -126,6 +148,7 @@ function applyInsertResult(stats, result) {
 
 function logSourceSummary(label, stats) {
   console.log(`\n--- ${label} ozeti ---`);
+  console.log(`   candidates_seen: ${stats.candidates_seen}`);
   console.log(`   processed: ${stats.processed}`);
   console.log(`   saved: ${stats.saved}`);
   console.log(`   duplicate_source_url: ${stats.duplicate_source_url}`);
@@ -135,6 +158,8 @@ function logSourceSummary(label, stats) {
   console.log(`   consistency_rejected: ${stats.consistency_rejected}`);
   console.log(`   insert_error: ${stats.insert_error}`);
   console.log(`   groq_failed: ${stats.groq_failed}`);
+  console.log(`   groq_attempted: ${stats.groq_attempted}`);
+  console.log(`   rate_limited: ${stats.rate_limited}`);
   console.log(`   verified_true: ${stats.verified_true}`);
 }
 
@@ -152,6 +177,43 @@ function mergeStats(total, partial) {
   }
 }
 
+function formatOptionalLimit(value) {
+  return value === null || value === undefined ? 'none' : String(value);
+}
+
+function getWikipediaFetchCount(config) {
+  if (config.wikipedia.count <= 0 && config.run.targetSaved === null) {
+    return 0;
+  }
+
+  if (config.run.maxCandidates !== null) {
+    return config.run.maxCandidates;
+  }
+
+  const targetOrCount = config.run.targetSaved ?? config.wikipedia.count;
+  return targetOrCount > 0 ? Math.ceil(targetOrCount * 6) : 0;
+}
+
+function getWikipediaStopReason(stats, config) {
+  if (config.run.targetSaved !== null && stats.saved >= config.run.targetSaved) {
+    return 'target_saved_reached';
+  }
+
+  if (config.run.maxCandidates !== null && stats.candidates_seen >= config.run.maxCandidates) {
+    return 'max_candidates_reached';
+  }
+
+  if (config.run.maxGroq !== null && stats.groq_attempted >= config.run.maxGroq) {
+    return 'max_groq_reached';
+  }
+
+  if (config.run.targetSaved === null && stats.processed >= config.wikipedia.count) {
+    return 'wikipedia_count_reached';
+  }
+
+  return null;
+}
+
 async function main() {
   console.log('SmartScrolling AI data pipeline baslatildi.\n');
 
@@ -165,30 +227,36 @@ async function main() {
   const nasaStats = createRunStats();
   const pdfCuratedStats = createRunStats();
 
-  console.log(`\nWikipedia'dan ${CONFIG.wikipedia.count} makale cekiliyor...`);
+  console.log(
+    `\nWikipedia job: count=${CONFIG.wikipedia.count} target_saved=${formatOptionalLimit(CONFIG.run.targetSaved)} max_candidates=${formatOptionalLimit(CONFIG.run.maxCandidates)} max_groq=${formatOptionalLimit(CONFIG.run.maxGroq)} lang=${CONFIG.wikipedia.lang}`,
+  );
   const wikipediaFetchStartedAt = Date.now();
-  const wikipediaFetchMultiplier = 6;
-  const wikipediaFetchCount =
-    CONFIG.wikipedia.count > 0 ? Math.ceil(CONFIG.wikipedia.count * wikipediaFetchMultiplier) : 0;
+  const wikipediaFetchCount = getWikipediaFetchCount(CONFIG);
   const existingWikipediaSourceTitles =
-    CONFIG.wikipedia.count > 0 ? await getExistingWikipediaSourceTitles() : new Set();
+    wikipediaFetchCount > 0 ? await getExistingWikipediaSourceTitles() : new Set();
   const wikiArticles =
-    CONFIG.wikipedia.count > 0
+    wikipediaFetchCount > 0
       ? await fetchWikipediaArticles(CONFIG.wikipedia.lang, wikipediaFetchCount, {
           excludeTitles: existingWikipediaSourceTitles,
+          allowRandomFallback: CONFIG.run.targetSaved !== null,
         })
       : [];
   console.log(
-    `   ${wikiArticles.length} makale alindi, Groq ile en fazla ${CONFIG.wikipedia.count} aday islenecek... fetch=${formatDuration(wikipediaFetchStartedAt)} existing_seed_titles=${existingWikipediaSourceTitles.size}`,
+    `   ${wikiArticles.length} makale alindi... fetch=${formatDuration(wikipediaFetchStartedAt)} existing_seed_titles=${existingWikipediaSourceTitles.size}`,
   );
   const existingWikiUrls = await getExistingSourceUrls(wikiArticles.map((article) => article.url));
+  let wikipediaStopReason = wikiArticles.length === 0 ? 'no_candidates' : 'candidate_exhausted';
 
   for (const article of wikiArticles) {
-    if (wikipediaStats.processed >= CONFIG.wikipedia.count) {
+    const stopReason = getWikipediaStopReason(wikipediaStats, CONFIG);
+
+    if (stopReason) {
+      wikipediaStopReason = stopReason;
       break;
     }
 
     const itemStartedAt = Date.now();
+    wikipediaStats.candidates_seen += 1;
 
     if (existingWikiUrls.has(article.url)) {
       console.log(`[Preflight] skipped existing Wikipedia source_url: "${article.title}"`);
@@ -215,7 +283,16 @@ async function main() {
       continue;
     }
 
+    if (CONFIG.run.maxGroq !== null && wikipediaStats.groq_attempted >= CONFIG.run.maxGroq) {
+      wikipediaStopReason = 'max_groq_reached';
+      console.log(
+        `[RunAll] max_groq=${CONFIG.run.maxGroq} limitine ulasildi; Groq'a yeni aday gonderilmiyor.`,
+      );
+      break;
+    }
+
     const groqStartedAt = Date.now();
+    wikipediaStats.groq_attempted += 1;
     const fact = await convertToFact(
       article.extract,
       'Wikipedia',
@@ -229,6 +306,8 @@ async function main() {
 
     if (isConversionRateLimited(fact)) {
       console.warn('[RunAll] Groq rate limit goruldu; Wikipedia dongusu erken durduruluyor.');
+      wikipediaStats.rate_limited += 1;
+      wikipediaStopReason = 'rate_limited';
       break;
     }
 
@@ -247,9 +326,16 @@ async function main() {
     console.log(
       `[Timing] Wikipedia "${article.title}" preflight=${preflightDuration} groq=${groqDuration} insert=${insertDuration} total=${formatDuration(itemStartedAt)}`,
     );
+
+    if (CONFIG.run.targetSaved !== null && wikipediaStats.saved >= CONFIG.run.targetSaved) {
+      wikipediaStopReason = 'target_saved_reached';
+      break;
+    }
+
     await sleep(200);
   }
 
+  console.log(`[RunAll] Wikipedia stop_reason=${wikipediaStopReason}`);
   logSourceSummary('Wikipedia', wikipediaStats);
   mergeStats(totalStats, wikipediaStats);
 
@@ -262,6 +348,8 @@ async function main() {
   );
 
   for (const article of stanfordArticles) {
+    stanfordStats.candidates_seen += 1;
+
     if (existingStanfordUrls.has(article.url)) {
       console.log(`[Preflight] skipped existing Stanford source_url: "${article.title}"`);
       stanfordStats.duplicate_source_url += 1;
@@ -281,6 +369,7 @@ async function main() {
       continue;
     }
 
+    stanfordStats.groq_attempted += 1;
     const fact = await convertToFact(
       article.extract,
       article.sourceLabel,
@@ -289,6 +378,12 @@ async function main() {
       article.imageUrl,
       article.title,
     );
+
+    if (isConversionRateLimited(fact)) {
+      console.warn('[RunAll] Groq rate limit goruldu; Stanford dongusu erken durduruluyor.');
+      stanfordStats.rate_limited += 1;
+      break;
+    }
 
     if (!fact) {
       stanfordStats.groq_failed += 1;
@@ -312,6 +407,8 @@ async function main() {
   );
 
   for (const article of medlinePlusArticles) {
+    medlinePlusStats.candidates_seen += 1;
+
     if (existingMedlineUrls.has(article.url)) {
       console.log(`[Preflight] skipped existing MedlinePlus source_url: "${article.title}"`);
       medlinePlusStats.duplicate_source_url += 1;
@@ -331,6 +428,7 @@ async function main() {
       continue;
     }
 
+    medlinePlusStats.groq_attempted += 1;
     const fact = await convertToFact(
       article.extract,
       article.sourceLabel,
@@ -339,6 +437,12 @@ async function main() {
       article.imageUrl,
       article.title,
     );
+
+    if (isConversionRateLimited(fact)) {
+      console.warn('[RunAll] Groq rate limit goruldu; MedlinePlus dongusu erken durduruluyor.');
+      medlinePlusStats.rate_limited += 1;
+      break;
+    }
 
     if (!fact) {
       medlinePlusStats.groq_failed += 1;
@@ -359,6 +463,8 @@ async function main() {
   const existingNasaUrls = await getExistingSourceUrls(nasaItems.map((item) => item.url));
 
   for (const item of nasaItems) {
+    nasaStats.candidates_seen += 1;
+
     if (existingNasaUrls.has(item.url)) {
       console.log(`[Preflight] skipped existing NASA source_url: "${item.title}"`);
       nasaStats.duplicate_source_url += 1;
@@ -378,6 +484,7 @@ async function main() {
       continue;
     }
 
+    nasaStats.groq_attempted += 1;
     const fact = await convertToFact(
       item.extract,
       item.sourceLabel ?? 'NASA APOD',
@@ -386,6 +493,12 @@ async function main() {
       item.imageUrl,
       item.title,
     );
+
+    if (isConversionRateLimited(fact)) {
+      console.warn('[RunAll] Groq rate limit goruldu; NASA dongusu erken durduruluyor.');
+      nasaStats.rate_limited += 1;
+      break;
+    }
 
     if (!fact) {
       nasaStats.groq_failed += 1;
@@ -413,6 +526,8 @@ async function main() {
     );
 
     for (const item of pdfCuratedItems) {
+      pdfCuratedStats.candidates_seen += 1;
+
       if (existingPdfCuratedUrls.has(item.url)) {
         console.log(`[Preflight] skipped existing PDF curated source_url: "${item.title}"`);
         pdfCuratedStats.duplicate_source_url += 1;
@@ -432,6 +547,7 @@ async function main() {
         continue;
       }
 
+      pdfCuratedStats.groq_attempted += 1;
       const fact = await convertToFact(
         item.extract,
         item.sourceLabel,
@@ -440,6 +556,12 @@ async function main() {
         item.imageUrl,
         item.title,
       );
+
+      if (isConversionRateLimited(fact)) {
+        console.warn('[RunAll] Groq rate limit goruldu; PDF curated dongusu erken durduruluyor.');
+        pdfCuratedStats.rate_limited += 1;
+        break;
+      }
 
       if (!fact) {
         pdfCuratedStats.groq_failed += 1;
@@ -457,6 +579,7 @@ async function main() {
 
   console.log(`\n${'='.repeat(50)}`);
   console.log('Pipeline tamamlandi');
+  console.log(`   candidates_seen: ${totalStats.candidates_seen}`);
   console.log(`   processed: ${totalStats.processed}`);
   console.log(`   saved: ${totalStats.saved}`);
   console.log(`   duplicate_source_url: ${totalStats.duplicate_source_url}`);
@@ -466,6 +589,8 @@ async function main() {
   console.log(`   consistency_rejected: ${totalStats.consistency_rejected}`);
   console.log(`   insert_error: ${totalStats.insert_error}`);
   console.log(`   groq_failed: ${totalStats.groq_failed}`);
+  console.log(`   groq_attempted: ${totalStats.groq_attempted}`);
+  console.log(`   rate_limited: ${totalStats.rate_limited}`);
   console.log(`   verified_true: ${totalStats.verified_true}`);
   console.log('='.repeat(50));
 }

@@ -6,8 +6,8 @@ Release sonrasi Wikipedia kaynakli fact uretimini kucuk, olculebilir ve maliyet 
 
 Hedef davranis:
 
-- Gunluk yaklasik 10 yeni kaliteli fact.
-- Haftalik toplam yaklasik 100 yeni fact.
+- Gunluk sabah/aksam 15'er kayit hedefiyle yaklasik 30 yeni kaliteli fact.
+- Haftalik toplam en az 100 yeni fact floor'u.
 - Groq rate/token limitine gelince temiz durma.
 - Kalite guard'lari gevsetmeden ilerleme.
 
@@ -21,6 +21,7 @@ Ana hedef dosyalar:
 - `packages/pipeline/src/lib/supabase.js`
 - `packages/pipeline/src/lib/quality-policy.js`
 - `packages/pipeline/src/lib/wiki-source-policy.js`
+- `.github/workflows/facts-ingest.yml`
 
 Dokumantasyon:
 
@@ -37,37 +38,47 @@ Dokumantasyon:
 
 ## Uygulama Plani
 
-- [ ] Runner'a `--target-saved` parametresi ekle.
-  - Ornek: `--target-saved 10`.
+- [x] Runner'a `--target-saved` parametresi ekle.
+  - Ornek: `--target-saved 15`.
   - Job, kaydedilen fact sayisi hedefe ulasinca durmali.
 
-- [ ] Runner'a `--max-candidates` parametresi ekle.
-  - Ornek: `--max-candidates 40`.
+- [x] Runner'a `--max-candidates` parametresi ekle.
+  - Ornek: `--max-candidates 90`.
   - Wikipedia source fetch tarafinda sonsuz aday arama yok.
 
-- [ ] Runner'a `--max-groq` parametresi ekle.
-  - Ornek: `--max-groq 20`.
+- [x] Runner'a `--max-groq` parametresi ekle.
+  - Ornek: `--max-groq 45`.
   - Quality gate'e takilan adaylar Groq butcesini tamamen tuketmemeli.
 
-- [ ] `stop_on_rate_limit` davranisini production default yap.
+- [x] `stop_on_rate_limit` davranisini production default yap.
   - Groq 429 gorulunce job basarisiz gibi davranmak yerine temiz ozetle bitsin.
-  - Exit code karari ayrica netlestirilsin: cron retry firtinasi yaratmayacak sekilde.
+  - Exit code retry firtinasi yaratmayacak sekilde temiz ozetle tamamlanir.
 
-- [ ] Sadece Wikipedia lane'i calistiran script alias'i ekle.
+- [x] Sadece Wikipedia lane'i calistiran script alias'i ekle.
   - Ornek: `npm run facts:wikipedia-daily`.
-  - Varsayilanlar: `target_saved=10`, `max_candidates=40`, `max_groq=20`.
+  - Varsayilanlar: `target_saved=15`, `max_candidates=90`, `max_groq=45`.
 
-- [ ] Haftalik catch-up icin ayri alias veya parametre seti tanimla.
+- [x] Haftalik catch-up icin ayri alias veya parametre seti tanimla.
   - Ornek: `target_saved=50`, `max_candidates=160`, `max_groq=90`.
+
+- [x] GitHub Actions schedule ekle.
+  - Gunluk job: 05:00 ve 17:00 UTC (08:00 ve 20:00 Europe/Istanbul).
+  - Haftalik catch-up check: Pazar 06:00 UTC.
+  - Manuel `workflow_dispatch` ile `daily` veya `catchup` calistirilabilir.
+
+- [x] Haftalik floor check ekle.
+  - Son 7 gunde 100 kayit altindaysa catch-up kosar.
+  - Floor saglandiysa catch-up Groq harcamadan pas gecer.
 
 ## Kabul Kriterleri
 
-- Gunluk job tek komutla calisir.
-- Job 10 kayit hedefini gorunce durur.
+- Gunluk job tek komutla calisir: `npm run facts:wikipedia-daily`.
+- Job 15 kayit hedefini gorunce durur.
 - Groq rate limit durumunda kontrollu durur ve ozet verir.
 - Duplicate, quality reject ve Groq fail nedenleri run sonunda gorunur.
+- GitHub Actions cron production secret'lariyla calisacak sekilde tanimlidir.
 - `npm run typecheck` temiz gecer.
-- Kucuk pilot: `target_saved=2`, `max_candidates=12`, `max_groq=5` ile dogrulanir.
+- Kucuk pilot: `npm run facts:run-all -- --wikipedia-count 2 --target-saved 2 --max-candidates 12 --max-groq 5 --stanford-count 0 --medlineplus-count 0 --nasa-count 0` ile dogrulanir.
 
 ## Notlar
 

@@ -1,0 +1,75 @@
+name: Facts Ingest
+
+on:
+  schedule:
+    # 08:00 and 20:00 Europe/Istanbul.
+    - cron: "0 5,17 * * *"
+    # Weekly catch-up check: Sunday 09:00 Europe/Istanbul.
+    - cron: "0 6 * * 0"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode"
+        required: true
+        default: "daily"
+        type: choice
+        options:
+          - daily
+          - catchup
+
+permissions:
+  contents: read
+
+concurrency:
+  group: facts-ingest-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    name: Wikipedia facts ingest
+    runs-on: ubuntu-latest
+    env:
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Determine mode
+        id: mode
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "mode=${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event.schedule }}" == "0 6 * * 0" ]]; then
+            echo "mode=catchup" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=daily" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run daily Wikipedia ingest
+        if: steps.mode.outputs.mode == 'daily'
+        run: npm run facts:wikipedia-daily
+
+      - name: Check weekly facts floor
+        if: steps.mode.outputs.mode == 'catchup'
+        id: weekly
+        run: npm run facts:weekly-check -- --floor 100 --days 7
+
+      - name: Run weekly catch-up
+        if: steps.mode.outputs.mode == 'catchup' && steps.weekly.outputs.needs_catchup == 'true'
+        run: npm run facts:wikipedia-catchup
+
+      - name: Skip weekly catch-up
+        if: steps.mode.outputs.mode == 'catchup' && steps.weekly.outputs.needs_catchup != 'true'
+        run: echo "Weekly facts floor already satisfied; catch-up skipped."

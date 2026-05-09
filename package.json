@@ -16,6 +16,9 @@
     "books:cleanup-sections": "npm --workspace @smartscrolling/pipeline run cleanup:book-sections --",
     "facts:cleanup": "npm --workspace @smartscrolling/pipeline run cleanup:facts --",
     "facts:run-all": "npm --workspace @smartscrolling/pipeline run run:all --",
+    "facts:wikipedia-daily": "npm --workspace @smartscrolling/pipeline run run:wikipedia-daily --",
+    "facts:wikipedia-catchup": "npm --workspace @smartscrolling/pipeline run run:wikipedia-catchup --",
+    "facts:weekly-check": "npm --workspace @smartscrolling/pipeline run check:facts-weekly-target --",
     "facts:report": "npm --workspace @smartscrolling/pipeline run report:facts --"
   },
   "devDependencies": {

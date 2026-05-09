@@ -74,6 +74,11 @@ const LOW_QUALITY_LANGUAGE_PATTERNS = [
   /\bbarkodlarin\b/i,
   /\byuksek degerlerde\b/i,
   /\bkitch bir stile\b/i,
+  /\bkuantum mekaniğine da\b/i,
+  /\bhala bugun bile\b/i,
+  /\bhala bugün bile\b/i,
+  /\bbüyük bir etki\b/i,
+  /\bbüyük etki\b/i,
   /\bbüyük bir şekilde\b/i,
   /\bbüyük etki yarattı\b/i,
   /\bbuyuk bir etki\b/i,
@@ -346,6 +351,13 @@ function firstSentenceWordCount(text) {
   return wordCount(firstSentence ?? '');
 }
 
+function sentenceCount(text) {
+  return (text ?? '')
+    .split(/[.!?]+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean).length;
+}
+
 function hasShortFormAllowance(title, content) {
   return title.length >= 20 && wordCount(content) >= 58 && firstSentenceWordCount(content) >= 9;
 }
@@ -568,6 +580,10 @@ export function evaluateFactQuality(fact) {
       : hasShortFormAllowance(title, content))
   ) {
     return { ok: false, reason: 'content_too_short' };
+  }
+
+  if (sourceKind === 'wikipedia' && sentenceCount(content) < 5) {
+    return { ok: false, reason: 'insufficient_sentence_count' };
   }
 
   if (!isPdfCurated && hasExcessiveSentenceRepetition(content)) {
