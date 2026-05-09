@@ -85,3 +85,11 @@ Dokumantasyon:
 - Kategori esitligi hedef degildir.
 - Category DB'de kalmaya devam eder; FTUE, For You ve ranking icin gereklidir.
 - Seed'ler discovery baslangic noktasi olarak kullanilir; feed urun kararini temsil etmez.
+
+## Kapanis Notu
+
+- Commit/push tamamlandi: `9ac1bc2 feat: schedule wikipedia facts ingest`.
+- GitHub repository secrets eklendi: `GROQ_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
+- Manuel GitHub Actions `Facts Ingest` calistirmasinda `Ortam degiskenleri dogrulandi.` logu goruldu; workflow production secret'larini okuyabiliyor.
+- Canli pilotta dusuk kaliteli iki Wikipedia fact DB'ye yazildi ve ID bazli silindi; buna karsilik `quality-policy` icinde dil hatasi, yetersiz cumle sayisi ve fazla genel tekrar/etki dili guard'lari sikilastirildi.
+- Turkce Wikipedia seed havuzu hedef adedi dolduramadiginda, yalnizca `--target-saved` modunda kontrollu random fallback devreye alindi.
