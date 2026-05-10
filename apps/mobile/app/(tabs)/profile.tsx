@@ -29,6 +29,12 @@ import {
 import { promptForPremium } from '../../src/lib/premiumPrompt';
 import { presentCustomerCenterSafe } from '../../src/lib/purchases';
 import {
+  disableCurrentExpoPushToken,
+  disableUserPushTokens,
+  refreshCurrentExpoPushTokenIfPermissionGranted,
+  upsertCurrentExpoPushToken,
+} from '../../src/lib/pushTokens';
+import {
   isAppleSignInAvailable,
   signInWithApple,
   signInWithGoogle,
@@ -193,6 +199,7 @@ export default function ProfileScreen() {
 
       if (permission.status === 'granted') {
         notificationPermissionWasRevokedRef.current = false;
+        void refreshCurrentExpoPushTokenIfPermissionGranted(user.id);
         return;
       }
 
@@ -208,6 +215,7 @@ export default function ProfileScreen() {
         notificationPermissionWasRevokedRef.current = true;
         await updateNotificationPreference(user.id, false);
         await cancelSmartScrollingScheduledNotifications();
+        await disableUserPushTokens(user.id);
 
         if (cancelled) {
           return;
@@ -362,6 +370,9 @@ export default function ProfileScreen() {
 
   async function performSignOut() {
     setIsSubmitting(true);
+    if (user?.id) {
+      await disableCurrentExpoPushToken(user.id);
+    }
     const { error } = await supabase.auth.signOut();
     setIsSubmitting(false);
 
@@ -586,9 +597,19 @@ export default function ProfileScreen() {
       setNotificationsEnabled(savedValue);
       setIsNotificationTimePanelVisible(false);
       const scheduleResult = await reconcileProfileNotificationSchedule(savedValue);
+      const tokenResult = await upsertCurrentExpoPushToken(user.id);
+      const tokenMessage =
+        tokenResult.status === 'saved'
+          ? tokenResult.message
+          : `Remote push: ${tokenResult.message}`;
       setAuthFeedback({
-        tone: scheduleResult.status === 'error' ? 'error' : 'success',
-        message: `${notificationTimeSummary} hatirlaticisi hazir. ${scheduleResult.message}`,
+        tone:
+          scheduleResult.status === 'error'
+            ? 'error'
+            : tokenResult.status === 'error'
+              ? 'info'
+              : 'success',
+        message: `${notificationTimeSummary} hatirlaticisi hazir. ${scheduleResult.message} ${tokenMessage}`,
       });
     } catch (error) {
       const message =
@@ -620,6 +641,7 @@ export default function ProfileScreen() {
         setNotificationsEnabled(savedValue);
         setIsNotificationTimePanelVisible(false);
         const cancelResult = await cancelSmartScrollingScheduledNotifications();
+        await disableUserPushTokens(user.id);
         setAuthFeedback({
           tone: cancelResult.status === 'error' ? 'error' : 'success',
           message: 'Bildirim tercihin kapatildi ve pending hatirlaticilar temizlendi.',
@@ -747,6 +769,21 @@ export default function ProfileScreen() {
           </Text>
           <Ionicons name="arrow-forward" size={14} color="#a78bfa" />
         </TouchableOpacity>
+
+        {isLoggedIn && authFeedback ? (
+          <View
+            style={[
+              s.feedbackBox,
+              authFeedback.tone === 'error'
+                ? s.feedbackError
+                : authFeedback.tone === 'success'
+                  ? s.feedbackSuccess
+                  : s.feedbackInfo,
+            ]}
+          >
+            <Text style={s.feedbackText}>{authFeedback.message}</Text>
+          </View>
+        ) : null}
 
         {!isLoggedIn ? (
           <View style={s.authCard}>

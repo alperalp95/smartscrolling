@@ -212,10 +212,10 @@ Not:
 - [x] **P35-09** Haftalik aktivite grafigi - profil ozetindeki 7 gunluk nokta satiri, `facts_read` degerini gosteren kompakt haftalik bar grafige donusturuldu (`docs/tasks/p35_09_weekly_activity_graph.md`)
 
 ### Push Notification
-- [ ] **P35-10** Expo Push Notification entegrasyonu - foundation + local scheduling helper'lari eklendi; Android development build fiziksel cihaz smoke ve remote push/token persistence acik (`docs/tasks/p35_10a_push_notification_foundation.md`, `docs/tasks/p35_10b_notification_permission_and_schedule.md`)
-- [ ] **P35-11** Kullaniciya ozel bildirim saati ayari - profile hour chips + `users.notification_hour/minute` migration dosyasi hazir; remote apply ve device smoke bekliyor (`docs/tasks/p35_11_notification_time_preference.md`)
-- [ ] **P35-12** Streak hatirlatici bildirimi - local-only best-effort schedule/cancel/reconcile baglandi; device smoke bekliyor (`docs/tasks/p35_12_streak_reminder_notification.md`)
-- [ ] **P35-13** Yeni icerik bildirimi - MVP'de single daily local copy olarak baglandi; gercek backend freshness trigger'i sonraki remote push taskina kaldi (`docs/tasks/p35_13_new_content_notification.md`)
+- [x] **P35-10** Expo Push Notification entegrasyonu - native foundation, local scheduling helper'lari, P35-10c push token persistence ve P35-10d self-test remote sender tamamlandi; fiziksel Android development build'de token kaydi ve Expo receipt `status: ok` smoke edildi (`docs/tasks/p35_10a_push_notification_foundation.md`, `docs/tasks/p35_10b_notification_permission_and_schedule.md`, `docs/tasks/p35_10c_remote_push_token_foundation.md`, `docs/tasks/p35_10d_remote_push_sender_smoke.md`)
+- [ ] **P35-11** Kullaniciya ozel bildirim saati ayari - profile hour chips + `users.notification_hour/minute` migration remote'a uygulandi; kalan: Android development build device smoke (`docs/tasks/p35_11_notification_time_preference.md`)
+- [ ] **P35-12** Streak hatirlatici bildirimi - local-only best-effort schedule/cancel/reconcile baglandi ve emulator smoke olumlu; kalan: fiziksel Android development build smoke (`docs/tasks/p35_12_streak_reminder_notification.md`)
+- [ ] **P35-13** Yeni icerik bildirimi - MVP'de single daily local copy olarak baglandi; P35-10d sender smoke tamamlandigi icin kalan is gercek backend content freshness trigger'i ve interest-based token hedefleme (`docs/tasks/p35_13_new_content_notification.md`, `docs/tasks/p35_10c_remote_push_token_foundation.md`, `docs/tasks/p35_10d_remote_push_sender_smoke.md`)
 - [x] **P35-14** Bildirim tercihlerini profil ayarlarindan yonetme - profile toggle + `users.notifications_enabled` persistence tamamlandi; OS permission artik kullanici aksiyonuyla P35-10b local akisa bagli
 
 ---
@@ -337,9 +337,11 @@ Not:
 - Supabase Edge Function dosyalari ve CI sanity check var; schema/function prod deploy workflow'u yok. `P6-11` ve Backend Deployment adimlari acik kalmali.
 
 ### Devam icin onerilen sira
-1. `P35-10`/`P35-12` ile push notification altyapisini kurarken `P35-02` streak kirilma uyarisi mesajini ele al; `P35-04` grace/freeze davranisini ayri urun karari olarak tut.
-2. `P6-09b`: hesap/veri silme ve AI icerik raporlama akisini release blocker olarak ele al.
-3. `P6-01`/`P6-02`: auth, bookmark, reader progress ve paywall icin minimum unit/e2e smoke seti kur.
-4. `P1-15o`/`P1-15p`/`P1-15q`: LLM provider abstraction, shadow benchmark ve budget guard ile Groq limit riskini operasyonel hale getir.
+1. `P35-13` backend content freshness trigger'ini P35-10d Android dev build sender smoke sonucuna dayanarak ele al; MVP local daily copy zaten bagli oldugu icin ikinci local notification ekleme.
+2. `P35-11`/`P35-12` icin kalan fiziksel Android smoke notlarini tamamla; saat degisimi ve gunluk hedef tamamlandiysa reminder iptali ozellikle kontrol edilecek.
+3. `P35-02` streak kirilma uyarisi mesajini P35-12 local reminder copy'siyle hizala; `P35-04` grace/freeze davranisini ayri urun karari olarak tut.
+4. `P6-09b`: hesap/veri silme ve AI icerik raporlama akisini release blocker olarak ele al.
+5. `P6-01`/`P6-02`: auth, bookmark, reader progress ve paywall icin minimum unit/e2e smoke seti kur.
+6. `P1-15o`/`P1-15p`/`P1-15q`: LLM provider abstraction, shadow benchmark ve budget guard ile Groq limit riskini operasyonel hale getir.
 
-*Son guncellenme: 2026-05-02 - v0.6*
+*Son guncellenme: 2026-05-10 - v0.7*

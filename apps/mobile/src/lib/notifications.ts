@@ -355,6 +355,80 @@ export async function registerForPushNotifications(): Promise<PushRegistrationRe
   }
 }
 
+export async function getExpoPushTokenIfPermissionGranted(): Promise<PushRegistrationResult> {
+  try {
+    const runtime = getNotificationRuntime(true);
+
+    if (runtime.status !== 'ready') {
+      return {
+        status: runtime.status,
+        message: runtime.message,
+      };
+    }
+
+    const missingDeviceModule = getMissingNativeModule(['ExpoDevice']);
+
+    if (missingDeviceModule) {
+      return {
+        status: 'unsupported',
+        message: `${missingDeviceModule} bu build icinde yok. Development build notification config'iyle yeniden alinmali.`,
+      };
+    }
+
+    const Device = loadDeviceModule();
+
+    if (!Device) {
+      return {
+        status: 'unsupported',
+        message: 'Device native modulu bu build icinde hazir degil.',
+      };
+    }
+
+    await ensureAndroidNotificationChannel(runtime.Notifications);
+
+    if (!Device.isDevice) {
+      return {
+        status: 'unsupported',
+        message: 'Push bildirimi icin fiziksel cihaz ve development build gerekiyor.',
+      };
+    }
+
+    const permission = await getExistingLocalNotificationPermission(runtime.Notifications);
+
+    if (permission.status !== 'granted') {
+      return {
+        status: permission.status,
+        message: permission.message,
+      };
+    }
+
+    const projectId = getExpoProjectId();
+
+    if (!projectId) {
+      return {
+        status: 'missing_project_id',
+        message: 'Expo projectId bulunamadi. EAS proje ayari kontrol edilmeli.',
+      };
+    }
+
+    const token = await runtime.Notifications.getExpoPushTokenAsync({ projectId });
+
+    return {
+      status: 'granted',
+      expoPushToken: token.data,
+      message: 'Mevcut bildirim izniyle push token hazirlandi.',
+    };
+  } catch (error) {
+    return {
+      status: 'error',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Push token kontrol edilirken bilinmeyen bir hata olustu.',
+    };
+  }
+}
+
 function isSmartScrollingDailyReminder(
   request: Awaited<ReturnType<NotificationsModule['getAllScheduledNotificationsAsync']>>[number],
 ) {

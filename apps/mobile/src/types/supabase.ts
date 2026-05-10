@@ -291,6 +291,53 @@ export type Database = {
         };
         Relationships: [];
       };
+      push_tokens: {
+        Row: {
+          app_version: string | null;
+          created_at: string;
+          enabled: boolean;
+          expo_push_token: string;
+          id: string;
+          last_seen_at: string;
+          platform: string;
+          revoked_at: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          app_version?: string | null;
+          created_at?: string;
+          enabled?: boolean;
+          expo_push_token: string;
+          id?: string;
+          last_seen_at?: string;
+          platform: string;
+          revoked_at?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          app_version?: string | null;
+          created_at?: string;
+          enabled?: boolean;
+          expo_push_token?: string;
+          id?: string;
+          last_seen_at?: string;
+          platform?: string;
+          revoked_at?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'push_tokens_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       reading_progress: {
         Row: {
           book_id: string | null;

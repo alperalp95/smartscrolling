@@ -13,6 +13,7 @@ import {
   reconcileDailyLocalReminder,
 } from '../src/lib/notifications';
 import { hydratePremiumEntitlement } from '../src/lib/premiumEntitlements';
+import { refreshCurrentExpoPushTokenIfPermissionGranted } from '../src/lib/pushTokens';
 import { supabase } from '../src/lib/supabase';
 import { fetchTodayActivity } from '../src/lib/userActivity';
 import { fetchUserPreferences } from '../src/lib/userPreferences';
@@ -58,6 +59,7 @@ export default function RootLayout() {
               minute: prefs.notificationTime.minute,
               todayFactsRead: todayActivity.factsRead,
             });
+            await refreshCurrentExpoPushTokenIfPermissionGranted(userId);
           }
         } catch (error) {
           console.warn('[ProfilePrefs] hydrate failed:', error);

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "642456401147",
+    "project_id": "smart-scrolling",
+    "storage_bucket": "smart-scrolling.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:642456401147:android:51b62bcadeb0a893502c5e",
+        "android_client_info": {
+          "package_name": "com.smartscrolling.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhg-Q04r-a6Slom9oIkz3lsPrfJT1WSc4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

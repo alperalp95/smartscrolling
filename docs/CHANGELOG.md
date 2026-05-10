@@ -18,7 +18,14 @@
 - P35-12 streak reminder daily goal incomplete durumuna, P35-13 MVP ise ayni tek daily notification icindeki generic kart copy'sine baglandi.
 - Emulator smoke bulgulari sonrasi Profile bildirim UX'i duzeltildi: permission prompt app girisinde degil kullanici aksiyonunda kalir, saat paneli secimden sonra kapanir ve secili saate dokunmak bildirimi kapatir.
 - Android App Info'dan notification kapatilinca Profile focus sync app preference'i off'a alir, SmartScrolling pending reminder'larini temizler ve yeniden acma denemesinde sistem ayarlari yonlendirmesi gosterir.
-- Physical Android development build smoke henuz yapilmadi; checklist task dosyalarinda acik tutuldu.
+- `P35-10c Remote Push Token Foundation` task'i acildi; push token persistence, token lifecycle ve P35-13 backend freshness trigger bagimliligi migration/kod yazmadan planlandi.
+- P35-10c implementasyonu eklendi: `push_tokens` tablosu/RLS migration'i, Expo token upsert/disable helper'lari, Profile opt-in/off/revoke ve sign-out token lifecycle baglantilari.
+- `push_tokens` migration'i kullanici onayiyla linked remote Supabase projesine uygulandi ve migration listesinde dogrulandi.
+- `P35-10d Remote Push Sender Smoke` task'i acildi; Edge Function sender, Expo ticket/receipt logging ve P35-13 content freshness trigger'i sonraki dilime birakildi.
+- P35-10d self-test sender eklendi: authenticated kullanici kendi enabled `push_tokens` kayitlarina `remote-push-smoke` Edge Function ile Expo Push API uzerinden test bildirimi gonderebilir; receipt sorgusu manuel action olarak planlandi.
+- `remote-push-smoke` Edge Function remote Supabase projesine deploy edildi ve `npx supabase functions list` ile `ACTIVE`, version 1 olarak dogrulandi.
+- Android remote push smoke tamamlandi: Firebase `google-services.json` native config'e baglandi, FCM V1 service account key EAS credentials'a yuklendi, fiziksel Android development build'de Profile opt-in `Push token kaydedildi.` dondu ve Expo receipt `status: ok` olarak dogrulandi.
+- Kalan bildirim isi P35-13 real backend content freshness trigger ve interest-based token hedefleme olarak ayrildi.
 
 ---
 ### [v1.32] - 2026-05-06

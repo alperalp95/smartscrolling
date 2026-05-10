@@ -15,11 +15,15 @@ MVP'de yeni icerik beklentisini duplicate bildirim yaratmadan gunluk local remin
 - [x] P35-13 MVP davranisi single daily local notification olarak netlestirildi.
 - [x] Generic yeni kart copy'si local schedule helper'ina eklendi.
 - [x] Ayrica ikinci pending notification kurulmayacak sekilde duplicate riskinden kacinildi.
-- [ ] Backend content freshness trigger'i ayri task olarak planlanacak.
-- [ ] Android development build smoke sonucu kaydedilecek.
+- [x] Backend content freshness trigger'i `P35-10c Remote Push Token Foundation` sonrasina baglandi.
+- [x] Remote push sender smoke `P35-10d` olarak acildi.
+- [x] Content freshness trigger task'i P35-10d Android dev build sender smoke sonucundan sonra acilacak.
+- [x] Android development build smoke sonucu kaydedildi: P35-10d physical Android token + sender receipt smoke `status: ok`.
+- [ ] Gercek backend content freshness trigger ve interest-based token hedefleme ayri implementasyon task'i olarak planlanacak.
 
 ## Acceptance
 
 - Kullanici gunde tek local retention notification alir.
 - Notification copy'si streak/daily-goal durumuna gore sade sekilde secilir.
 - Gercek yeni content geldi aninda remote push gonderimi bu MVP'nin parcasi degildir.
+- Remote content trigger icin P35-10c token persistence ve P35-10d server-side sender smoke tamamlandi; sonraki adim backend freshness trigger tasarimi ve interest-based hedefleme.

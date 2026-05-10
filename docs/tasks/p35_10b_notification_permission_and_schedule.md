@@ -24,7 +24,7 @@
 ## Karar
 
 - Bu sprintte local notifications kullanilir.
-- Expo push token persistence, FCM/APNs credential kurulumu ve backend remote push trigger'i kapsam disidir.
+- Expo push token persistence P35-10c ile ayrildi; FCM/APNs credential kurulumu ve backend remote push trigger'i kapsam disidir.
 - OS permission yalnizca kullanici profilde `Bildirimler` ayarini bilinclli actiginda istenir.
 - Toggle kapatilinca SmartScrolling pending local notification kayitlari temizlenir.
 - Android App Info > Notifications kapatilirsa Profile focus sync app preference'i kapatir ve pending reminder'lari temizler.
@@ -32,6 +32,7 @@
 - App acilisinda, saat degisiminde ve kart okuma ilerlemesinde best-effort cancel/reschedule yapilir.
 - Expo SDK 54 resmi dokumani kontrol edildi: Android SDK 53+ remote push icin Expo Go yeterli kabul edilmez; Android development build hedeflenir. Local notifications Expo Go'da daha genis destekli olsa da P35 smoke hedefi development build'dir.
 - Production/preview remote push icin FCM/APNs credential ve Expo Push Service testi sonraki tasktir.
+- Remote push sender smoke P35-10d taskina birakildi.
 
 ## Smoke Checklist
 
