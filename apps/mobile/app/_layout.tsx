@@ -3,14 +3,18 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthPromptModal } from '../components/auth-prompt-modal';
 import { PremiumPromptModal } from '../components/premium-prompt-modal';
+import {
+  cancelSmartScrollingScheduledNotifications,
+  reconcileDailyLocalReminder,
+} from '../src/lib/notifications';
 import { hydratePremiumEntitlement } from '../src/lib/premiumEntitlements';
 import { supabase } from '../src/lib/supabase';
+import { fetchTodayActivity } from '../src/lib/userActivity';
 import { fetchUserPreferences } from '../src/lib/userPreferences';
 import { useAuthStore } from '../src/store/authStore';
 import { useFeedStore } from '../src/store/feedStore';
@@ -43,7 +47,18 @@ export default function RootLayout() {
           const prefs = await fetchUserPreferences(userId);
           hydrateDailyGoal(prefs.dailyGoal);
           hydrateInterestPicker(prefs.interests);
-          hydrateNotificationPreference(prefs.notificationsEnabled);
+          hydrateNotificationPreference(prefs.notificationsEnabled, prefs.notificationTime);
+
+          if (prefs.notificationsEnabled) {
+            const todayActivity = await fetchTodayActivity();
+            await reconcileDailyLocalReminder({
+              dailyGoalValue: prefs.dailyGoal?.value ?? null,
+              enabled: prefs.notificationsEnabled,
+              hour: prefs.notificationTime.hour,
+              minute: prefs.notificationTime.minute,
+              todayFactsRead: todayActivity.factsRead,
+            });
+          }
         } catch (error) {
           console.warn('[ProfilePrefs] hydrate failed:', error);
         }
@@ -52,6 +67,7 @@ export default function RootLayout() {
       } else {
         resetOnboarding();
         clearSavedFacts();
+        await cancelSmartScrollingScheduledNotifications();
       }
 
       finishInitializing();

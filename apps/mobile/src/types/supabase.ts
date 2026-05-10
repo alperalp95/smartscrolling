@@ -378,6 +378,8 @@ export type Database = {
           email: string | null;
           id: string;
           interests: string[] | null;
+          notification_hour: number;
+          notification_minute: number;
           notifications_enabled: boolean | null;
           plan: string | null;
           streak_days: number | null;
@@ -391,6 +393,8 @@ export type Database = {
           email?: string | null;
           id: string;
           interests?: string[] | null;
+          notification_hour?: number;
+          notification_minute?: number;
           notifications_enabled?: boolean | null;
           plan?: string | null;
           streak_days?: number | null;
@@ -404,6 +408,8 @@ export type Database = {
           email?: string | null;
           id?: string;
           interests?: string[] | null;
+          notification_hour?: number;
+          notification_minute?: number;
           notifications_enabled?: boolean | null;
           plan?: string | null;
           streak_days?: number | null;

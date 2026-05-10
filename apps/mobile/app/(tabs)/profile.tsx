@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Modal,
   Platform,
   ScrollView,
@@ -19,7 +20,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { deleteCurrentAccount } from '../../src/lib/accountDeletion';
 import { promptForAuth } from '../../src/lib/authPrompt';
-import { registerForPushNotifications } from '../../src/lib/notifications';
+import {
+  cancelSmartScrollingScheduledNotifications,
+  getLocalNotificationPermissionStatus,
+  reconcileDailyLocalReminder,
+  requestLocalNotificationPermission,
+} from '../../src/lib/notifications';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
 import { presentCustomerCenterSafe } from '../../src/lib/purchases';
 import {
@@ -32,6 +38,7 @@ import { type ActivitySummary, fetchActivitySummary } from '../../src/lib/userAc
 import type { DailyGoalPreference } from '../../src/lib/userPreferences';
 import {
   updateNotificationPreference,
+  updateNotificationTimePreference,
   updateUserDailyGoal,
   updateUserInterests,
 } from '../../src/lib/userPreferences';
@@ -44,6 +51,7 @@ const DAILY_GOAL_OPTIONS: Exclude<DailyGoalPreference, null>[] = [
   { type: 'facts', value: 3 },
   { type: 'facts', value: 5 },
 ];
+const NOTIFICATION_HOUR_OPTIONS = [18, 19, 20, 21, 22];
 
 type AuthFeedback = {
   message: string;
@@ -74,10 +82,12 @@ export default function ProfileScreen() {
   const completeInterestPicker = useOnboardingStore((state) => state.completeInterestPicker);
   const dailyGoal = useOnboardingStore((state) => state.dailyGoal);
   const notificationsEnabled = useOnboardingStore((state) => state.notificationsEnabled);
+  const notificationTime = useOnboardingStore((state) => state.notificationTime);
   const resetOnboarding = useOnboardingStore((state) => state.resetOnboarding);
   const selectedInterests = useOnboardingStore((state) => state.selectedInterests);
   const setDailyGoal = useOnboardingStore((state) => state.setDailyGoal);
   const setNotificationsEnabled = useOnboardingStore((state) => state.setNotificationsEnabled);
+  const setNotificationTime = useOnboardingStore((state) => state.setNotificationTime);
   const setSelectedInterests = useOnboardingStore((state) => state.setSelectedInterests);
   const toggleInterest = useOnboardingStore((state) => state.toggleInterest);
 
@@ -93,12 +103,14 @@ export default function ProfileScreen() {
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
   const [isEditingDailyGoal, setIsEditingDailyGoal] = useState(false);
   const [isEditingInterests, setIsEditingInterests] = useState(false);
+  const [isNotificationTimePanelVisible, setIsNotificationTimePanelVisible] = useState(false);
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
   const [showEmailForm, setShowEmailForm] = useState(false);
 
   const interestsBackup = useRef<string[]>([]);
   const dailyGoalBackup = useRef<DailyGoalPreference>(null);
+  const notificationPermissionWasRevokedRef = useRef(false);
 
   const cancelInterestEdit = useCallback(() => {
     const backup = interestsBackup.current;
@@ -132,6 +144,7 @@ export default function ProfileScreen() {
           ? 'E-posta ile bagli'
           : 'Hesap baglandi';
   const dailyGoalSummary = dailyGoal ? `Her gun ${dailyGoal.value} kart` : 'Henuz hedef secilmedi';
+  const notificationTimeSummary = `${String(notificationTime.hour).padStart(2, '0')}:00`;
   const todayKey = getTodayKey();
   const streakDays = activitySummary?.streakDays ?? 0;
   const bestStreakDays = activitySummary?.bestStreakDays ?? 0;
@@ -163,6 +176,69 @@ export default function ProfileScreen() {
       cancelled = true;
     };
   }, [isFocused, user?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isFocused || !user?.id || !notificationsEnabled) {
+      return;
+    }
+
+    void (async () => {
+      const permission = await getLocalNotificationPermissionStatus();
+
+      if (cancelled) {
+        return;
+      }
+
+      if (permission.status === 'granted') {
+        notificationPermissionWasRevokedRef.current = false;
+        return;
+      }
+
+      if (permission.status === 'unsupported' || permission.status === 'error') {
+        setAuthFeedback({
+          tone: permission.status === 'error' ? 'error' : 'info',
+          message: permission.message,
+        });
+        return;
+      }
+
+      try {
+        notificationPermissionWasRevokedRef.current = true;
+        await updateNotificationPreference(user.id, false);
+        await cancelSmartScrollingScheduledNotifications();
+
+        if (cancelled) {
+          return;
+        }
+
+        setNotificationsEnabled(false);
+        setIsNotificationTimePanelVisible(false);
+        setAuthFeedback({
+          tone: 'info',
+          message: `${permission.message} Bildirim tercihin kapatildi.`,
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Bildirim izin durumu eslenirken bir hata olustu.';
+        setAuthFeedback({
+          tone: 'error',
+          message,
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isFocused, notificationsEnabled, setNotificationsEnabled, user?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -432,6 +508,9 @@ export default function ProfileScreen() {
       await updateUserDailyGoal(user.id, dailyGoal);
       completeDailyGoal();
       setIsEditingDailyGoal(false);
+      if (notificationsEnabled) {
+        await reconcileProfileNotificationSchedule(true);
+      }
       Alert.alert('Kaydedildi', 'Gunluk hedefin profile kaydedildi.');
     } catch (error) {
       const message =
@@ -440,6 +519,22 @@ export default function ProfileScreen() {
     } finally {
       setIsSavingDailyGoal(false);
     }
+  }
+
+  async function reconcileProfileNotificationSchedule(enabled = notificationsEnabled) {
+    if (!enabled) {
+      return cancelSmartScrollingScheduledNotifications();
+    }
+
+    const summary = activitySummary ?? (user?.id ? await fetchActivitySummary() : null);
+
+    return reconcileDailyLocalReminder({
+      dailyGoalValue: dailyGoal?.value ?? null,
+      enabled,
+      hour: notificationTime.hour,
+      minute: notificationTime.minute,
+      todayFactsRead: summary?.today.factsRead ?? 0,
+    });
   }
 
   async function handleNotificationPreferencePress() {
@@ -452,33 +547,105 @@ export default function ProfileScreen() {
       return;
     }
 
-    const nextValue = !notificationsEnabled;
+    if (notificationsEnabled) {
+      setIsNotificationTimePanelVisible((current) => !current);
+      return;
+    }
+
     setIsSavingNotifications(true);
 
     try {
-      if (nextValue) {
-        const registration = await registerForPushNotifications();
+      const shouldUseSettingsGuidance = notificationPermissionWasRevokedRef.current;
+      const permission = shouldUseSettingsGuidance
+        ? await getLocalNotificationPermissionStatus()
+        : await requestLocalNotificationPermission();
 
-        if (registration.status !== 'granted') {
-          setAuthFeedback({
-            tone: registration.status === 'denied' ? 'error' : 'info',
-            message: registration.message,
-          });
-          return;
+      if (permission.status !== 'granted') {
+        const permissionMessage = shouldUseSettingsGuidance
+          ? 'Bildirimler sistem ayarlarindan kapali. Devam etmek icin Android App Info > Notifications ayarini ac.'
+          : permission.message;
+        setNotificationsEnabled(false);
+        setIsNotificationTimePanelVisible(false);
+        setAuthFeedback({
+          tone:
+            permission.status === 'denied' || permission.status === 'blocked' ? 'error' : 'info',
+          message: permissionMessage,
+        });
+
+        if (permission.status === 'blocked' || shouldUseSettingsGuidance) {
+          Alert.alert('Bildirimler sistemden kapali', permissionMessage, [
+            { text: 'Tamam', style: 'cancel' },
+            { text: 'Ayarlar', onPress: () => void Linking.openSettings() },
+          ]);
         }
+        return;
       }
 
-      const savedValue = await updateNotificationPreference(user.id, nextValue);
+      notificationPermissionWasRevokedRef.current = false;
+      const savedValue = await updateNotificationPreference(user.id, true);
       setNotificationsEnabled(savedValue);
+      setIsNotificationTimePanelVisible(false);
+      const scheduleResult = await reconcileProfileNotificationSchedule(savedValue);
       setAuthFeedback({
-        tone: 'success',
-        message: savedValue
-          ? 'Bildirim izni hazir. Hatirlatma saati ve scheduling sonraki adimda eklenecek.'
-          : 'Bildirim tercihin kapatildi.',
+        tone: scheduleResult.status === 'error' ? 'error' : 'success',
+        message: `${notificationTimeSummary} hatirlaticisi hazir. ${scheduleResult.message}`,
       });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Bildirim tercihi guncellenirken bir hata olustu.';
+      setAuthFeedback({
+        tone: 'error',
+        message,
+      });
+    } finally {
+      setIsSavingNotifications(false);
+    }
+  }
+
+  async function handleNotificationHourPress(hour: number) {
+    if (isSavingNotifications) {
+      return;
+    }
+
+    if (!user?.id) {
+      Alert.alert('Giris gerekli', 'Bildirim saatini yonetmek icin once hesabini bagla.');
+      return;
+    }
+
+    setIsSavingNotifications(true);
+
+    try {
+      if (hour === notificationTime.hour) {
+        const savedValue = await updateNotificationPreference(user.id, false);
+        setNotificationsEnabled(savedValue);
+        setIsNotificationTimePanelVisible(false);
+        const cancelResult = await cancelSmartScrollingScheduledNotifications();
+        setAuthFeedback({
+          tone: cancelResult.status === 'error' ? 'error' : 'success',
+          message: 'Bildirim tercihin kapatildi ve pending hatirlaticilar temizlendi.',
+        });
+        return;
+      }
+
+      const savedTime = await updateNotificationTimePreference(user.id, { hour, minute: 0 });
+      setNotificationTime(savedTime);
+      setIsNotificationTimePanelVisible(false);
+
+      const scheduleResult = await reconcileDailyLocalReminder({
+        dailyGoalValue: dailyGoal?.value ?? null,
+        enabled: notificationsEnabled,
+        hour: savedTime.hour,
+        minute: savedTime.minute,
+        todayFactsRead: activitySummary?.today.factsRead ?? 0,
+      });
+
+      setAuthFeedback({
+        tone: scheduleResult.status === 'error' ? 'error' : 'success',
+        message: `Bildirim saati ${String(savedTime.hour).padStart(2, '0')}:00 olarak kaydedildi. ${scheduleResult.message}`,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Bildirim saati kaydedilirken bir hata olustu.';
       setAuthFeedback({
         tone: 'error',
         message,
@@ -856,9 +1023,58 @@ export default function ProfileScreen() {
                     <Ionicons name="notifications-outline" size={18} color="#a78bfa" />
                   </View>
                   <Text style={s.settingsLabel}>Bildirimler</Text>
-                  <Text style={s.settingsValue}>{notificationsEnabled ? 'Acik' : 'Kapali'}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#4b5563" />
+                  <Text style={s.settingsValue}>
+                    {notificationsEnabled ? notificationTimeSummary : 'Kapali'}
+                  </Text>
+                  <Ionicons
+                    name={
+                      notificationsEnabled && isNotificationTimePanelVisible
+                        ? 'chevron-down'
+                        : 'chevron-forward'
+                    }
+                    size={16}
+                    color="#4b5563"
+                  />
                 </TouchableOpacity>
+
+                {notificationsEnabled && isNotificationTimePanelVisible ? (
+                  <>
+                    <View style={s.settingsDivider} />
+                    <View style={s.notificationTimePanel}>
+                      <View style={s.notificationTimeHeader}>
+                        <Text style={s.notificationTimeTitle}>Hatirlatma saati</Text>
+                        <Text style={s.notificationTimeValue}>{notificationTimeSummary}</Text>
+                      </View>
+                      <View style={s.notificationHourChips}>
+                        {NOTIFICATION_HOUR_OPTIONS.map((hour) => {
+                          const isSelected = notificationTime.hour === hour;
+                          return (
+                            <TouchableOpacity
+                              key={hour}
+                              style={[
+                                s.notificationHourChip,
+                                isSelected && s.notificationHourChipSelected,
+                                isSavingNotifications && s.buttonDisabled,
+                              ]}
+                              onPress={() => void handleNotificationHourPress(hour)}
+                              activeOpacity={0.85}
+                              disabled={isSavingNotifications}
+                            >
+                              <Text
+                                style={[
+                                  s.notificationHourChipText,
+                                  isSelected && s.notificationHourChipTextSelected,
+                                ]}
+                              >
+                                {String(hour).padStart(2, '0')}:00
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  </>
+                ) : null}
               </>
             ) : null}
 
@@ -1378,6 +1594,51 @@ const s = StyleSheet.create({
     color: '#c4b5fd',
     fontSize: 12,
     fontWeight: '800',
+  },
+  notificationTimePanel: {
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  notificationTimeHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  notificationTimeTitle: {
+    color: '#d1d5db',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  notificationTimeValue: {
+    color: '#c4b5fd',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  notificationHourChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  notificationHourChip: {
+    backgroundColor: '#111827',
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  notificationHourChipSelected: {
+    backgroundColor: 'rgba(139,92,246,0.18)',
+    borderColor: 'rgba(167,139,250,0.42)',
+  },
+  notificationHourChipText: {
+    color: '#e5e7eb',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  notificationHourChipTextSelected: {
+    color: '#c4b5fd',
   },
 
   settingsSection: {

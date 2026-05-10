@@ -17,6 +17,7 @@ Expo push notification altyapisinin mobil uygulamada guvenli ilk temelini kurmak
 - Gercek push token testi icin fiziksel cihaz gerekir.
 - Android SDK 53+ tarafinda Expo Go yerine development build gerekir.
 - Kod foundation tamamlandiktan sonra dev build/cihaz smoke adimlari ayrica uygulanacak.
+- 2026-05-10 planina gore ana smoke ortami Android development build + fiziksel Android cihazdir.
 
 ## Out of Scope
 
@@ -48,3 +49,12 @@ Expo push notification altyapisinin mobil uygulamada guvenli ilk temelini kurmak
 - [x] Native modul eksikligi bildirim opt-in sirasinda kontrollu unsupported mesajina doner.
 - [x] Root layout app acilisinda `expo-notifications` yuklemez; native module eksikligi profil route'unu etkilemez.
 - [x] `expo-notifications` require edilmeden once gerekli native moduller preflight edilir; `ExpoPushTokenManager` eksikligi kirmizi stack'e donmez.
+
+## Smoke Checklist
+
+- [ ] Android development build fiziksel cihazda acildi.
+- [ ] Bildirim toggle kapaliyken OS permission prompt cikmadi.
+- [ ] Bildirim toggle acilirken permission prompt bilincli kullanici aksiyonuyla cikti.
+- [ ] Permission granted durumunda local schedule sonucu kontrollu gorundu.
+- [ ] Permission denied durumunda preference acik kaydedilmedi.
+- [ ] Expo push token persistence bu sprintte yapilmadi; remote push sonraki task olarak kaldi.

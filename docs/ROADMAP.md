@@ -128,11 +128,11 @@
 - [ ] **P35-09** Haftalık aktivite grafiği (GitHub contribution graph benzeri)
 
 ### Push Notification
-- [ ] **P35-10** Expo Push Notification entegrasyonu
-- [ ] **P35-11** Kullanıcıya özel bildirim saati ayarı ("Her gün saat 20:00")
-- [ ] **P35-12** Streak hatırlatıcı: "Serinizi kaybetmemek için bugün okuyun! 🔥"
-- [ ] **P35-13** Yeni içerik bildirimi: "Bugünkü bilgi kartların hazır!"
-- [ ] **P35-14** Bildirim tercihlerini profil ayarlarından yönetme
+- [ ] **P35-10** Expo Push Notification entegrasyonu - foundation + local scheduling hazir; Android dev build smoke ve remote push/token persistence acik
+- [ ] **P35-11** Kullaniciya ozel bildirim saati ayari - profile hour chips ve migration dosyasi hazir; remote apply/smoke bekliyor
+- [ ] **P35-12** Streak hatirlatici - daily goal incomplete icin local-only best-effort reminder hazir; smoke bekliyor
+- [ ] **P35-13** Yeni icerik bildirimi - MVP'de single daily local copy; backend freshness trigger sonraki task
+- [x] **P35-14** Bildirim tercihlerini profil ayarlarindan yonetme
 
 ---
 

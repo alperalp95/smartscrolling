@@ -6,6 +6,21 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.33] - 2026-05-10
+
+#### P35 Notifications Local MVP
+- P35-10b local notification mimarisi netlestirildi: bu sprintte remote push/token persistence yok, Android development build smoke hedef.
+- `users.notification_hour` ve `users.notification_minute` icin Supabase migration dosyasi eklendi; remote apply kullanici onayina birakildi.
+- Mobil preference/store hydration katmani bildirim saatini default `20:00` ile okuyup yazacak sekilde guncellendi.
+- Profile settings icine bildirim acikken `18:00`-`22:00` saat chip'leri eklendi.
+- `notifications.ts` local permission, pending cancel ve daily reminder reconcile helper'lariyla genisletildi; native module lazy/preflight yaklasimi korundu.
+- Feed kart okuma ilerlemesi, app acilisi, toggle ve saat degisimi sonrasi local reminder best-effort cancel/reschedule baglandi.
+- P35-12 streak reminder daily goal incomplete durumuna, P35-13 MVP ise ayni tek daily notification icindeki generic kart copy'sine baglandi.
+- Emulator smoke bulgulari sonrasi Profile bildirim UX'i duzeltildi: permission prompt app girisinde degil kullanici aksiyonunda kalir, saat paneli secimden sonra kapanir ve secili saate dokunmak bildirimi kapatir.
+- Android App Info'dan notification kapatilinca Profile focus sync app preference'i off'a alir, SmartScrolling pending reminder'larini temizler ve yeniden acma denemesinde sistem ayarlari yonlendirmesi gosterir.
+- Physical Android development build smoke henuz yapilmadi; checklist task dosyalarinda acik tutuldu.
+
+---
 ### [v1.32] - 2026-05-06
 
 #### P1-13 Google OAuth Config ve Smoke Kaydi

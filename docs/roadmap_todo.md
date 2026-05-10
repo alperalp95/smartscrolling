@@ -212,11 +212,11 @@ Not:
 - [x] **P35-09** Haftalik aktivite grafigi - profil ozetindeki 7 gunluk nokta satiri, `facts_read` degerini gosteren kompakt haftalik bar grafige donusturuldu (`docs/tasks/p35_09_weekly_activity_graph.md`)
 
 ### Push Notification
-- [ ] **P35-10** Expo Push Notification entegrasyonu - foundation slice'i eklendi: `expo-notifications` / `expo-device`, config plugin, Android channel ve profil opt-in permission/token hazirligi tamamlandi; fiziksel cihaz/dev build smoke ve persistence/scheduling sonraki dilimlerde (`docs/tasks/p35_10a_push_notification_foundation.md`)
-- [ ] **P35-11** Kullaniciya ozel bildirim saati ayari
-- [ ] **P35-12** Streak hatirlatici bildirimi
-- [ ] **P35-13** Yeni icerik bildirimi
-- [x] **P35-14** Bildirim tercihlerini profil ayarlarindan yonetme - profile toggle + `users.notifications_enabled` persistence tamamlandi; OS permission/schedule P35-10..13 kapsaminda bekliyor
+- [ ] **P35-10** Expo Push Notification entegrasyonu - foundation + local scheduling helper'lari eklendi; Android development build fiziksel cihaz smoke ve remote push/token persistence acik (`docs/tasks/p35_10a_push_notification_foundation.md`, `docs/tasks/p35_10b_notification_permission_and_schedule.md`)
+- [ ] **P35-11** Kullaniciya ozel bildirim saati ayari - profile hour chips + `users.notification_hour/minute` migration dosyasi hazir; remote apply ve device smoke bekliyor (`docs/tasks/p35_11_notification_time_preference.md`)
+- [ ] **P35-12** Streak hatirlatici bildirimi - local-only best-effort schedule/cancel/reconcile baglandi; device smoke bekliyor (`docs/tasks/p35_12_streak_reminder_notification.md`)
+- [ ] **P35-13** Yeni icerik bildirimi - MVP'de single daily local copy olarak baglandi; gercek backend freshness trigger'i sonraki remote push taskina kaldi (`docs/tasks/p35_13_new_content_notification.md`)
+- [x] **P35-14** Bildirim tercihlerini profil ayarlarindan yonetme - profile toggle + `users.notifications_enabled` persistence tamamlandi; OS permission artik kullanici aksiyonuyla P35-10b local akisa bagli
 
 ---
 

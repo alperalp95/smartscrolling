@@ -29,6 +29,7 @@ import { PremiumUpsellCard } from '../../components/premium-upsell-card';
 import { type FeedAdSlot, getAdAudience, insertFeedAdSlots } from '../../src/lib/ads';
 import { promptForAuth } from '../../src/lib/authPrompt';
 import { isBadFactMediaUrl } from '../../src/lib/factVisuals';
+import { reconcileDailyLocalReminder } from '../../src/lib/notifications';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
 import { fetchActivitySummary, incrementDailyActivity } from '../../src/lib/userActivity';
 import { useAuthStore } from '../../src/store/authStore';
@@ -1156,6 +1157,7 @@ export default function FeedScreen() {
   const feedScreenOpenedAt = useRef(Date.now());
   const hasLoggedFirstCard = useRef(false);
   const activityTrackedFactIdsRef = useRef<Set<string>>(new Set());
+  const todayFactsReadRef = useRef(0);
   const [activeFactId, setActiveFactId] = useState<string | null>(null);
   const [activeFactIndex, setActiveFactIndex] = useState(0);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
@@ -1197,6 +1199,8 @@ export default function FeedScreen() {
   const hasPremium = useAuthStore((state) => state.hasPremium);
   const setPostAuthRedirectPath = useAuthStore((state) => state.setPostAuthRedirectPath);
   const dailyGoal = useOnboardingStore((state) => state.dailyGoal);
+  const notificationsEnabled = useOnboardingStore((state) => state.notificationsEnabled);
+  const notificationTime = useOnboardingStore((state) => state.notificationTime);
   const feedItems = insertFeedAdSlots(
     orderedFacts,
     getAdAudience({
@@ -1208,6 +1212,10 @@ export default function FeedScreen() {
   useEffect(() => {
     void fetchFacts({ reset: true });
   }, [fetchFacts]);
+
+  useEffect(() => {
+    todayFactsReadRef.current = todayFactsRead;
+  }, [todayFactsRead]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1298,22 +1306,37 @@ export default function FeedScreen() {
     );
   }, [activeFactId]);
 
-  const handleReadQualified = useCallback((factId: string) => {
-    if (activityTrackedFactIdsRef.current.has(factId)) {
-      return;
-    }
-
-    activityTrackedFactIdsRef.current.add(factId);
-
-    void (async () => {
-      const result = await incrementDailyActivity({ factsRead: 1 });
-
-      if (result.synced) {
-        setFeedStreakDays((current) => Math.max(current, 1));
-        setTodayFactsRead((current) => current + 1);
+  const handleReadQualified = useCallback(
+    (factId: string) => {
+      if (activityTrackedFactIdsRef.current.has(factId)) {
+        return;
       }
-    })();
-  }, []);
+
+      activityTrackedFactIdsRef.current.add(factId);
+
+      void (async () => {
+        const result = await incrementDailyActivity({ factsRead: 1 });
+
+        if (result.synced) {
+          const nextFactsRead = todayFactsReadRef.current + 1;
+          todayFactsReadRef.current = nextFactsRead;
+          setFeedStreakDays((current) => Math.max(current, 1));
+          setTodayFactsRead(nextFactsRead);
+
+          if (notificationsEnabled) {
+            await reconcileDailyLocalReminder({
+              dailyGoalValue: dailyGoal?.value ?? null,
+              enabled: notificationsEnabled,
+              hour: notificationTime.hour,
+              minute: notificationTime.minute,
+              todayFactsRead: nextFactsRead,
+            });
+          }
+        }
+      })();
+    },
+    [dailyGoal?.value, notificationTime.hour, notificationTime.minute, notificationsEnabled],
+  );
 
   const factDailyGoal = dailyGoal?.type === 'facts' ? dailyGoal.value : null;
   const todayProgressPercent = factDailyGoal
