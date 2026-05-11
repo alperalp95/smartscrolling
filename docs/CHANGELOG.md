@@ -26,6 +26,8 @@
 - `remote-push-smoke` Edge Function remote Supabase projesine deploy edildi ve `npx supabase functions list` ile `ACTIVE`, version 1 olarak dogrulandi.
 - Android remote push smoke tamamlandi: Firebase `google-services.json` native config'e baglandi, FCM V1 service account key EAS credentials'a yuklendi, fiziksel Android development build'de Profile opt-in `Push token kaydedildi.` dondu ve Expo receipt `status: ok` olarak dogrulandi.
 - Kalan bildirim isi P35-13 real backend content freshness trigger ve interest-based token hedefleme olarak ayrildi.
+- P35-13b backend content freshness push eklendi: daily facts ingest basarili olunca son 3 saatte yeni fact varsa enabled tokenlara generic remote push gonderecek `content-freshness-push` Edge Function ve GitHub Actions cagrisi hazirlandi; interest-based hedefleme broadcast MVP sonrasina birakildi.
+- `content-freshness-push` remote deploy edildi; boot smoke 200 `sent:false/no_fresh_facts` ile dogrulandi, full send/receipt smoke son 3 saatte yeni fact oldugunda kaydedilecek.
 
 ---
 ### [v1.32] - 2026-05-06

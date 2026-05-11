@@ -429,3 +429,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/remote-push-smoke/deno.json"
 entrypoint = "./functions/remote-push-smoke/index.ts"
+
+[functions.content-freshness-push]
+enabled = true
+verify_jwt = false
+import_map = "./functions/content-freshness-push/deno.json"
+entrypoint = "./functions/content-freshness-push/index.ts"

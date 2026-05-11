@@ -61,6 +61,16 @@ jobs:
         if: steps.mode.outputs.mode == 'daily'
         run: npm run facts:wikipedia-daily
 
+      - name: Send content freshness push
+        if: steps.mode.outputs.mode == 'daily'
+        shell: bash
+        run: |
+          response="$(curl -fsS -X POST "$SUPABASE_URL/functions/v1/content-freshness-push" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"action":"send"}')"
+          echo "$response"
+
       - name: Check weekly facts floor
         if: steps.mode.outputs.mode == 'catchup'
         id: weekly
