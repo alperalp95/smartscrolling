@@ -2,10 +2,12 @@ name: Facts Ingest
 
 on:
   schedule:
-    # 08:00 and 20:00 Europe/Istanbul.
-    - cron: "0 5,17 * * *"
-    # Weekly catch-up check: Sunday 09:00 Europe/Istanbul.
-    - cron: "0 6 * * 0"
+    # 08:17 and 20:17 Europe/Istanbul.
+    - cron: "17 5,17 * * *"
+    # Backup check at 08:47 and 20:47 Europe/Istanbul.
+    - cron: "47 5,17 * * *"
+    # Weekly catch-up check: Sunday 09:17 Europe/Istanbul.
+    - cron: "17 6 * * 0"
   workflow_dispatch:
     inputs:
       mode:
@@ -15,6 +17,7 @@ on:
         type: choice
         options:
           - daily
+          - backup
           - catchup
 
 permissions:
@@ -26,7 +29,7 @@ concurrency:
 
 jobs:
   ingest:
-    name: Wikipedia facts ingest
+    name: Facts ingest
     runs-on: ubuntu-latest
     env:
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -51,18 +54,33 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "mode=${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.event.schedule }}" == "0 6 * * 0" ]]; then
+          elif [[ "${{ github.event.schedule }}" == "17 6 * * 0" ]]; then
             echo "mode=catchup" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event.schedule }}" == "47 5,17 * * *" ]]; then
+            echo "mode=backup" >> "$GITHUB_OUTPUT"
           else
             echo "mode=daily" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Run daily Wikipedia ingest
+      - name: Check backup ingest window
+        if: steps.mode.outputs.mode == 'backup'
+        id: backup
+        run: npm run facts:daily-check -- --hours 12 --floor 15
+
+      - name: Run daily facts ingest
         if: steps.mode.outputs.mode == 'daily'
-        run: npm run facts:wikipedia-daily
+        run: npm run facts:daily-ingest
+
+      - name: Run backup facts ingest
+        if: steps.mode.outputs.mode == 'backup' && steps.backup.outputs.needs_ingest == 'true'
+        run: npm run facts:daily-ingest
+
+      - name: Skip backup facts ingest
+        if: steps.mode.outputs.mode == 'backup' && steps.backup.outputs.needs_ingest != 'true'
+        run: echo "Recent facts floor already satisfied; backup ingest skipped."
 
       - name: Send content freshness push
-        if: steps.mode.outputs.mode == 'daily'
+        if: steps.mode.outputs.mode == 'daily' || (steps.mode.outputs.mode == 'backup' && steps.backup.outputs.needs_ingest == 'true')
         shell: bash
         run: |
           response="$(curl -fsS -X POST "$SUPABASE_URL/functions/v1/content-freshness-push" \

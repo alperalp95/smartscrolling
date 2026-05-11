@@ -182,7 +182,10 @@ function formatOptionalLimit(value) {
 }
 
 function getWikipediaFetchCount(config) {
-  if (config.wikipedia.count <= 0 && config.run.targetSaved === null) {
+  if (
+    config.wikipedia.count <= 0 &&
+    (config.run.targetSaved === null || config.run.targetSaved <= 0)
+  ) {
     return 0;
   }
 
