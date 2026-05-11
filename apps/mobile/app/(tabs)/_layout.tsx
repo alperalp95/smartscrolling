@@ -18,7 +18,10 @@ export default function TabLayout() {
   const bumpFeedRotation = useFeedStore((state) => state.bumpFeedRotation);
   const bottomInset = Platform.OS === 'web' ? 0 : Math.max(insets.bottom, 0);
   const baseTabBarHeight = Platform.OS === 'ios' ? 60 : 56;
-  const tabBarHeight = baseTabBarHeight + Math.max(bottomInset, Platform.OS === 'ios' ? 12 : 8);
+  const androidNavigationGuard = Platform.OS === 'android' ? 6 : 0;
+  const tabBarBottomPadding =
+    Math.max(bottomInset, Platform.OS === 'ios' ? 18 : 10) + androidNavigationGuard;
+  const tabBarHeight = baseTabBarHeight + tabBarBottomPadding;
 
   return (
     <Tabs
@@ -31,7 +34,7 @@ export default function TabLayout() {
           borderTopColor: 'rgba(255,255,255,0.07)',
           borderTopWidth: 0.5,
           height: tabBarHeight,
-          paddingBottom: Math.max(bottomInset, Platform.OS === 'ios' ? 18 : 10),
+          paddingBottom: tabBarBottomPadding,
           paddingTop: 8,
           position: 'absolute',
         },

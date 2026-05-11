@@ -23,7 +23,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import type { ImageSourcePropType, ViewToken } from 'react-native';
+import type { ImageSourcePropType, LayoutChangeEvent, ViewToken } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PremiumUpsellCard } from '../../components/premium-upsell-card';
 import { type FeedAdSlot, getAdAudience, insertFeedAdSlots } from '../../src/lib/ads';
@@ -1151,7 +1151,6 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { height: windowHeight } = useWindowDimensions();
-  const listHeight = windowHeight;
   const flatListRef = useRef<FlashListRef<FeedListItem> | null>(null);
   const appStateRef = useRef(AppState.currentState);
   const feedScreenOpenedAt = useRef(Date.now());
@@ -1179,6 +1178,20 @@ export default function FeedScreen() {
   const [reviewsByFactId, setReviewsByFactId] = useState<Record<string, FactReviewDraft>>({});
   const [feedStreakDays, setFeedStreakDays] = useState(0);
   const [todayFactsRead, setTodayFactsRead] = useState(0);
+  const [measuredListHeight, setMeasuredListHeight] = useState(0);
+  const listHeight = measuredListHeight > 0 ? measuredListHeight : windowHeight;
+
+  const handleListWrapperLayout = useCallback((event: LayoutChangeEvent) => {
+    const nextHeight = Math.round(event.nativeEvent.layout.height);
+
+    if (nextHeight <= 0) {
+      return;
+    }
+
+    setMeasuredListHeight((currentHeight) =>
+      currentHeight === nextHeight ? currentHeight : nextHeight,
+    );
+  }, []);
   const orderingKeyRef = useRef<string>('');
 
   const {
@@ -1481,10 +1494,10 @@ export default function FeedScreen() {
   return (
     <View style={[s.container, Platform.OS === 'web' && !isFocused ? s.webHiddenScreen : null]}>
       <View
+        onLayout={handleListWrapperLayout}
         style={[
           s.listWrapper,
           {
-            height: listHeight,
             maxWidth: Platform.OS === 'web' ? 500 : '100%',
             alignSelf: 'center',
             backgroundColor: '#000',
@@ -1514,7 +1527,10 @@ export default function FeedScreen() {
               bumpFeedRotation();
               void refreshFacts();
             }}
+            disableIntervalMomentum
             pagingEnabled
+            snapToInterval={listHeight}
+            snapToAlignment="start"
             scrollEnabled={!expandedCardId}
             showsVerticalScrollIndicator={false}
             onViewableItemsChanged={onViewableItemsChanged}

@@ -6,6 +6,16 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.34] - 2026-05-11
+
+#### P35-06e Feed Paging Viewport Fix
+- Feed ekraninda paging item yuksekligi artik yalnizca `useWindowDimensions().height` uzerinden alinmiyor; liste wrapper'i gercek viewport yuksekligini `onLayout` ile olcuyor.
+- Fact kartlari, ad kartlari ve FlashList `snapToInterval` ayni olculen page height ile hizalandi; Android 3 tus navigation modunda kartlarin yarim sayfa oturma riski azaltildi.
+- FlashList momentum ayarlari tek swipe'ta birden fazla kart atlama riskini azaltacak, ancak gecis hissini sertlestirmeyecek sekilde sinirlandi.
+- Android tab bar bottom padding'e eski navigation bar modlarinda kesilme riskini azaltan kucuk guard eklendi.
+- Cihaz modeline ozel ayar eklenmedi; mevcut tab bar/safe-area offset davranisi korundu.
+
+---
 ### [v1.33] - 2026-05-10
 
 #### P35 Notifications Local MVP
