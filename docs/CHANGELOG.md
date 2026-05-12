@@ -8,6 +8,12 @@
 ---
 ### [v1.36] - 2026-05-12
 
+#### P35-02 Streak Break Warning Local MVP
+- `docs/tasks/p35_02_streak_break_warning.md` task'i acildi; P35-02'nin P35-12 ile ayni single local reminder stack'i icinde kalacagi netlestirildi.
+- `fetchActivitySummary()` migration'siz streak-risk state'i donduruyor: bugun aktif degil ama dun aktifse `isStreakAtRiskToday` true olur.
+- P35-12 local reminder copy'si streak-risk state'ini kullanacak sekilde genisletildi; ayrica pending notification, remote push veya freeze/grace migration'i eklenmedi.
+
+---
 #### P35-13b Backend Content Freshness Push Smoke Tamamlandi
 - GitHub Actions `Facts Ingest` run #8 daily mode basarili tamamlandi ve `Send content freshness push` step'i success dondu.
 - `content-freshness-push` response'u `sent: true`, `freshFactCount: 8`, `targetCount: 1` ve ticket id `019e1b54-9b2e-70b5-a8de-a4c9807653b6` ile dogrulandi.

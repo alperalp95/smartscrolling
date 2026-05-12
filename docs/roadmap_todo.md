@@ -200,7 +200,7 @@ Not:
 
 ### Streak Sistemi
 - [x] **P35-01** Gunluk giris / okuma serisi (streak) sayaci - `user_activity` uzerinden gercek streak hesaplama profile summary'ye baglandi (`docs/tasks/p35_01_real_streak_counter.md`)
-- [ ] **P35-02** Streak kirilma uyarisi - push notification olmadan kullaniciya zamaninda ulasmadigi icin P35-10/P35-12 bildirim dilimiyle birlikte ele alinacak
+- [x] **P35-02** Streak kirilma uyarisi - `ActivitySummary` streak-risk state'i P35-12 single local reminder copy'sine baglandi; ayrica pending notification, remote push veya freeze migration'i eklenmedi (`docs/tasks/p35_02_streak_break_warning.md`)
 - [x] **P35-03** Streak rekoru goruntuleme - son 90 gun `user_activity` verisinden hesaplanan en iyi seri profil ozetinde `Rekor: X gun` olarak gosteriliyor; kalici rekor kolonu MVP disi tutuldu (`docs/tasks/p35_03_best_streak_summary.md`)
 - [ ] **P35-04** Streak korumasi (1 gunluk grace period veya freeze)
 - [x] **P35-05** `user_activity` tablosu ile gunluk kayit tut - feed kart goruntuleme, reader sayfa ilerlemesi ve basarili AI soru sayisi `incrementDailyActivity()` ile gunluk kayda yaziliyor

@@ -42,6 +42,7 @@ export type DailyReminderScheduleInput = {
   dailyGoalValue?: number | null;
   enabled: boolean;
   hour: number;
+  isStreakAtRiskToday?: boolean;
   minute: number;
   todayFactsRead?: number | null;
 };
@@ -491,7 +492,17 @@ function getNextReminderDate(hour: number, minute: number, skipToday: boolean) {
 
 function getReminderCopy(input: DailyReminderScheduleInput) {
   const dailyGoalValue = input.dailyGoalValue ?? null;
+  const isStreakAtRiskToday = input.isStreakAtRiskToday === true;
   const todayFactsRead = Math.max(0, input.todayFactsRead ?? 0);
+
+  if (isStreakAtRiskToday) {
+    return {
+      title: 'Serin bugun riskte',
+      body: dailyGoalValue
+        ? `Bugun ${todayFactsRead}/${dailyGoalValue} karttasin. Bir kart serini korur.`
+        : 'Bugun henuz aktiflik yok. Kisa bir okuma serini korur.',
+    };
+  }
 
   if (dailyGoalValue && todayFactsRead < dailyGoalValue) {
     return {

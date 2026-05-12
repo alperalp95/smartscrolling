@@ -16,6 +16,10 @@ export type DailyActivity = {
 
 export type ActivitySummary = {
   bestStreakDays: number;
+  hasActiveDayToday: boolean;
+  hasActiveDayYesterday: boolean;
+  isStreakAtRiskToday: boolean;
+  lastActiveDate: string | null;
   streakDays: number;
   today: DailyActivity;
   week: DailyActivity[];
@@ -160,6 +164,10 @@ export async function fetchActivitySummary(): Promise<ActivitySummary> {
   if (!userId) {
     return {
       bestStreakDays: 0,
+      hasActiveDayToday: false,
+      hasActiveDayYesterday: false,
+      isStreakAtRiskToday: false,
+      lastActiveDate: null,
       streakDays: 0,
       today: emptyToday,
       week: weekKeys.map((date) => normalizeActivityRow(null, date)),
@@ -179,6 +187,10 @@ export async function fetchActivitySummary(): Promise<ActivitySummary> {
     console.error('[Dev] activity summary fetch failed:', error.message);
     return {
       bestStreakDays: 0,
+      hasActiveDayToday: false,
+      hasActiveDayYesterday: false,
+      isStreakAtRiskToday: false,
+      lastActiveDate: null,
       streakDays: 0,
       today: emptyToday,
       week: weekKeys.map((date) => normalizeActivityRow(null, date)),
@@ -197,11 +209,15 @@ export async function fetchActivitySummary(): Promise<ActivitySummary> {
       .map((activity) => activity.date),
   );
   const today = activityByDate.get(todayKey) ?? emptyToday;
-  const streakStart = activeDates.has(todayKey)
-    ? todayKey
-    : activeDates.has(addDays(todayKey, -1))
-      ? addDays(todayKey, -1)
-      : null;
+  const yesterdayKey = addDays(todayKey, -1);
+  const hasActiveDayToday = activeDates.has(todayKey);
+  const hasActiveDayYesterday = activeDates.has(yesterdayKey);
+  const lastActiveDate =
+    (data ?? [])
+      .map((row) => normalizeActivityRow(row, row.date ?? todayKey))
+      .find((activity) => activity.isActive)?.date ?? null;
+  const isStreakAtRiskToday = !hasActiveDayToday && hasActiveDayYesterday;
+  const streakStart = hasActiveDayToday ? todayKey : hasActiveDayYesterday ? yesterdayKey : null;
   let streakDays = 0;
 
   if (streakStart) {
@@ -215,6 +231,10 @@ export async function fetchActivitySummary(): Promise<ActivitySummary> {
 
   return {
     bestStreakDays: getBestStreakDays(activeDates),
+    hasActiveDayToday,
+    hasActiveDayYesterday,
+    isStreakAtRiskToday,
+    lastActiveDate,
     streakDays,
     today,
     week: weekKeys.map((date) => activityByDate.get(date) ?? normalizeActivityRow(null, date)),

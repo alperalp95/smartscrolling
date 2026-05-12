@@ -543,6 +543,7 @@ export default function ProfileScreen() {
       dailyGoalValue: dailyGoal?.value ?? null,
       enabled,
       hour: notificationTime.hour,
+      isStreakAtRiskToday: summary?.isStreakAtRiskToday ?? false,
       minute: notificationTime.minute,
       todayFactsRead: summary?.today.factsRead ?? 0,
     });
@@ -657,6 +658,7 @@ export default function ProfileScreen() {
         dailyGoalValue: dailyGoal?.value ?? null,
         enabled: notificationsEnabled,
         hour: savedTime.hour,
+        isStreakAtRiskToday: activitySummary?.isStreakAtRiskToday ?? false,
         minute: savedTime.minute,
         todayFactsRead: activitySummary?.today.factsRead ?? 0,
       });

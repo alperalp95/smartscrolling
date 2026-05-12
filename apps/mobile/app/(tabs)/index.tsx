@@ -1341,6 +1341,7 @@ export default function FeedScreen() {
               dailyGoalValue: dailyGoal?.value ?? null,
               enabled: notificationsEnabled,
               hour: notificationTime.hour,
+              isStreakAtRiskToday: false,
               minute: notificationTime.minute,
               todayFactsRead: nextFactsRead,
             });

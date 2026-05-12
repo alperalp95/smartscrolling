@@ -15,7 +15,7 @@ import {
 import { hydratePremiumEntitlement } from '../src/lib/premiumEntitlements';
 import { refreshCurrentExpoPushTokenIfPermissionGranted } from '../src/lib/pushTokens';
 import { supabase } from '../src/lib/supabase';
-import { fetchTodayActivity } from '../src/lib/userActivity';
+import { fetchActivitySummary } from '../src/lib/userActivity';
 import { fetchUserPreferences } from '../src/lib/userPreferences';
 import { useAuthStore } from '../src/store/authStore';
 import { useFeedStore } from '../src/store/feedStore';
@@ -51,13 +51,14 @@ export default function RootLayout() {
           hydrateNotificationPreference(prefs.notificationsEnabled, prefs.notificationTime);
 
           if (prefs.notificationsEnabled) {
-            const todayActivity = await fetchTodayActivity();
+            const activitySummary = await fetchActivitySummary();
             await reconcileDailyLocalReminder({
               dailyGoalValue: prefs.dailyGoal?.value ?? null,
               enabled: prefs.notificationsEnabled,
               hour: prefs.notificationTime.hour,
+              isStreakAtRiskToday: activitySummary.isStreakAtRiskToday,
               minute: prefs.notificationTime.minute,
-              todayFactsRead: todayActivity.factsRead,
+              todayFactsRead: activitySummary.today.factsRead,
             });
             await refreshCurrentExpoPushTokenIfPermissionGranted(userId);
           }
