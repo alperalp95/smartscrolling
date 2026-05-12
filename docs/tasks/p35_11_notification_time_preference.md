@@ -22,7 +22,7 @@ Kullaniciya profile icinden sade bir bildirim saati secimi sunmak.
 - [x] Profile saat chip UI'i eklendi.
 - [x] Remote Supabase migration kullanici onayi sonrasi uygulandi.
 - [x] Emulator UX bulgulari sonrasi saat paneli kompakt editor davranisina cekildi.
-- [ ] Android development build smoke sonucu kaydedilecek.
+- [x] Android development build smoke sonucu kaydedildi.
 
 ## Acceptance
 
@@ -31,3 +31,8 @@ Kullaniciya profile icinden sade bir bildirim saati secimi sunmak.
 - App yeniden acilinca secili saat hydrate olur.
 - Secili saat chip'ine dokunmak bildirimi kapatir ve pending reminder'i temizler.
 - Dakika hassasiyeti bu MVP'de yoktur; dakika `00` olarak sabittir.
+
+## Smoke
+
+- Fiziksel Android development build uzerinde bildirim saati davranisi basarili goruldu.
+- Saat degisimi sonrasi local reminder best-effort yeniden kurulum akisi kabul edildi.

@@ -13,6 +13,10 @@
 - `fetchActivitySummary()` migration'siz streak-risk state'i donduruyor: bugun aktif degil ama dun aktifse `isStreakAtRiskToday` true olur.
 - P35-12 local reminder copy'si streak-risk state'ini kullanacak sekilde genisletildi; ayrica pending notification, remote push veya freeze/grace migration'i eklenmedi.
 
+#### P35-11/P35-12 Android Smoke Kaydi
+- Fiziksel Android development build uzerinde P35-11 notification time preference ve P35-12 local reminder smoke basarili goruldu.
+- Roadmap ve task checklist'lerinde P35-11/P35-12 kapatildi; P35 retention tarafinda kalan ana urun karari `P35-04` grace/freeze olarak birakildi.
+
 ---
 #### P35-13b Backend Content Freshness Push Smoke Tamamlandi
 - GitHub Actions `Facts Ingest` run #8 daily mode basarili tamamlandi ve `Send content freshness push` step'i success dondu.

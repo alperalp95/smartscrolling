@@ -213,8 +213,8 @@ Not:
 
 ### Push Notification
 - [x] **P35-10** Expo Push Notification entegrasyonu - native foundation, local scheduling helper'lari, P35-10c push token persistence ve P35-10d self-test remote sender tamamlandi; fiziksel Android development build'de token kaydi ve Expo receipt `status: ok` smoke edildi (`docs/tasks/p35_10a_push_notification_foundation.md`, `docs/tasks/p35_10b_notification_permission_and_schedule.md`, `docs/tasks/p35_10c_remote_push_token_foundation.md`, `docs/tasks/p35_10d_remote_push_sender_smoke.md`)
-- [ ] **P35-11** Kullaniciya ozel bildirim saati ayari - profile hour chips + `users.notification_hour/minute` migration remote'a uygulandi; kalan: Android development build device smoke (`docs/tasks/p35_11_notification_time_preference.md`)
-- [ ] **P35-12** Streak hatirlatici bildirimi - local-only best-effort schedule/cancel/reconcile baglandi ve emulator smoke olumlu; kalan: fiziksel Android development build smoke (`docs/tasks/p35_12_streak_reminder_notification.md`)
+- [x] **P35-11** Kullaniciya ozel bildirim saati ayari - profile hour chips + `users.notification_hour/minute` migration remote'a uygulandi; fiziksel Android development build smoke basarili goruldu (`docs/tasks/p35_11_notification_time_preference.md`)
+- [x] **P35-12** Streak hatirlatici bildirimi - local-only best-effort schedule/cancel/reconcile ve P35-02 streak-risk copy baglandi; fiziksel Android development build smoke basarili goruldu (`docs/tasks/p35_12_streak_reminder_notification.md`)
 - [x] **P35-13** Yeni icerik bildirimi - MVP'de single daily local copy baglandi; P35-13b backend content freshness push daily ingest sonrasi broadcast MVP olarak eklendi ve GitHub Actions daily workflow smoke Expo receipt `status: ok` ile tamamlandi; interest-based token hedefleme MVP sonrasina ayrildi (`docs/tasks/p35_13_new_content_notification.md`, `docs/tasks/p35_13_backend_content_freshness_push.md`)
 - [x] **P35-14** Bildirim tercihlerini profil ayarlarindan yonetme - profile toggle + `users.notifications_enabled` persistence tamamlandi; OS permission artik kullanici aksiyonuyla P35-10b local akisa bagli
 
@@ -331,17 +331,16 @@ Not:
 
 ### Kodda mevcut ama urun olarak tamam sayilmamasi gereken alanlar
 - `P35-05`, `P35-01` ve `P35-06` ilk retention dikeyi olarak kapandi; sonraki adim uyarilar/rekor/grace-period veya daha genis hedef UI'i.
-- Profilde gercek seri sayaci ve rekor gosterimi baglandi; kirilma uyarisi push notification dilimine birakildi, grace/freeze davranisi henuz yok. `P35-02` ve `P35-04` acik kalmali.
+- Profilde gercek seri sayaci ve rekor gosterimi baglandi; P35-02 streak kirilma uyarisi P35-12 single local reminder copy'sine baglandi. Grace/freeze davranisi henuz yok; `P35-04` acik kalmali.
 - Google OAuth icin mobil helper, callback route, profil butonu, Dashboard/provider allowlist hizasi ve fiziksel Android dev build smoke tamam; Apple native foundation eklendi. `P1-13` kapandi; Apple Developer config ve iOS fiziksel cihaz smoke release-oncesi blocker olarak takip edilecek.
 - RevenueCat/paywall kodu var; reklam tarafinda production AdMob render, consent ve store beyan smoke bekledigi icin `P3-24b` acik kalmali.
 - Supabase Edge Function dosyalari ve CI sanity check var; schema/function prod deploy workflow'u yok. `P6-11` ve Backend Deployment adimlari acik kalmali.
 
 ### Devam icin onerilen sira
-1. `P35-11`/`P35-12` icin kalan fiziksel Android smoke notlarini tamamla; saat degisimi ve gunluk hedef tamamlandiysa reminder iptali ozellikle kontrol edilecek.
-2. `P35-02` streak kirilma uyarisi mesajini P35-12 local reminder copy'siyle hizala; `P35-04` grace/freeze davranisini ayri urun karari olarak tut.
-3. `P6-09b`: hesap/veri silme ve AI icerik raporlama akisini release blocker olarak ele al.
-4. `P6-01`/`P6-02`: auth, bookmark, reader progress ve paywall icin minimum unit/e2e smoke seti kur.
-5. `P1-15o`/`P1-15p`/`P1-15q`: LLM provider abstraction, shadow benchmark ve budget guard ile Groq limit riskini operasyonel hale getir.
-6. `P35-13` interest-based token hedeflemeyi MVP sonrasi ayri task olarak ele al.
+1. `P35-04` grace/freeze davranisini ayri urun karari olarak tut; MVP oncesi gereklilik netlestirilecek.
+2. `P6-09b`: hesap/veri silme ve AI icerik raporlama akisini release blocker olarak ele al.
+3. `P6-01`/`P6-02`: auth, bookmark, reader progress ve paywall icin minimum unit/e2e smoke seti kur.
+4. `P1-15o`/`P1-15p`/`P1-15q`: LLM provider abstraction, shadow benchmark ve budget guard ile Groq limit riskini operasyonel hale getir.
+5. `P35-13` interest-based token hedeflemeyi MVP sonrasi ayri task olarak ele al.
 
-*Son guncellenme: 2026-05-10 - v0.7*
+*Son guncellenme: 2026-05-12 - v0.8*

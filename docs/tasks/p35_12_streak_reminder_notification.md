@@ -21,7 +21,7 @@ Gunluk hedef tamamlanmadiysa veya streak bugun riskteyse kullaniciya secili saat
 - [x] P35-02 streak-risk state'i ayni tek local reminder copy'sine baglandi.
 - [x] Hedef tamamlaninca bugunku reminder best-effort iptal edilip sonraki uygun zamana aliniyor.
 - [x] Emulator UX bulgulari sonrasi OS permission revoked durumunda reminder temizligi Profile focus sync'e baglandi.
-- [ ] Android development build smoke sonucu kaydedilecek.
+- [x] Android development build smoke sonucu kaydedildi.
 
 ## Acceptance
 
@@ -35,3 +35,8 @@ Gunluk hedef tamamlanmadiysa veya streak bugun riskteyse kullaniciya secili saat
 ## Limitation
 
 - Local notification tetik aninda Supabase sorgusu calistirilmaz. Strict "hedef tamamlandiysa asla gitmesin" garantisi remote push veya background task gerektirir ve bu sprint kapsaminda degildir.
+
+## Smoke
+
+- Fiziksel Android development build uzerinde local reminder akisi basarili goruldu.
+- Daily goal tamamlanmadi/tamamlandi durumlari ve tek pending SmartScrolling reminder beklentisi kabul edildi.
