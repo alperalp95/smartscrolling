@@ -8,7 +8,7 @@ MVP'de yeni icerik beklentisini duplicate bildirim yaratmadan gunluk local remin
 
 - Ayrica ikinci bir notification kurulmaz.
 - Gunluk hedef yoksa veya bugunku hedef tamamlanmissa generic `Bugunku kartlarin hazir` copy'si kullanilir.
-- Gercek backend content freshness trigger'i sonraki remote push/task kapsaminda kalir.
+- Gercek backend content freshness trigger'i P35-13b broadcast MVP olarak daily ingest sonrasina baglandi.
 
 ## Checklist
 
@@ -20,12 +20,13 @@ MVP'de yeni icerik beklentisini duplicate bildirim yaratmadan gunluk local remin
 - [x] Content freshness trigger task'i P35-10d Android dev build sender smoke sonucundan sonra acilacak.
 - [x] Android development build smoke sonucu kaydedildi: P35-10d physical Android token + sender receipt smoke `status: ok`.
 - [x] Gercek backend content freshness trigger `P35-13b` olarak planlandi ve broadcast MVP seklinde eklendi.
-- [ ] Interest-based token hedefleme broadcast MVP smoke sonrasina birakildi.
+- [x] P35-13b GitHub Actions daily workflow smoke tamamlandi: `sent: true`, `freshFactCount: 8`, `targetCount: 1`, Expo receipt `status: ok`.
+- [x] Interest-based token hedefleme MVP sonrasina birakildi.
 
 ## Acceptance
 
 - Kullanici gunde tek local retention notification alir.
 - Notification copy'si streak/daily-goal durumuna gore sade sekilde secilir.
-- Gercek yeni content geldi aninda remote push gonderimi bu MVP'nin parcasi degildir.
-- Remote content trigger icin P35-10c token persistence ve P35-10d server-side sender smoke tamamlandi; backend freshness push P35-13b ile daily ingest sonrasina baglandi.
-- Interest-based hedefleme bu MVP'nin parcasi degildir; broadcast smoke sonrasinda ayri task olarak ele alinacak.
+- Gercek yeni content geldikten sonra daily ingest basarisi uzerinden broadcast remote push denenir.
+- Remote content trigger icin P35-10c token persistence, P35-10d server-side sender smoke ve P35-13b workflow smoke tamamlandi.
+- Interest-based hedefleme bu MVP'nin parcasi degildir; MVP sonrasi ayri task olarak ele alinacak.

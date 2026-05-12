@@ -29,8 +29,8 @@ P35-13 MVP single local reminder davranisini bozmadan, daily fact ingest basaril
 - [x] Weekly catch-up modunda push tetiklenmeyecek sekilde birakildi.
 - [x] `npm run check:edge-functions` kapsamÄ±na yeni function eklendi.
 - [x] Remote deploy yapildi ve `npx supabase functions list` ile `ACTIVE`, version 5 olarak dogrulandi.
-- [ ] Manual content freshness push smoke sonucu kaydedilecek.
-- [ ] GitHub Actions daily workflow smoke sonucu kaydedilecek.
+- [x] Manual content freshness push smoke sonucu kaydedildi.
+- [x] GitHub Actions daily workflow smoke sonucu kaydedildi.
 
 ## Deploy / Smoke Notes - 2026-05-10
 
@@ -39,17 +39,27 @@ P35-13 MVP single local reminder davranisini bozmadan, daily fact ingest basaril
 - Internal bearer cagrisi 200 dondu ve canli DB'de son 3 saatte fresh fact olmadigi icin beklenen `sent: false`, `reason: no_fresh_facts`, `freshFactCount: 0` sonucunu verdi.
 - Full send/receipt smoke henuz yapilmadi; bunun icin son 3 saatte en az bir gercek `facts` kaydi ve enabled push token hedefi gerekir.
 
+## Workflow Smoke Notes - 2026-05-12
+
+- GitHub Actions `Facts Ingest` run #8 (`25721752260`) daily mode basarili tamamlandi.
+- `Run daily facts ingest` step'i success dondu ve `Send content freshness push` step'i success dondu.
+- Function response: `sent: true`, `freshFactCount: 8`, `targetCount: 1`, `ticketIds: ["019e1b54-9b2e-70b5-a8de-a4c9807653b6"]`.
+- Fresh facts arasinda `Kopegin Yas Hesaplamalari`, `Dashboard: Mac OS X icin Hizli Erisim`, `Rezonans ve Kontrolsuz Titresim` ve diger 5 yeni fact yer aldi.
+- Hedef token: Android platformunda 1 enabled push token; response'ta token suffix `j7mrmV9]` olarak gorundu.
+- Receipt polling sonucu: HTTP `200`, `ok: true`, Expo receipt `status: ok`.
+- `p35-13b-cron-smoke-check` heartbeat manuel inceleme sonrasi `PAUSED` durumuna alindi.
+
 ## Smoke Checklist
 
-- [ ] En az bir enabled `push_tokens` row'u var.
-- [ ] Son 3 saatte en az bir `facts.created_at` row'u var.
-- [ ] `content-freshness-push` `send` response'u `sent: true`, `targetCount > 0`, non-empty `ticketIds` donuyor.
-- [ ] 45-60 saniye sonra `receipts` action Expo receipt `status: ok` donuyor.
-- [ ] `Facts Ingest` workflow daily mode log'unda content freshness push response'u gorunuyor.
+- [x] En az bir enabled `push_tokens` row'u var.
+- [x] Son 3 saatte en az bir `facts.created_at` row'u var.
+- [x] `content-freshness-push` `send` response'u `sent: true`, `targetCount > 0`, non-empty `ticketIds` donuyor.
+- [x] 45-60 saniye sonra `receipts` action Expo receipt `status: ok` donuyor.
+- [x] `Facts Ingest` workflow daily mode log'unda content freshness push response'u gorunuyor.
 
 ## Acceptance
 
 - Daily ingest yeni fact urettiginde remote content push otomatik denenir.
 - Yeni fact yoksa veya hedef token yoksa function 200 ile `sent: false` doner.
 - Mobil local reminder davranisi degismez.
-- Interest-based hedefleme broadcast MVP smoke tamamlandiktan sonra ayri task olarak kalir.
+- Broadcast MVP smoke tamamlandi; interest-based hedefleme MVP sonrasi ayri task olarak kalir.

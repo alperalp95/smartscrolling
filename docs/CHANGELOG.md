@@ -6,6 +6,15 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.36] - 2026-05-12
+
+#### P35-13b Backend Content Freshness Push Smoke Tamamlandi
+- GitHub Actions `Facts Ingest` run #8 daily mode basarili tamamlandi ve `Send content freshness push` step'i success dondu.
+- `content-freshness-push` response'u `sent: true`, `freshFactCount: 8`, `targetCount: 1` ve ticket id `019e1b54-9b2e-70b5-a8de-a4c9807653b6` ile dogrulandi.
+- Expo receipt polling HTTP `200`, `ok: true`, receipt `status: ok` dondu; P35-13 broadcast MVP smoke kapandi.
+- Interest-based token hedefleme MVP sonrasina ayrildi ve `p35-13b-cron-smoke-check` heartbeat pasife alindi.
+
+---
 ### [v1.34] - 2026-05-11
 
 #### P35-06e Feed Paging Viewport Fix
