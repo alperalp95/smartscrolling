@@ -357,11 +357,6 @@ export default function LibraryScreen() {
                   <View style={s.savedFactBadge}>
                     <Text style={s.savedFactBadgeText}>{fact.category}</Text>
                   </View>
-                  {fact.verified ? (
-                    <View style={s.savedFactVerified}>
-                      <Ionicons name="checkmark-circle" size={12} color="#a78bfa" />
-                    </View>
-                  ) : null}
                 </View>
                 <Text numberOfLines={2} style={s.savedFactTitle}>
                   {fact.title}
@@ -599,10 +594,6 @@ const s = StyleSheet.create({
     paddingVertical: 5,
   },
   savedFactBadgeText: { color: '#c4b5fd', fontSize: 11, fontWeight: '700' },
-  savedFactVerified: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   savedFactTitle: {
     color: '#fff',
     fontSize: 15,

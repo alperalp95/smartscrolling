@@ -996,7 +996,7 @@ function FullScreenFactCard({
         ]}
       >
         <View style={s.catBadge}>
-          <Text style={s.catBadgeText}>{item.category} Dogrulandi</Text>
+          <Text style={s.catBadgeText}>{item.category}</Text>
         </View>
         {isReviewMode ? (
           <View style={s.imageDebugBadge}>

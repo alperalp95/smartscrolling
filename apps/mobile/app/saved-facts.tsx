@@ -107,7 +107,6 @@ export default function SavedFactsScreen() {
                   <View style={s.badge}>
                     <Text style={s.badgeText}>{fact.category}</Text>
                   </View>
-                  {fact.verified ? <Text style={s.verified}>Dogrulandi</Text> : null}
                 </View>
                 <Text numberOfLines={2} style={s.cardTitle}>
                   {fact.title}
@@ -222,11 +221,6 @@ const s = StyleSheet.create({
   },
   badgeText: {
     color: '#c4b5fd',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  verified: {
-    color: '#a78bfa',
     fontSize: 11,
     fontWeight: '700',
   },
