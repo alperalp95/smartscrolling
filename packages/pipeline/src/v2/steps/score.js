@@ -1,8 +1,9 @@
 // src/v2/steps/score.js
 // Puanla: Tekrar-1'i geçmiş `new` adaylar config.scoring.batchSize'lık gruplarla tek çağrıda.
 // wow = 0.6*surprise + 0.4*tr_relevance.
-// Eleme sırası: is_definition → definition; surprise < 6 → low_surprise;
-// tr_relevance < 4 → low_relevance; kategori tanınmazsa → invalid_category.
+// Eleme sırası: is_definition → definition; surprise < scoring.minSurprise (6) → low_surprise;
+// tr_relevance < scoring.minTrRelevance (4) → low_relevance; kategori tanınmazsa → invalid_category.
+// maxTokens: config.roles.scorer.maxTokens (yoksa SCORE_MAX_TOKENS).
 // Kalanlardan batch başına en iyi passPercent (batch boyutunun %'si, en az 1) → scored;
 // diğerleri → below_cut. Tüm puanlar scores jsonb'ye yazılır.
 import { SCORE_MAX_TOKENS, buildScorePrompt } from '../prompts/score.js';
@@ -16,10 +17,18 @@ import {
   nowIso,
   recordFailure,
   reject,
+  roleMaxTokens,
 } from './common.js';
 
 export const MIN_SURPRISE = 6;
 export const MIN_TR_RELEVANCE = 4;
+
+/** config.scoring.minSurprise / minTrRelevance (0-10), yoksa varsayılanlar. */
+export function scoringThresholds(config) {
+  const s = config?.scoring ?? {};
+  const num = (v, d) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 10 ? v : d);
+  return { minSurprise: num(s.minSurprise, MIN_SURPRISE), minTrRelevance: num(s.minTrRelevance, MIN_TR_RELEVANCE) };
+}
 
 export function wowScore(surprise, trRelevance) {
   return Math.round((0.6 * surprise + 0.4 * trRelevance) * 100) / 100;
@@ -85,17 +94,20 @@ function extractItems(json) {
  * @param {Array<{ cand: object, score: object }>} scored  geçerli puanı olanlar
  * @param {number} batchLength
  * @param {number} passPercent
+ * @param {{ minSurprise?: number, minTrRelevance?: number }} [thresholds]
  * @returns {Array<{ cand, score, decision: 'scored' | string }>}  string = reject_reason
  */
-export function decideBatch(scored, batchLength, passPercent) {
+export function decideBatch(scored, batchLength, passPercent, thresholds = {}) {
+  const minSurprise = thresholds.minSurprise ?? MIN_SURPRISE;
+  const minTr = thresholds.minTrRelevance ?? MIN_TR_RELEVANCE;
   const out = [];
   const eligible = [];
   for (const entry of scored) {
     const s = entry.score;
     let reason = null;
     if (s.is_definition) reason = 'definition';
-    else if (s.surprise < MIN_SURPRISE) reason = 'low_surprise';
-    else if (s.tr_relevance < MIN_TR_RELEVANCE) reason = 'low_relevance';
+    else if (s.surprise < minSurprise) reason = 'low_surprise';
+    else if (s.tr_relevance < minTr) reason = 'low_relevance';
     else if (!s.category) reason = 'invalid_category';
     if (reason) out.push({ ...entry, decision: reason });
     else eligible.push(entry);
@@ -117,6 +129,8 @@ export async function runScore(deps, { limit = 50 } = {}) {
   const stats = newStats('score');
   const batchSize = deps.config?.scoring?.batchSize ?? 15;
   const passPercent = deps.config?.scoring?.passPercent ?? 30;
+  const thresholds = scoringThresholds(deps.config);
+  const maxTokens = roleMaxTokens(deps.config, 'scorer', SCORE_MAX_TOKENS);
   const cands = await deps.repo.listByStatus(STATUS.NEW, limit, { scoresHas: 'dedup_hook' });
 
   for (let start = 0; start < cands.length; start += batchSize) {
@@ -125,7 +139,7 @@ export async function runScore(deps, { limit = 50 } = {}) {
 
     let res;
     try {
-      res = await deps.llm.chat('scorer', { ...buildScorePrompt(items), json: true, maxTokens: SCORE_MAX_TOKENS });
+      res = await deps.llm.chat('scorer', { ...buildScorePrompt(items), json: true, maxTokens });
     } catch (err) {
       if (isFatal(err)) throw err;
       if (isExhausted(err)) {
@@ -159,7 +173,7 @@ export async function runScore(deps, { limit = 50 } = {}) {
     }
 
     // Kesim, modelin geçerli puan verdiği aday sayısına göre değil batch boyutuna göre.
-    for (const { cand, score, decision } of decideBatch(valid, batch.length, passPercent)) {
+    for (const { cand, score, decision } of decideBatch(valid, batch.length, passPercent, thresholds)) {
       const scores = {
         ...(cand.scores ?? {}),
         surprise: score.surprise,

@@ -3,16 +3,18 @@
   "version": 1,
 
   "roles": {
-    "_aciklama": "Her iş (rol) için hangi yapay zeka modelinin kullanılacağı. 'chain' listesi sırayla denenir: ilki dolarsa ya da hata verirse bir sonrakine geçilir.",
+    "_aciklama": "Her iş (rol) için hangi yapay zeka modelinin kullanılacağı. 'chain' listesi sırayla denenir: ilki dolarsa ya da hata verirse bir sonrakine geçilir. 'maxTokens' = modelin bir yanıtta en fazla kaç token yazabileceği; yanıt bu sınırda kesilirse hata sayılır ve yedek model denenir.",
     "scorer": {
-      "_aciklama": "Puanlayıcı: aday bilgileri 0-10 arası şaşırtıcılık vb. puanlar.",
+      "_aciklama": "Puanlayıcı: aday bilgileri 0-10 arası şaşırtıcılık vb. puanlar. Qwen3 modellerinde 'düşünme' kapalı: Groq'ta reasoning_effort=none, Cloudflare'de isteğin sonuna ' /no_think' eklenir (userSuffix).",
+      "maxTokens": 1500,
       "chain": [
-        { "provider": "groq", "model": "qwen/qwen3.8-27b" },
-        { "provider": "cloudflare", "model": "@cf/qwen/qwen3-30b-a3b-fp8" }
+        { "provider": "groq", "model": "qwen/qwen3.8-27b", "params": { "reasoning_effort": "none" } },
+        { "provider": "cloudflare", "model": "@cf/qwen/qwen3-30b-a3b-fp8", "userSuffix": " /no_think" }
       ]
     },
     "writer": {
       "_aciklama": "Yazar: Türkçe kartı yazar. İlk adımdaki 'pool' içindeki iki model sırayla (bir o, bir bu) kullanılır; ikisi de doluysa Cloudflare'e geçilir.",
+      "maxTokens": 1500,
       "chain": [
         {
           "_aciklama": "round_robin = yük havuzdaki modellere sırayla dağıtılır.",
@@ -26,7 +28,8 @@
       ]
     },
     "verifier": {
-      "_aciklama": "Doğrulayıcı: kartı iddialara böler, kaynağa karşı kontrol eder. Yazardan farklı aile (Google) olmalı.",
+      "_aciklama": "Doğrulayıcı: kartı iddialara böler, kanca + destek paragrafına karşı kontrol eder. Yazardan farklı aile (Google) olmalı.",
+      "maxTokens": 1500,
       "chain": [
         { "provider": "cloudflare", "model": "@cf/google/gemma-4-26b-a4b-it" },
         { "provider": "gemini", "model": "gemini-3.1-flash-lite" }
@@ -34,7 +37,8 @@
     },
     "judge": {
       "_aciklama": "Hakem: benzerliği gri bölgede kalan iki kart 'aynı bilgi mi?' diye sorulur. 'sameAs' = puanlayıcıyla aynı model zincirini kullan.",
-      "sameAs": "scorer"
+      "sameAs": "scorer",
+      "maxTokens": 200
     },
     "embedding": {
       "_aciklama": "Tekrar kontrolü için metni sayı dizisine (vektör) çevirir. Bu modeli değiştirirseniz tüm eski vektörler yeniden hesaplanmalı; boyut (dimensions) veritabanıyla aynı kalmalı.",
@@ -102,9 +106,11 @@
   },
 
   "scoring": {
-    "_aciklama": "Puanlama: bir çağrıda kaç aday puanlanır, en iyi yüzde kaçı geçer.",
+    "_aciklama": "Puanlama: bir çağrıda kaç aday puanlanır, en iyi yüzde kaçı geçer, en az kaç puan gerekir (0-10).",
     "batchSize": 15,
-    "passPercent": 30
+    "passPercent": 30,
+    "minSurprise": 6,
+    "minTrRelevance": 4
   },
 
   "dedup": {

@@ -28,8 +28,27 @@ export class LlmExhaustedError extends Error {
 }
 
 /**
+ * Zincirdeki modeller ÇALIŞTI ama kullanılabilir çıktı vermedi (geçersiz JSON, kesilmiş yanıt).
+ * Bu bir kapasite tükenmesi DEĞİLDİR: adım durmaz, aday/batch normal hata gibi sayılır
+ * (attempts++), sonraki adaylar/batch'ler denenmeye devam eder.
+ */
+export class LlmOutputError extends Error {
+  constructor(role, { attempts = [], events = [] } = {}) {
+    const summary = attempts
+      .map((a) => `${a.provider}/${a.model}: ${a.reason}`)
+      .join('; ');
+    super(`LLM çıktısı kullanılamadı (role=${role})${summary ? ` -> ${summary}` : ''}`);
+    this.name = 'LlmOutputError';
+    this.role = role;
+    this.attempts = attempts;
+    this.events = events;
+  }
+}
+
+/**
  * Tek bir sağlayıcı çağrısının sınıflandırılmış hatası (iç kullanım).
- * kind: 'retryable' | 'unavailable' | 'fatal' | 'invalid_json'
+ * kind: 'retryable' | 'unavailable' | 'quota' | 'fatal' | 'invalid_json' | 'truncated' | 'empty'
+ * (invalid_json, truncated, empty "çıktı hatası"dır; diğerleri kapasite/erişim hatası.)
  */
 export class ProviderCallError extends Error {
   constructor(kind, message, { status, retryAfterMs, failedGeneration } = {}) {
@@ -41,3 +60,6 @@ export class ProviderCallError extends Error {
     this.failedGeneration = failedGeneration;
   }
 }
+
+/** Çıktı hatası türleri: zincir bunlarla biterse LlmExhaustedError değil LlmOutputError atılır. */
+export const OUTPUT_ERROR_KINDS = Object.freeze(['invalid_json', 'truncated', 'empty']);

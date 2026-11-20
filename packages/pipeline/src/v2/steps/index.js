@@ -53,8 +53,10 @@ export function resolveSteps(names = DEFAULT_STEP_NAMES) {
 export async function runSteps(names, deps, opts = {}) {
   const steps = resolveSteps(names);
   const stats = {};
+  // Run başına bellek içi liste: dedup-card aynı run'da geçen taslakları birbirine karşı da kontrol eder.
+  const runDeps = { ...deps, runDrafts: Array.isArray(deps.runDrafts) ? deps.runDrafts : [] };
   for (const name of steps) {
-    stats[name] = await STEPS[name](deps, opts);
+    stats[name] = await STEPS[name](runDeps, opts);
   }
   return { steps, stats };
 }

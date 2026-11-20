@@ -17,6 +17,7 @@ import {
   nowIso,
   recordFailure,
   reject,
+  roleMaxTokens,
 } from './common.js';
 
 export const DEDUP_HOOK_MATCH_LIMIT = 5;
@@ -56,10 +57,14 @@ export async function runDedupHook(deps, { limit = 50 } = {}) {
 
   await forEachCandidate(deps, cands, stats, async (cand) => {
     const embedding = vectors[cands.indexOf(cand)];
-    const raw = await deps.repo.matchSimilar(embedding, low, DEDUP_HOOK_MATCH_LIMIT);
-    const matches = (raw ?? []).filter((m) => m.id !== cand.id && !(m.kind === 'candidate' && m.status === STATUS.REJECTED));
+    // DB kendisini (p_exclude_candidate) ve rejected adayları zaten eler; id süzgeci sadece emniyet.
+    const raw = await deps.repo.matchSimilar(embedding, low, DEDUP_HOOK_MATCH_LIMIT, {
+      kinds: ['fact', 'candidate'],
+      excludeCandidate: cand.id,
+    });
+    const matches = (raw ?? []).filter((m) => !(m.kind === 'candidate' && m.id === cand.id));
 
-    const { judge, state } = createJudge(deps.llm, buildJudgePrompt);
+    const { judge, state } = createJudge(deps.llm, buildJudgePrompt, { maxTokens: roleMaxTokens(deps.config, 'judge', 200) });
     const decision = await decideDuplicate({
       candidate: { sourceKey: cand.source_key, text: cand.hook_text, embedding },
       matches,
@@ -67,6 +72,7 @@ export async function runDedupHook(deps, { limit = 50 } = {}) {
       judge,
     });
     if (state.exhausted) throw state.exhausted; // hakem zinciri tükendi → tekrar sayma, ertele
+    if (state.error) throw state.error; // hakem çıktısı bozuk → tekrar sayma, aday hata (attempts++)
 
     const scores = { ...(cand.scores ?? {}), dedup_hook: { ...decision, at: nowIso(deps.now) } };
     if (decision.verdict === 'duplicate') {

@@ -85,7 +85,7 @@ export async function runSupport(deps, { limit = 50 } = {}) {
       support_paragraph: picked.text,
       scores: {
         ...(cand.scores ?? {}),
-        support: { paragraphs: picked.indexes, coverage: picked.coverage, at: nowIso(deps.now) },
+        support: { paragraphs: picked.indexes, coverage: picked.coverage, main_fact: picked.mainFact, at: nowIso(deps.now) },
       },
     });
     stats.advanced += 1;

@@ -39,7 +39,14 @@ test('gerçek config dosyası geçerli ve beklenen değerleri içeriyor', () => 
     { a: cfg.retry.maxAttempts, b: cfg.retry.baseDelayMs, c: cfg.retry.maxDelayMs, t: cfg.retry.requestTimeoutMs },
     { a: 3, b: 2000, c: 30000, t: 60000 },
   );
-  assert.deepEqual(cfg.scoring, { batchSize: 15, passPercent: 30 });
+  assert.deepEqual(cfg.scoring, { batchSize: 15, passPercent: 30, minSurprise: 6, minTrRelevance: 4 });
+  assert.deepEqual(
+    { s: cfg.roles.scorer.maxTokens, w: cfg.roles.writer.maxTokens, v: cfg.roles.verifier.maxTokens, j: cfg.roles.judge.maxTokens },
+    { s: 1500, w: 1500, v: 1500, j: 200 },
+  );
+  // Qwen3 düşünme kapalı: Groq reasoning_effort=none, Cloudflare /no_think yumuşak anahtarı
+  assert.deepEqual(cfg.roles.scorer.steps[0].members[0].params, { reasoning_effort: 'none' });
+  assert.equal(cfg.roles.scorer.steps[1].members[0].userSuffix, ' /no_think');
   assert.deepEqual(cfg.dedup, { duplicateThreshold: 0.92, grayZoneLow: 0.85 });
   assert.deepEqual(cfg.publish, { dailyCount: 100, minStockDays: 7 });
   assert.ok(!JSON.stringify(cfg).includes('_aciklama'));
@@ -78,4 +85,13 @@ test('createLlm ham config ile de çalışır, bilinmeyen rol anlaşılır hata 
   const llm = createLlm(rawConfig(), { env: {}, fetch: async () => { throw new Error('x'); } });
   await assert.rejects(() => llm.chat('poet', { messages: [{ role: 'user', content: 'x' }] }), /bilinmeyen rol 'poet'/);
   assert.throws(() => createLlm({ roles: {} }), LlmConfigError);
+});
+
+test('roles.<rol>.maxTokens pozitif tam sayı olmalı; userSuffix metin olmalı', () => {
+  const raw = JSON.parse(readFileSync(DEFAULT_CONFIG_PATH, 'utf8'));
+  raw.roles.writer.maxTokens = -5;
+  assert.throws(() => validateConfig(raw), /roles\.writer\.maxTokens/);
+  const raw2 = JSON.parse(readFileSync(DEFAULT_CONFIG_PATH, 'utf8'));
+  raw2.roles.scorer.chain[1].userSuffix = 42;
+  assert.throws(() => validateConfig(raw2), /userSuffix/);
 });
