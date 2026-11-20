@@ -1,0 +1,24 @@
+==Food==
+[[File:Biáng.svg|thumb|150px|Think this character is threatening? See [[Biangbiang noodles|your favorite noodles]].]]
+{| class="wikitable"
+|-
+! Article !! Description
+|-
+| width="30%" | '''[[Ant egg soup]]'''
+| width="70%" | A nostalgic soup with a "distinctive, sour pop".
+|-
+| {{icon|GA}} '''[[Bacon Explosion]]'''
+| Not as dangerous as it sounds.<ref>Some ref</ref>
+|-
+| '''[[Balut (food)|Balut]]''' || Eggs for eating don't have bird embryos inside... except when they do.
+|-
+| '''[[Casu martzu]]'''
+| Italian "[[maggot]] cheese"{{spaced ndash}}cheese designed to be eaten
+while it is infested with [[cheese fly]] larvae.
+|-
+| '''[[Category:Unusual foods]]'''
+| A category row, not an article.
+|-
+| '''[[Ant egg soup]]'''
+| Duplicate row for the same article.
+|}
