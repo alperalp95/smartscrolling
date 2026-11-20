@@ -28,7 +28,11 @@ test('gerçek config dosyası geçerli ve beklenen değerleri içeriyor', () => 
   assert.equal(cfg.roles.writer.steps[0].strategy, 'round_robin');
   assert.deepEqual(cfg.roles.writer.steps[0].members.map((m) => m.model), ['openai/gpt-oss-120b', 'openai/gpt-oss-20b']);
   assert.equal(cfg.roles.writer.steps[1].members[0].model, '@cf/openai/gpt-oss-20b');
-  assert.deepEqual(cfg.roles.verifier.steps.map((s) => s.members[0].model), ['@cf/google/gemma-4-26b-a4b-it', 'gemini-3.1-flash-lite']);
+  assert.deepEqual(cfg.roles.verifier.steps.map((s) => s.members[0].model), [
+    '@cf/mistralai/mistral-small-3.1-24b-instruct',
+    '@cf/google/gemma-4-26b-a4b-it',
+    'gemini-3.1-flash-lite',
+  ]);
   assert.deepEqual(cfg.roles.judge.steps, cfg.roles.scorer.steps);
   assert.equal(cfg.roles.embedding.dimensions, 1024);
   assert.equal(cfg.roles.embedding.steps[0].members[0].model, '@cf/baai/bge-m3');
@@ -42,13 +46,14 @@ test('gerçek config dosyası geçerli ve beklenen değerleri içeriyor', () => 
   assert.deepEqual(cfg.scoring, { batchSize: 15, passPercent: 30, minSurprise: 6, minTrRelevance: 4 });
   assert.deepEqual(
     { s: cfg.roles.scorer.maxTokens, w: cfg.roles.writer.maxTokens, v: cfg.roles.verifier.maxTokens, j: cfg.roles.judge.maxTokens },
-    { s: 1500, w: 1500, v: 1500, j: 200 },
+    { s: 1500, w: 1500, v: 800, j: 200 },
   );
   // Qwen3 düşünme kapalı: Groq reasoning_effort=none, Cloudflare /no_think yumuşak anahtarı
   assert.deepEqual(cfg.roles.scorer.steps[0].members[0].params, { reasoning_effort: 'none' });
   assert.equal(cfg.roles.scorer.steps[1].members[0].userSuffix, ' /no_think');
   assert.deepEqual(cfg.dedup, { duplicateThreshold: 0.92, grayZoneLow: 0.85 });
   assert.deepEqual(cfg.publish, { dailyCount: 100, minStockDays: 7 });
+  assert.deepEqual(cfg.writing, { minSentences: 2, maxSentences: 4 });
   assert.ok(!JSON.stringify(cfg).includes('_aciklama'));
 });
 
@@ -58,7 +63,7 @@ test('config doğrulama: eksik rol anlaşılır hata verir', () => {
 });
 
 test('config doğrulama: tanımsız sağlayıcı anlaşılır hata verir', () => {
-  expectConfigError((c) => delete c.providers.gemini, /roles\.verifier\.chain\[1\]\.provider.*'gemini' providers bölümünde tanımlı değil/);
+  expectConfigError((c) => delete c.providers.gemini, /roles\.verifier\.chain\[2\]\.provider.*'gemini' providers bölümünde tanımlı değil/);
   expectConfigError((c) => { c.roles.scorer.chain[0].provider = 'openai'; }, /'openai'/);
   expectConfigError((c) => { c.providers.mistral = { baseUrl: 'https://x', apiKeyEnv: 'X' }; }, /providers\.mistral.*desteklenmeyen/);
 });

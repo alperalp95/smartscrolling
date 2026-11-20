@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMemoryStepsRepo } from '../../db/steps-repo.js';
 import { DEFAULT_STEP_NAMES, runSteps } from '../index.js';
+import { REPAIR_MARKER } from '../../prompts/write.js';
 import { GOOD_CARD, baseCandidate, deps, fakeLlm, fakeWikiFetch, parseScoreRequest, userContent } from './helpers.js';
 
 const C = (id, hook, title) =>
@@ -100,7 +101,7 @@ test('uçtan uca: 10 aday → 2 queued, 8 farklı red nedeni', async () => {
       if (u.includes('octopus')) return CARDS.octopus;
       if (u.includes('Napoleon')) return CARDS.napoleon;
       if (u.includes('bananas')) return CARDS.bananas_bad;
-      if (u.includes('Oxford')) return u.includes('Şu ifadeler') ? CARDS.oxford_fixed : CARDS.oxford;
+      if (u.includes('Oxford')) return u.includes(REPAIR_MARKER) ? CARDS.oxford_fixed : CARDS.oxford;
       throw new Error(`beklenmeyen yazım isteği: ${u.slice(0, 80)}`);
     },
     verifier: (req) => {
@@ -145,10 +146,11 @@ test('uçtan uca: 10 aday → 2 queued, 8 farklı red nedeni', async () => {
   assert.equal(byKey.c1.fact_id, facts.find((f) => f.source_key === 'enwiki-dyk:e2e:c1').id);
   assert.equal(facts.find((f) => f.source_key === 'enwiki-dyk:e2e:c9').title, CARDS.oxford_fixed.title);
 
-  // Puanlama tek çağrı (9 aday, batchSize 15); yazar: c1, c7×2, c8, c9 + c9 unclear düzeltmesi = 6.
+  // Puanlama tek çağrı (9 aday, batchSize 15); yazar: c1, c7×2, c8, c9 + onarım c8 (unsupported,
+  // onarımdan sonra da unsupported → red) + onarım c9 (unclear → verified) = 7. Doğrulama: c1, c8×2, c9×2.
   assert.equal(llm.count('scorer'), 1);
-  assert.equal(llm.count('writer'), 6);
-  assert.equal(llm.count('verifier'), 4);
+  assert.equal(llm.count('writer'), 7);
+  assert.equal(llm.count('verifier'), 5);
   assert.equal(stats.score.advanced, 5);
   assert.equal(stats.enqueue.advanced, 2);
   assert.ok(Object.values(stats).every((s) => s.deferred === 0 && s.failed === 0));

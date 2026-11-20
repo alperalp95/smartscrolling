@@ -54,13 +54,13 @@ test('runVerify: hepsi supported → verified, verification kaydı', async () =>
   assert.ok(u.includes(SUPPORT) && u.includes(GOOD_CARD.title));
 });
 
-test('runVerify: tek unsupported → rejected:unsupported_claim, yeniden yazım yok', async () => {
+test('runVerify: unsupported → hemen red yok, tek onarım; onarımdan sonra yine unsupported → rejected:unsupported_claim', async () => {
   const repo = repoWith();
-  const llm = fakeLlm({ verifier: [{ claims: [S('üç kalp'), X('kalpler 9 tane')] }], writer: [FIXED] });
+  const llm = fakeLlm({ verifier: [{ claims: [S('üç kalp'), X('kalpler 9 tane')] }, { claims: [X('kalpler 9 tane')] }], writer: [FIXED] });
   await runVerify(deps({ llm, repo }));
   assert.equal(repo.get('v1').reject_reason, 'unsupported_claim');
-  assert.equal(llm.count('writer'), 0);
-  assert.equal(llm.count('verifier'), 1);
+  assert.equal(llm.count('writer'), 1);
+  assert.equal(llm.count('verifier'), 2);
 });
 
 test('runVerify: unclear → bir yeniden yazım (unclear iddialar prompt\'ta) + yeniden doğrulama → verified', async () => {

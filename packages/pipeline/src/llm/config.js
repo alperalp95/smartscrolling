@@ -148,6 +148,34 @@ function validateProvider(name, p) {
   };
 }
 
+/** Kart gövdesinde izin verilen cümle sayısı için mutlak sınırlar (config yanlış yazılırsa yakalanır). */
+export const SENTENCE_LIMIT_MAX = 10;
+
+/**
+ * İsteğe bağlı 'writing' bölümü: minSentences / maxSentences (1-10 arası tam sayı, min ≤ max).
+ * Bölüm yoksa undefined döner; adımlar varsayılanı (2-4) kullanır.
+ */
+function validateWriting(writing) {
+  if (writing === undefined) return undefined;
+  if (!isObject(writing)) throw new LlmConfigError("'writing' bir nesne olmalı", { path: 'writing' });
+  for (const key of ['minSentences', 'maxSentences']) {
+    const v = writing[key];
+    if (v === undefined) continue;
+    if (!Number.isInteger(v) || v < 1 || v > SENTENCE_LIMIT_MAX) {
+      throw new LlmConfigError(`'${key}' 1-${SENTENCE_LIMIT_MAX} arası bir tam sayı olmalı (şu an: ${JSON.stringify(v)})`, {
+        path: `writing.${key}`,
+      });
+    }
+  }
+  if (writing.minSentences !== undefined && writing.maxSentences !== undefined && writing.minSentences > writing.maxSentences) {
+    throw new LlmConfigError(
+      `'minSentences' (${writing.minSentences}) 'maxSentences' (${writing.maxSentences}) değerinden büyük olamaz`,
+      { path: 'writing.minSentences' },
+    );
+  }
+  return { ...writing };
+}
+
 /**
  * Ham config'i doğrular ve normalize eder. Hata mesajları kod bilmeyen birinin
  * düzeltebileceği kadar açık olmalı (hangi alan, ne bekleniyor).
@@ -209,7 +237,9 @@ export function validateConfig(rawConfig) {
   const retry = { requestTimeoutMs: 60000, ...cfg.retry };
   requirePositiveNumber(retry, 'requestTimeoutMs', 'retry');
 
-  const normalized = { ...cfg, roles, providers, retry };
+  const writing = validateWriting(cfg.writing);
+
+  const normalized = { ...cfg, roles, providers, retry, ...(writing ? { writing } : {}) };
   Object.defineProperty(normalized, NORMALIZED, { value: true, enumerable: false });
   return normalized;
 }

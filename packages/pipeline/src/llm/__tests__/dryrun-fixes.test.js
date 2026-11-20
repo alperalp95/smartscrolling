@@ -91,18 +91,18 @@ test('hata nedeni log/olay/hata mesajına anahtar değeri olmadan yazılır', as
   assert.match(everything, /\*\*\*/);
 });
 
-test('finish_reason=length → kesik yanıt hata sayılır, tamir denenmez, yedeğe geçilir (doğrulayıcı Gemma → Gemini)', async () => {
+test('finish_reason=length → kesik yanıt hata sayılır, tamir denenmez, yedeğe geçilir (doğrulayıcı Mistral → Gemma → Gemini)', async () => {
   const { llm, fetch } = setup((call) => {
     if (isCloudflare(call)) return chatWith('{"claims":[{"claim":"uzun uzun', 'length', { completion: 1500 });
     return chatWith('{"claims":[{"claim":"a","verdict":"supported"}]}', 'stop');
   });
   const res = await llm.chat('verifier', { messages: MESSAGES, json: true });
   assert.equal(res.provider, 'gemini');
-  assert.equal(fetch.calls.filter(isCloudflare).length, 1, 'kesik yanıt için tamir isteği yok');
+  assert.equal(fetch.calls.filter(isCloudflare).length, 2, 'iki Cloudflare üyesi, kesik yanıt için tamir isteği yok');
   assert.equal(fetch.calls.filter(isGemini).length, 1);
-  const truncated = llm.events.find((e) => e.type === 'truncated');
-  assert.equal(truncated.model, '@cf/google/gemma-4-26b-a4b-it');
-  assert.equal(truncated.maxTokens, 1500, 'config roles.verifier.maxTokens');
+  const truncated = llm.events.filter((e) => e.type === 'truncated');
+  assert.deepEqual(truncated.map((e) => e.model), ['@cf/mistralai/mistral-small-3.1-24b-instruct', '@cf/google/gemma-4-26b-a4b-it']);
+  assert.equal(truncated[0].maxTokens, 800, 'config roles.verifier.maxTokens');
   const failed = llm.events.find((e) => e.type === 'provider_failed');
   assert.equal(failed.kind, 'truncated');
 });
