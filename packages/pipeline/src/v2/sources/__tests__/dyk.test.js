@@ -142,5 +142,11 @@ test('S2 toplayıcı: iki sayfayı action=parse ile okur, tekrarları eler, limi
   assert.equal(http.calls.length, 2);
   assert.equal(result.candidates.length, 4);
   assert.equal(result.stats.available, 6); // ikinci sayfadaki aynı anahtarlar elendi
-  assert.equal(result.nextCursor, null);
+  // eskiden yeniye sıralı; imleç son alınan kanca
+  assert.deepEqual(
+    result.candidates.map((c) => c.source_key),
+    ['enwiki-dyk:2024-02-02T0000:0', 'enwiki-dyk:2024-02-02T0000:1', 'enwiki-dyk:2024-02-02T1200:0', 'enwiki-dyk:2024-02-02T1200:1'],
+  );
+  assert.deepEqual(result.nextCursor, { after: '2024-02-02T1200:1' });
+  assert.equal(result.backfill, undefined);
 });
