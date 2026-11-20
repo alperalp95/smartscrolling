@@ -18,9 +18,9 @@ test('countSentences: kısaltma ve baş harf cümle bitirmez', () => {
   assert.equal(countSentences('Sayı 3.5 kat büyüktü. Bitti.'), 2);
 });
 
-test('checkWriteRules: başlık uzunluğu, nedir/kimdir, 3-5 cümle, Türkçe karakter', () => {
+test('checkWriteRules: başlık uzunluğu, nedir/kimdir, 2-4 cümle, Türkçe karakter', () => {
   assert.deepEqual(checkWriteRules(GOOD_CARD), []);
-  const v = checkWriteRules({ title: 'Ahtapot nedir?', content: 'Octopus is an animal. It lives in the sea.' });
+  const v = checkWriteRules({ title: 'Ahtapot nedir?', content: 'Octopus is an animal. It lives in the sea. It has eight arms. Its blood is blue. It is smart.' });
   assert.equal(v.length, 3);
   assert.ok(v.some((x) => x.includes('nedir')));
   assert.ok(v.some((x) => x.includes('cümle')));

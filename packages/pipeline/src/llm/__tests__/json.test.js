@@ -48,7 +48,8 @@ test('tamir de başarısızsa zincirde sonraki sağlayıcıya geçilir (tek tami
 
   assert.equal(res.provider, 'gemini');
   assert.deepEqual(res.json, { ok: true });
-  assert.equal(fetch.calls.filter(isCloudflare).length, 2);
+  // doğrulayıcı zincirinde iki Cloudflare üyesi var (Mistral, Gemma): her biri istek + tek tamir
+  assert.equal(fetch.calls.filter(isCloudflare).length, 4);
   assert.ok(llm.events.some((e) => e.type === 'provider_failed' && e.kind === 'invalid_json'));
 });
 

@@ -25,7 +25,7 @@ Hatta beş iş (rol) var:
 |---|---|
 | `scorer` | Puanlayıcı. Aday bilgilere şaşırtıcılık, Türk okur için ilgi gibi puanlar verir. |
 | `writer` | Yazar. Türkçe kartı yazar. |
-| `verifier` | Doğrulayıcı. Kartı iddialara böler, her iddiayı kancaya ve destek paragrafına karşı kontrol eder (iddia ikisinden biriyle destekleniyorsa geçer). Yazardan farklı bir model ailesinden olmalı. |
+| `verifier` | Doğrulayıcı. Kartı iddialara böler, her iddiayı kancaya ve destek paragrafına karşı kontrol eder (iddia ikisinden birinde açıkça ya da doğrudan çıkarılabilir şekilde geçiyorsa geçer). Desteklenmeyen iddia varsa kart hemen elenmez: yazara **bir kez** onarım için geri gider ("şu iddiaları çıkar ya da kaynakla uyumlu hale getir"), sonra yeniden doğrulanır. Yazardan farklı bir model ailesinden ve "düşünmeyen" bir model olmalı. |
 | `judge` | Hakem. Benzerliği "gri bölgede" kalan iki kart için "aynı bilgi mi?" diye karar verir. |
 | `embedding` | Metni sayı dizisine (vektör) çevirir. Tekrar eden kartları bulmak için kullanılır. |
 
@@ -43,10 +43,20 @@ Her rolde `maxTokens` modelin tek yanıtta en fazla kaç token yazabileceğidir:
 |---|---|---|
 | `scorer` | `1500` | 15 kanca ≈ 700 token; düşünme kapalıyken bol pay. |
 | `writer` | `1500` | Kart ≈ 150 token + gpt-oss "low" düşünme. |
-| `verifier` | `1500` | En fazla 6 kısa iddia ≈ 250 token. |
+| `verifier` | `800` | En fazla 6 kısa iddia ≈ 150-250 token (düşünmeyen model). |
 | `judge` | `200` | Tek karar. |
 
 Yanıt bu sınırda kesilirse (sağlayıcı `finish_reason: length` der) yanıt kullanılmaz, hata sayılır ve zincirde sıradaki model denenir. Log'da `[llm] truncated ...` görürseniz o rolün `maxTokens` değerini artırın.
+
+#### Doğrulayıcı zinciri ve Gemma'nın "düşünme" modu
+
+İkinci dry-run'da Gemma 4 (`@cf/google/gemma-4-26b-a4b-it`) her doğrulamada `maxTokens` sınırına kadar "düşündü" ve yanıtı kesildi; hepsi günlük ücretsiz limiti çok düşük olan Gemini'ye düştü. Cloudflare'in model sayfası Gemma 4'ün düşünme modunun nasıl kapatılacağını belgelemiyor. Bu yüzden zincir şöyle:
+
+1. `@cf/mistralai/mistral-small-3.1-24b-instruct` (birincil): düşünme modu yok, Türkçe destekli, OpenAI ailesinden değil. Çağrı başına ≈ 32 Neuron (700 girdi + 200 çıktı token).
+2. `@cf/google/gemma-4-26b-a4b-it` + `"params": { "chat_template_kwargs": { "enable_thinking": false } }`: Gemma'nın kendi sohbet şablonundaki anahtarla düşünme kapatılmaya çalışılır. Cloudflare bu anahtarı belgelemediği için dry-run'da teyit edilmeli: log'da Gemma için `[llm] truncated` görünüyorsa kapanmamıştır.
+3. `gemini-3.1-flash-lite`: son yedek.
+
+Gemma'da düşünme gerçekten kapanıyorsa (çağrı başına ≈ 12 Neuron) Gemma'yı birincil yapmak Neuron bütçesini üçte birine indirir.
 
 #### Qwen3 "düşünme" modu
 
@@ -87,7 +97,8 @@ Doğrulayıcıya üçüncü bir yedek eklemek için zincirin sonuna yeni bir sat
 ```json
 "verifier": {
   "chain": [
-    { "provider": "cloudflare", "model": "@cf/google/gemma-4-26b-a4b-it" },
+    { "provider": "cloudflare", "model": "@cf/mistralai/mistral-small-3.1-24b-instruct" },
+    { "provider": "cloudflare", "model": "@cf/google/gemma-4-26b-a4b-it", "params": { "chat_template_kwargs": { "enable_thinking": false } } },
     { "provider": "gemini", "model": "gemini-3.1-flash-lite" },
     { "provider": "gemini", "model": "gemma-4-31b-it" }
   ]
@@ -96,7 +107,7 @@ Doğrulayıcıya üçüncü bir yedek eklemek için zincirin sonuna yeni bir sat
 
 Kullanılabilecek sağlayıcılar şimdilik `groq`, `cloudflare` ve `gemini`. Yeni bir sağlayıcı (ör. OpenRouter) eklemek kod değişikliği ister.
 
-Doğrulayıcı zincirine yazarla aynı aileden model koymayın. Yazar OpenAI ailesi (gpt-oss), doğrulayıcı Google ailesi (Gemma / Gemini). Aynı aile kendi hatasını daha zor yakalar.
+Doğrulayıcı zincirine yazarla aynı aileden model koymayın. Yazar OpenAI ailesi (gpt-oss), doğrulayıcı Mistral / Google ailesi (Mistral Small, Gemma, Gemini). Aynı aile kendi hatasını daha zor yakalar.
 
 #### Havuz (`pool`) ve `round_robin`
 
@@ -174,7 +185,7 @@ Günlük sayaçlar UTC gününe göre tutulur (Cloudflare da 00:00 UTC'de sıfı
 
 Sağlayıcı "günlük kotanız bitti" derse (ör. Groq "tokens per day") boşuna tekrar denenmez; o model o gün için kapatılır ve sıradakine geçilir.
 
-### `scoring`, `dedup`, `publish`: hat eşikleri
+### `scoring`, `writing`, `dedup`, `publish`: hat eşikleri
 
 | Alan | Varsayılan | Anlamı |
 |---|---|---|
@@ -182,6 +193,8 @@ Sağlayıcı "günlük kotanız bitti" derse (ör. Groq "tokens per day") boşun
 | `scoring.passPercent` | `30` | Puanlanan adayların en iyi yüzde kaçı yazıma geçer. |
 | `scoring.minSurprise` | `6` | Şaşırtıcılık puanı (0–10) bunun altındaysa aday elenir (`low_surprise`). Kartlar yeterince "Aa!" dedirtmiyorsa artırın. |
 | `scoring.minTrRelevance` | `4` | Türk okur için ilgi puanı (0–10) bunun altındaysa aday elenir (`low_relevance`). |
+| `writing.minSentences` | `2` | Kart gövdesi en az kaç cümle olmalı (1–10). Daha az cümleli kart bir kez yeniden yazdırılır, yine kısaysa elenir (`write_rules`). |
+| `writing.maxSentences` | `4` | Kart gövdesi en fazla kaç cümle olabilir (1–10, `minSentences`'tan küçük olamaz). Kısa kart daha az yorum cümlesi ve daha az doğrulama reddi demektir. |
 | `dedup.duplicateThreshold` | `0.92` | İki kartın benzerliği (0–1) bunun üstündeyse yeni kart "tekrar" sayılır ve elenir. |
 | `dedup.grayZoneLow` | `0.85` | Benzerlik bu değer ile `duplicateThreshold` arasındaysa "gri bölge"dir; hakeme sorulur. |
 | `publish.dailyCount` | `100` | Günde kaç kart yayınlanır. |

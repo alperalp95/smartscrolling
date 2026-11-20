@@ -2,7 +2,8 @@
 // Yaz: `scored` + destek paragrafı olan aday → Türkçe kart taslağı (scores.draft), durum `written`.
 // Kod tarafı kurallar (basit kurallar, içerik regex'i yok): başlık 12–58 karakter,
 // başlıkta "nedir"/"kimdir" yok, başlık Türkçe cümle düzeninde (Her Kelimesi Büyük değil),
-// gövde 3–5 cümle, Türkçe karakter var. maxTokens: config roles.writer.maxTokens.
+// gövde config writing.minSentences–maxSentences cümle (varsayılan 2–4), Türkçe karakter var.
+// maxTokens: config roles.writer.maxTokens.
 // İhlal → BİR kez yeniden yazım (ihlaller prompt'a eklenir); yine ihlal → rejected:write_rules.
 // Model `{ skip: true }` dönerse → rejected:writer_skip, yeniden deneme yok.
 import { WRITE_MAX_TOKENS, buildRuleFixMessages, buildWritePrompt } from '../prompts/write.js';
@@ -10,8 +11,9 @@ import { STATUS, forEachCandidate, newStats, nowIso, reject, roleMaxTokens } fro
 
 export const TITLE_MIN = 12;
 export const TITLE_MAX = 58;
-export const SENTENCES_MIN = 3;
-export const SENTENCES_MAX = 5;
+/** config.writing.minSentences / maxSentences yoksa kullanılır. */
+export const SENTENCES_MIN = 2;
+export const SENTENCES_MAX = 4;
 const TR_CHARS = new Set(['ı', 'ğ', 'ş', 'ç', 'ö', 'ü', 'İ', 'Ğ', 'Ş', 'Ç', 'Ö', 'Ü']);
 const BANNED_TITLE_WORDS = new Set(['nedir', 'kimdir']);
 // Nokta ile biten ama cümle bitirmeyen kısaltmalar (küçük harfe çevrilmiş).
@@ -57,6 +59,18 @@ export function isTitleCase(title) {
   return upper / words.length >= 0.75;
 }
 
+/**
+ * Gövde cümle sınırları: config.writing.minSentences / maxSentences, yoksa 2-4.
+ * @returns {{ minSentences: number, maxSentences: number }}
+ */
+export function writingLimits(config) {
+  const w = config?.writing ?? {};
+  const pick = (v, d) => (Number.isInteger(v) && v > 0 ? v : d);
+  const minSentences = pick(w.minSentences, SENTENCES_MIN);
+  const maxSentences = Math.max(minSentences, pick(w.maxSentences, SENTENCES_MAX));
+  return { minSentences, maxSentences };
+}
+
 function titleWords(title) {
   return String(title ?? '')
     .toLocaleLowerCase('tr-TR')
@@ -66,9 +80,11 @@ function titleWords(title) {
 
 /**
  * Kart taslağını kod kurallarına göre denetler.
+ * @param {object} card
+ * @param {{ minSentences?: number, maxSentences?: number }} [limits]  writingLimits(config)
  * @returns {string[]} ihlaller (Türkçe; prompt'a eklenir). Boşsa geçer.
  */
-export function checkWriteRules(card) {
+export function checkWriteRules(card, { minSentences = SENTENCES_MIN, maxSentences = SENTENCES_MAX } = {}) {
   const v = [];
   const title = typeof card?.title === 'string' ? card.title.trim() : '';
   const content = typeof card?.content === 'string' ? card.content.trim() : '';
@@ -77,7 +93,7 @@ export function checkWriteRules(card) {
   if (titleWords(title).some((w) => BANNED_TITLE_WORDS.has(w))) v.push('başlıkta "nedir"/"kimdir" olmamalı');
   if (isTitleCase(title)) v.push('başlık Türkçe cümle düzeninde olmalı: sadece ilk harf ve özel adlar büyük');
   const n = countSentences(content);
-  if (n < SENTENCES_MIN || n > SENTENCES_MAX) v.push(`gövde ${SENTENCES_MIN}-${SENTENCES_MAX} cümle olmalı (şu an ${n})`);
+  if (n < minSentences || n > maxSentences) v.push(`gövde ${minSentences}-${maxSentences} cümle olmalı (şu an ${n})`);
   if (!hasTurkishChars(`${title} ${content}`)) v.push('Türkçe karakter (ı, ğ, ş, ç, ö, ü) kullanılmalı');
   return v;
 }
@@ -114,11 +130,11 @@ function isSkip(json) {
  * @param {Array} messages  ilk istem mesajları
  * @returns {Promise<{ outcome: 'ok', draft, text, model, rewrites } | { outcome: 'skip', reason } | { outcome: 'rules', violations }>}
  */
-export async function writeWithRules(llm, messages, { maxTokens = WRITE_MAX_TOKENS } = {}) {
+export async function writeWithRules(llm, messages, { maxTokens = WRITE_MAX_TOKENS, limits } = {}) {
   let res = await llm.chat('writer', { messages, json: true, maxTokens });
   if (isSkip(res?.json)) return { outcome: 'skip', reason: String(res.json.reason ?? '').slice(0, 200) };
   let draft = normalizeDraft(res?.json);
-  let violations = checkWriteRules(draft);
+  let violations = checkWriteRules(draft, limits);
   let rewrites = 0;
   if (violations.length > 0) {
     rewrites = 1;
@@ -129,18 +145,19 @@ export async function writeWithRules(llm, messages, { maxTokens = WRITE_MAX_TOKE
     });
     if (isSkip(res?.json)) return { outcome: 'skip', reason: String(res.json.reason ?? '').slice(0, 200) };
     draft = normalizeDraft(res?.json);
-    violations = checkWriteRules(draft);
+    violations = checkWriteRules(draft, limits);
     if (violations.length > 0) return { outcome: 'rules', violations };
   }
   return { outcome: 'ok', draft, text: res?.text ?? JSON.stringify(res?.json ?? {}), model: res?.model ?? null, rewrites };
 }
 
-export function writeInput(cand) {
+export function writeInput(cand, limits = writingLimits(null)) {
   return {
     hook: cand.hook_text,
     lang: cand.lang,
     support: cand.support_paragraph,
     category: cand.scores?.category,
+    ...limits,
   };
 }
 
@@ -152,10 +169,11 @@ export async function runWrite(deps, { limit = 50 } = {}) {
   const stats = newStats('write');
   const cands = await deps.repo.listByStatus(STATUS.SCORED, limit, { hasSupport: true });
   const maxTokens = roleMaxTokens(deps.config, 'writer', WRITE_MAX_TOKENS);
+  const limits = writingLimits(deps.config);
 
   await forEachCandidate(deps, cands, stats, async (cand) => {
-    const { messages } = buildWritePrompt(writeInput(cand));
-    const r = await writeWithRules(deps.llm, messages, { maxTokens });
+    const { messages } = buildWritePrompt(writeInput(cand, limits));
+    const r = await writeWithRules(deps.llm, messages, { maxTokens, limits });
     if (r.outcome === 'skip') {
       await reject(deps, cand, 'writer_skip', stats, { scores: { ...(cand.scores ?? {}), writer_skip: r.reason } });
       return;
