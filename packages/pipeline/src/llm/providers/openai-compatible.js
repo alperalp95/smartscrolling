@@ -58,10 +58,13 @@ export function parseOpenAiChatResponse(body) {
   if (!message) {
     throw new ProviderCallError('fatal', 'yanıtta choices[0].message yok');
   }
+  // Akıl yürütme ayrı alanda gelirse (reasoning / reasoning_content) içerik sayılmaz.
   const text = contentToText(message.content);
   const usage = body.usage ?? {};
+  const finishReason = body.choices[0].finish_reason ?? body.choices[0].finishReason ?? null;
   return {
     text,
+    finishReason: typeof finishReason === 'string' ? finishReason.toLowerCase() : null,
     usage: {
       inputTokens: Number(usage.prompt_tokens ?? usage.input_tokens ?? 0) || 0,
       outputTokens: Number(usage.completion_tokens ?? usage.output_tokens ?? 0) || 0,
@@ -83,6 +86,19 @@ export function parseRetryAfterMs(headers) {
   const date = Date.parse(raw);
   if (Number.isFinite(date)) return Math.max(0, date - Date.now());
   return undefined;
+}
+
+/**
+ * Groq 429 gövdesindeki "Please try again in 7.5s" / "in 650ms" / "in 1m2.5s" ipucu (başlık yoksa).
+ * @returns {number|undefined} milisaniye
+ */
+export function parseRetryHintMs(bodyText) {
+  const m = String(bodyText ?? '').match(/try again in\s+(?:(\d+)m(?!s))?\s*(?:(\d+(?:\.\d+)?)(ms|s))?/i);
+  if (!m || (!m[1] && !m[2])) return undefined;
+  const minutes = Number(m[1] ?? 0);
+  const value = Number(m[2] ?? 0);
+  const ms = m[3]?.toLowerCase() === 'ms' ? value : value * 1000;
+  return Math.ceil(minutes * 60000 + ms);
 }
 
 function extractFailedGeneration(bodyText) {
@@ -112,7 +128,10 @@ export function classifyHttpFailure(status, bodyText = '', headers) {
     return new ProviderCallError('quota', msg, { status });
   }
   if (status === 429 || status === 408 || status === 498 || status >= 500) {
-    return new ProviderCallError('retryable', msg, { status, retryAfterMs: parseRetryAfterMs(headers) });
+    return new ProviderCallError('retryable', msg, {
+      status,
+      retryAfterMs: parseRetryAfterMs(headers) ?? parseRetryHintMs(bodyText),
+    });
   }
   if (JSON_FAIL_RE.test(bodyText)) {
     return new ProviderCallError('invalid_json', msg, {

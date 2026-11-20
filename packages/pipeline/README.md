@@ -25,11 +25,37 @@ Hatta beş iş (rol) var:
 |---|---|
 | `scorer` | Puanlayıcı. Aday bilgilere şaşırtıcılık, Türk okur için ilgi gibi puanlar verir. |
 | `writer` | Yazar. Türkçe kartı yazar. |
-| `verifier` | Doğrulayıcı. Kartı iddialara böler, her iddiayı kaynağa karşı kontrol eder. Yazardan farklı bir model ailesinden olmalı. |
+| `verifier` | Doğrulayıcı. Kartı iddialara böler, her iddiayı kancaya ve destek paragrafına karşı kontrol eder (iddia ikisinden biriyle destekleniyorsa geçer). Yazardan farklı bir model ailesinden olmalı. |
 | `judge` | Hakem. Benzerliği "gri bölgede" kalan iki kart için "aynı bilgi mi?" diye karar verir. |
 | `embedding` | Metni sayı dizisine (vektör) çevirir. Tekrar eden kartları bulmak için kullanılır. |
 
-Her rolün bir `chain` (zincir) listesi vardır. Zincir **yukarıdan aşağıya** denenir. İlk model dolarsa (günlük sınır), hata verirse ya da kapatılmışsa sıradakine geçilir. Zincirin hepsi tükenirse o iş ertesi güne kalır; hat çökmez.
+Her rolün bir `chain` (zincir) listesi vardır. Zincir **yukarıdan aşağıya** denenir. İlk model dolarsa (günlük sınır), hata verirse, bozuk/kesik yanıt verirse ya da kapatılmışsa sıradakine geçilir.
+
+- Zincirin hepsi **dolu ya da erişilemez** ise (kota, "çok istek", sunucu hatası, anahtar yok) o iş ertesi güne kalır; hat çökmez.
+- Modeller çalıştığı hâlde **hepsi bozuk çıktı** verdiyse (geçersiz JSON, kesik yanıt) bu "tükenme" sayılmaz: o aday (ya da puanlama grubu) bir hata hakkı kaybeder (3 hatada elenir), hat sıradaki adaylarla devam eder.
+- Her başarısız denemenin nedeni log'a `[llm] provider_failed role=scorer groq/... kind=retryable status=429 :: ...` biçiminde yazılır (anahtar değerleri silinir). Usage dosyasında da modelin altında `failures` ve `lastError` görünür; `requests: 0` ama `failures: 2` ise model denenmiş ama düşmüş demektir.
+
+#### `maxTokens`: bir yanıtın en fazla uzunluğu
+
+Her rolde `maxTokens` modelin tek yanıtta en fazla kaç token yazabileceğidir:
+
+| Rol | Değer | Not |
+|---|---|---|
+| `scorer` | `1500` | 15 kanca ≈ 700 token; düşünme kapalıyken bol pay. |
+| `writer` | `1500` | Kart ≈ 150 token + gpt-oss "low" düşünme. |
+| `verifier` | `1500` | En fazla 6 kısa iddia ≈ 250 token. |
+| `judge` | `200` | Tek karar. |
+
+Yanıt bu sınırda kesilirse (sağlayıcı `finish_reason: length` der) yanıt kullanılmaz, hata sayılır ve zincirde sıradaki model denenir. Log'da `[llm] truncated ...` görürseniz o rolün `maxTokens` değerini artırın.
+
+#### Qwen3 "düşünme" modu
+
+Qwen3 modelleri cevaptan önce uzun bir "düşünme" metni yazabilir; bu hem token harcar hem de `maxTokens`'i doldurup JSON'u bozabilir. Puanlayıcıda kapalıdır:
+
+- Groq: `"params": { "reasoning_effort": "none" }` (Groq dokümanı: Qwen 3.8 27B için `none` düşünmeyi kapatır).
+- Cloudflare: `"userSuffix": " /no_think"`. `userSuffix` isteğin son kullanıcı mesajının sonuna eklenen metindir; Qwen3'ün resmi "yumuşak anahtarı" `/no_think` düşünmeyi kapatır.
+
+Model yine de `<think>...</think>` bloğu yazarsa hat bunu yanıttan ayıklar.
 
 Zincirdeki her satır bir sağlayıcı ve bir model adıdır:
 
@@ -96,7 +122,7 @@ Yazarın ilk adımı tek model değil, iki modelli bir havuzdur:
 "judge": { "sameAs": "scorer" }
 ```
 
-Hakem, puanlayıcıyla aynı zinciri kullanır. Puanlayıcının modelini değiştirdiğinizde hakemin modeli de değişir. Hakeme ayrı bir zincir vermek isterseniz `sameAs` satırını silip yerine `chain` yazın.
+Hakem, puanlayıcıyla aynı zinciri kullanır (kendi `maxTokens` değeri ayrı yazılabilir: `"judge": { "sameAs": "scorer", "maxTokens": 200 }`). Puanlayıcının modelini değiştirdiğinizde hakemin modeli de değişir. Hakeme ayrı bir zincir vermek isterseniz `sameAs` satırını silip yerine `chain` yazın.
 
 #### `embedding`
 
@@ -154,6 +180,8 @@ Sağlayıcı "günlük kotanız bitti" derse (ör. Groq "tokens per day") boşun
 |---|---|---|
 | `scoring.batchSize` | `15` | Puanlayıcıya tek seferde kaç aday gönderilir. |
 | `scoring.passPercent` | `30` | Puanlanan adayların en iyi yüzde kaçı yazıma geçer. |
+| `scoring.minSurprise` | `6` | Şaşırtıcılık puanı (0–10) bunun altındaysa aday elenir (`low_surprise`). Kartlar yeterince "Aa!" dedirtmiyorsa artırın. |
+| `scoring.minTrRelevance` | `4` | Türk okur için ilgi puanı (0–10) bunun altındaysa aday elenir (`low_relevance`). |
 | `dedup.duplicateThreshold` | `0.92` | İki kartın benzerliği (0–1) bunun üstündeyse yeni kart "tekrar" sayılır ve elenir. |
 | `dedup.grayZoneLow` | `0.85` | Benzerlik bu değer ile `duplicateThreshold` arasındaysa "gri bölge"dir; hakeme sorulur. |
 | `publish.dailyCount` | `100` | Günde kaç kart yayınlanır. |
@@ -185,7 +213,7 @@ const { vectors } = await llm.embed(['metin 1', 'metin 2']);
 // llm.events: model_unavailable, budget_skip, quota_exhausted, retry, json_repair ... olayları
 ```
 
-Zincir tükenirse `LlmExhaustedError` fırlatılır; işi ertesi güne bırakmak çağıranın kararıdır.
+Zincir tükenirse `LlmExhaustedError` fırlatılır; işi ertesi güne bırakmak çağıranın kararıdır. Modeller çalıştı ama hepsi bozuk çıktı verdiyse `LlmOutputError` fırlatılır (adımlar bunu aday hatası sayar). `maxTokens` verilmezse `roles.<rol>.maxTokens` kullanılır.
 
 Testler (gerçek API çağrısı yapmaz):
 

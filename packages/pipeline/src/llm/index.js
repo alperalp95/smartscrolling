@@ -7,8 +7,8 @@
 //
 // API anahtarları sadece env'den okunur; hiçbir log/olay/hata mesajına yazılmaz.
 import { ensureConfig, loadConfig, validateConfig } from './config.js';
-import { LlmConfigError, LlmExhaustedError, ProviderCallError } from './errors.js';
-import { extractJson, JSON_REPAIR_INSTRUCTION } from './json.js';
+import { LlmConfigError, LlmExhaustedError, LlmOutputError, OUTPUT_ERROR_KINDS, ProviderCallError } from './errors.js';
+import { extractJson, JSON_REPAIR_INSTRUCTION, stripThinking } from './json.js';
 import { adapters } from './providers/index.js';
 import { classifyHttpFailure } from './providers/openai-compatible.js';
 import {
@@ -23,12 +23,35 @@ export {
   validateConfig,
   LlmConfigError,
   LlmExhaustedError,
+  LlmOutputError,
   createFileUsageStore,
   createMemoryUsageStore,
   createUsageTracker,
   utcDayKey,
   extractJson,
+  stripThinking,
 };
+
+/**
+ * Hata metninden anahtar/hesap kimliklerini siler (sağlayıcı gövdeyi geri yansıtırsa diye).
+ * @param {string} text
+ * @param {string[]} secrets  config'teki tüm apiKeyEnv/accountIdEnv değerleri
+ */
+export function redactSecrets(text, secrets = []) {
+  let out = String(text ?? '');
+  for (const secret of secrets) {
+    if (typeof secret === 'string' && secret.length >= 4) out = out.split(secret).join('***');
+  }
+  return out.replace(/Bearer\s+[A-Za-z0-9._\-]+/g, 'Bearer ***');
+}
+
+/** Son kullanıcı mesajına ek metin (ör. Qwen3 " /no_think" yumuşak anahtarı). */
+function withUserSuffix(messages, suffix) {
+  if (!suffix) return messages;
+  const idx = messages.map((m) => m.role).lastIndexOf('user');
+  if (idx < 0) return messages;
+  return messages.map((m, i) => (i === idx ? { ...m, content: `${m.content}${suffix}` } : m));
+}
 
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -60,6 +83,10 @@ export function createLlm(config, deps = {}) {
   const events = [];
   const rrCounters = new Map();
   const { maxAttempts, baseDelayMs, maxDelayMs, requestTimeoutMs } = cfg.retry;
+  // Olay/hata metinlerinden silinecek değerler: tüm sağlayıcıların anahtar ve hesap kimlikleri.
+  const secrets = Object.values(cfg.providers)
+    .flatMap((p) => [env[p.apiKeyEnv], p.accountIdEnv ? env[p.accountIdEnv] : undefined])
+    .filter((v) => typeof v === 'string' && v.length >= 4);
 
   if (typeof fetchImpl !== 'function') throw new LlmConfigError('fetch fonksiyonu bulunamadı');
 
@@ -137,7 +164,7 @@ export function createLlm(config, deps = {}) {
         if (!(err instanceof ProviderCallError) || err.kind !== 'retryable' || attempt >= maxAttempts) throw err;
         const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
         const delayMs = Math.min(maxDelayMs, Math.max(backoff, err.retryAfterMs ?? 0));
-        emit({ type: 'retry', ...ctx, attempt, delayMs, status: err.status, error: err.message.slice(0, 200) });
+        emit({ type: 'retry', ...ctx, attempt, delayMs, status: err.status, error: redactSecrets(err.message, secrets).slice(0, 200) });
         await sleep(delayMs);
       }
     }
@@ -169,19 +196,28 @@ export function createLlm(config, deps = {}) {
         return await perMember({ member, adapter, providerCfg, creds });
       } catch (err) {
         if (!(err instanceof ProviderCallError)) throw err;
+        const error = redactSecrets(err.message, secrets).replace(/\s+/g, ' ').slice(0, 200);
         if (err.kind === 'unavailable') {
-          emit({ type: 'model_unavailable', role, provider, model, status: err.status });
+          emit({ type: 'model_unavailable', role, provider, model, status: err.status, error });
         } else if (err.kind === 'quota') {
           const scope = Object.keys(providerCfg.dailyLimits.provider ?? {}).length ? 'provider' : 'model';
           await usage.markExhausted(provider, model, scope);
-          emit({ type: 'quota_exhausted', role, provider, model, scope });
+          emit({ type: 'quota_exhausted', role, provider, model, scope, error });
         } else {
-          emit({ type: 'provider_failed', role, provider, model, kind: err.kind, status: err.status, error: err.message.slice(0, 200) });
+          emit({ type: 'provider_failed', role, provider, model, kind: err.kind, status: err.status, error });
         }
-        attempts.push({ provider, model, reason: err.status ? `${err.kind} (${err.status})` : err.kind });
+        await usage.recordFailure(provider, model, { kind: err.kind, status: err.status, message: error });
+        const head = err.status ? `${err.kind} (${err.status})` : err.kind;
+        attempts.push({ provider, model, kind: err.kind, reason: `${head}: ${error.slice(0, 120)}` });
       }
     }
-    throw new LlmExhaustedError(role, { attempts, events: events.slice(firstEvent) });
+    // En az bir üye çalışıp bozuk çıktı verdiyse (geçersiz JSON, kesik/boş yanıt) bu tükenme
+    // değildir: çağıran adayı/batch'i hata sayar (attempts++), adım sonraki adaylarla sürer.
+    // Sadece kapasite/erişim hataları (kota, bütçe, 429/5xx, anahtar yok, model yok) → tükenme.
+    const kinds = attempts.map((a) => a.kind).filter(Boolean);
+    const payload = { attempts, events: events.slice(firstEvent) };
+    if (kinds.some((k) => OUTPUT_ERROR_KINDS.includes(k))) throw new LlmOutputError(role, payload);
+    throw new LlmExhaustedError(role, payload);
   }
 
   async function recordUsage(provider, model, u, requests = 1) {
@@ -199,23 +235,41 @@ export function createLlm(config, deps = {}) {
    * @param {string} role  scorer | writer | verifier | judge
    * @param {{ messages: Array<{role:string, content:string}>, json?: boolean, maxTokens?: number }} req
    */
-  async function chat(role, { messages, json = false, maxTokens } = {}) {
-    roleDef(role);
+  async function chat(role, { messages, json = false, maxTokens: requestedMaxTokens } = {}) {
+    const def = roleDef(role);
+    // Öncelik: çağrıdaki maxTokens > config roles.<rol>.maxTokens.
+    const maxTokens = requestedMaxTokens ?? def.maxTokens;
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new LlmConfigError('chat: messages boş olamaz');
     }
 
     return runChain(role, async ({ member, adapter, providerCfg, creds }) => {
-      const { provider, model, params } = member;
+      const { provider, model, params, userSuffix } = member;
       const ctx = { role, provider, model };
       const total = { inputTokens: 0, outputTokens: 0 };
 
       const send = async (msgs) => {
-        const req = adapter.chatRequest({ creds, providerCfg, model, messages: msgs, json, maxTokens, params });
+        const req = adapter.chatRequest({
+          creds,
+          providerCfg,
+          model,
+          messages: withUserSuffix(msgs, userSuffix),
+          json,
+          maxTokens,
+          params,
+        });
         try {
           const out = await withRetry(ctx, () => callOnce(req, adapter.parseChat));
           addUsage(total, out.usage, await recordUsage(provider, model, out.usage));
-          return out.text;
+          // finish_reason=length: yanıt maxTokens'ta kesildi → tamir de kesilir; doğrudan yedeğe.
+          if (out.finishReason === 'length') {
+            emit({ type: 'truncated', ...ctx, maxTokens, outputTokens: out.usage?.outputTokens });
+            throw new ProviderCallError(
+              'truncated',
+              `yanıt maxTokens (${maxTokens ?? 'varsayılan'}) sınırında kesildi (finish_reason=length, çıktı ${out.usage?.outputTokens ?? '?'} token)`,
+            );
+          }
+          return stripThinking(out.text);
         } catch (err) {
           // Groq JSON modu geçersiz JSON üretirse 400 json_validate_failed döner; tamire gider.
           if (err instanceof ProviderCallError && err.kind === 'invalid_json' && json) {
@@ -241,7 +295,7 @@ export function createLlm(config, deps = {}) {
           if (!parsed.ok) throw new ProviderCallError('invalid_json', `tamir sonrası da geçersiz JSON: ${parsed.error}`);
         }
       } else if (!text.trim()) {
-        throw new ProviderCallError('fatal', 'boş yanıt');
+        throw new ProviderCallError('empty', 'boş yanıt (düşünme bloğu dışında içerik yok)');
       }
 
       const result = { text, provider, model, usage: total };

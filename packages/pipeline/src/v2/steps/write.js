@@ -1,11 +1,12 @@
 // src/v2/steps/write.js
 // Yaz: `scored` + destek paragrafı olan aday → Türkçe kart taslağı (scores.draft), durum `written`.
 // Kod tarafı kurallar (basit kurallar, içerik regex'i yok): başlık 12–58 karakter,
-// başlıkta "nedir"/"kimdir" yok, gövde 3–5 cümle, Türkçe karakter var.
+// başlıkta "nedir"/"kimdir" yok, başlık Türkçe cümle düzeninde (Her Kelimesi Büyük değil),
+// gövde 3–5 cümle, Türkçe karakter var. maxTokens: config roles.writer.maxTokens.
 // İhlal → BİR kez yeniden yazım (ihlaller prompt'a eklenir); yine ihlal → rejected:write_rules.
 // Model `{ skip: true }` dönerse → rejected:writer_skip, yeniden deneme yok.
 import { WRITE_MAX_TOKENS, buildRuleFixMessages, buildWritePrompt } from '../prompts/write.js';
-import { STATUS, forEachCandidate, newStats, nowIso, reject } from './common.js';
+import { STATUS, forEachCandidate, newStats, nowIso, reject, roleMaxTokens } from './common.js';
 
 export const TITLE_MIN = 12;
 export const TITLE_MAX = 58;
@@ -39,6 +40,23 @@ export function hasTurkishChars(text) {
   return false;
 }
 
+/**
+ * Başlık "Her Kelimesi Büyük" mü? İlk kelimeden sonraki, en az 3 harfli ve tamamı büyük
+ * olmayan (kısaltma değil) kelimelerin en az 3'ü varsa ve %75'i büyük harfle başlıyorsa evet.
+ * Özel adlar büyük kalabilir: "Raisa Gorbaçova Moskova'da gömülü" geçer.
+ */
+export function isTitleCase(title) {
+  const words = String(title ?? '')
+    .split(/\s+/)
+    .map((w) => w.replace(/^[^\p{L}]+|[^\p{L}]+$/gu, ''))
+    .filter(Boolean)
+    .slice(1)
+    .filter((w) => [...w].length >= 3 && w !== w.toLocaleUpperCase('tr-TR'));
+  if (words.length < 3) return false;
+  const upper = words.filter((w) => /^\p{Lu}/u.test(w)).length;
+  return upper / words.length >= 0.75;
+}
+
 function titleWords(title) {
   return String(title ?? '')
     .toLocaleLowerCase('tr-TR')
@@ -57,6 +75,7 @@ export function checkWriteRules(card) {
   const len = [...title].length;
   if (len < TITLE_MIN || len > TITLE_MAX) v.push(`başlık ${TITLE_MIN}-${TITLE_MAX} karakter olmalı (şu an ${len})`);
   if (titleWords(title).some((w) => BANNED_TITLE_WORDS.has(w))) v.push('başlıkta "nedir"/"kimdir" olmamalı');
+  if (isTitleCase(title)) v.push('başlık Türkçe cümle düzeninde olmalı: sadece ilk harf ve özel adlar büyük');
   const n = countSentences(content);
   if (n < SENTENCES_MIN || n > SENTENCES_MAX) v.push(`gövde ${SENTENCES_MIN}-${SENTENCES_MAX} cümle olmalı (şu an ${n})`);
   if (!hasTurkishChars(`${title} ${content}`)) v.push('Türkçe karakter (ı, ğ, ş, ç, ö, ü) kullanılmalı');
@@ -95,8 +114,8 @@ function isSkip(json) {
  * @param {Array} messages  ilk istem mesajları
  * @returns {Promise<{ outcome: 'ok', draft, text, model, rewrites } | { outcome: 'skip', reason } | { outcome: 'rules', violations }>}
  */
-export async function writeWithRules(llm, messages) {
-  let res = await llm.chat('writer', { messages, json: true, maxTokens: WRITE_MAX_TOKENS });
+export async function writeWithRules(llm, messages, { maxTokens = WRITE_MAX_TOKENS } = {}) {
+  let res = await llm.chat('writer', { messages, json: true, maxTokens });
   if (isSkip(res?.json)) return { outcome: 'skip', reason: String(res.json.reason ?? '').slice(0, 200) };
   let draft = normalizeDraft(res?.json);
   let violations = checkWriteRules(draft);
@@ -106,7 +125,7 @@ export async function writeWithRules(llm, messages) {
     res = await llm.chat('writer', {
       messages: [...messages, ...buildRuleFixMessages(res?.text, violations)],
       json: true,
-      maxTokens: WRITE_MAX_TOKENS,
+      maxTokens,
     });
     if (isSkip(res?.json)) return { outcome: 'skip', reason: String(res.json.reason ?? '').slice(0, 200) };
     draft = normalizeDraft(res?.json);
@@ -132,10 +151,11 @@ export function writeInput(cand) {
 export async function runWrite(deps, { limit = 50 } = {}) {
   const stats = newStats('write');
   const cands = await deps.repo.listByStatus(STATUS.SCORED, limit, { hasSupport: true });
+  const maxTokens = roleMaxTokens(deps.config, 'writer', WRITE_MAX_TOKENS);
 
   await forEachCandidate(deps, cands, stats, async (cand) => {
     const { messages } = buildWritePrompt(writeInput(cand));
-    const r = await writeWithRules(deps.llm, messages);
+    const r = await writeWithRules(deps.llm, messages, { maxTokens });
     if (r.outcome === 'skip') {
       await reject(deps, cand, 'writer_skip', stats, { scores: { ...(cand.scores ?? {}), writer_skip: r.reason } });
       return;

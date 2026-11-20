@@ -97,8 +97,43 @@ async function defaultCreateDbRepo() {
   return createStepsRepo(createClient(url, key, { auth: { persistSession: false } }));
 }
 
-function defaultCreateLlm(config) {
-  return createLlm(config, { usageStore: createFileUsageStore() });
+/** LLM olaylarından log'a yazılanlar (başarılı çağrılar yazılmaz). */
+const LOGGED_EVENTS = new Set([
+  'retry',
+  'provider_failed',
+  'model_unavailable',
+  'quota_exhausted',
+  'budget_skip',
+  'missing_credentials',
+  'json_repair',
+  'truncated',
+]);
+
+/** LLM olayını tek satır log'a çevirir. Olaylarda anahtar yok (LLM katmanı temizler). */
+export function formatLlmEvent(e) {
+  const where = `role=${e.role} ${e.provider}/${e.model}`;
+  const extra = [
+    e.kind && `kind=${e.kind}`,
+    e.status && `status=${e.status}`,
+    e.attempt && `deneme=${e.attempt}`,
+    e.delayMs !== undefined && `bekleme=${e.delayMs}ms`,
+    e.reason && `neden=${e.reason}`,
+    e.scope && `kapsam=${e.scope}`,
+    e.env && `env=${[].concat(e.env).join(',')}`,
+    e.maxTokens && `maxTokens=${e.maxTokens}`,
+    e.outputTokens !== undefined && `çıktı=${e.outputTokens}`,
+  ].filter(Boolean);
+  const msg = e.error ? ` :: ${String(e.error).slice(0, 200)}` : '';
+  return `[llm] ${e.type} ${where}${extra.length ? ` ${extra.join(' ')}` : ''}${msg}`;
+}
+
+function defaultCreateLlm(config, log) {
+  return createLlm(config, {
+    usageStore: createFileUsageStore(),
+    onEvent: (e) => {
+      if (LOGGED_EVENTS.has(e.type)) log(formatLlmEvent(e));
+    },
+  });
 }
 
 /**
@@ -115,7 +150,7 @@ export async function runProcess(argv, deps = {}) {
   }
   const now = deps.now ?? (() => Date.now());
   const config = deps.config ?? (deps.loadConfig ?? loadConfig)();
-  const llm = deps.llm ?? (deps.createLlm ?? defaultCreateLlm)(config);
+  const llm = deps.llm ?? (deps.createLlm ?? defaultCreateLlm)(config, deps.stepLog ?? log);
 
   let repo;
   let inputCount = null;
@@ -137,6 +172,7 @@ export async function runProcess(argv, deps = {}) {
     const s = stats[name];
     const rej = Object.entries(s.rejected).map(([k, v]) => `${k}=${v}`).join(' ');
     log(`[v2-process] ${name}: görülen=${s.seen} ilerleyen=${s.advanced} red={${rej}} hata=${s.failed} ertelenen=${s.deferred}`);
+    if (s.exhaustedReason) log(`[v2-process] ${name}: zincir tükenme nedeni: ${s.exhaustedReason}`);
   }
 
   const result = { mode: opts.apply ? 'apply' : 'dry-run', started_at: startedAt, finished_at: new Date(now()).toISOString(), steps, limit: opts.limit, stats };

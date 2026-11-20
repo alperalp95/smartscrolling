@@ -1,6 +1,7 @@
 // src/v2/steps/verify.js
 // Doğrula: Tekrar-2'yi geçmiş `written` kart, yazardan farklı aile doğrulayıcıyla
-// (llm.chat('verifier')) atomik iddialara bölünür; her iddia sadece destek paragrafına göre
+// (llm.chat('verifier')) atomik iddialara bölünür; her iddia KANCA + DESTEK PARAGRAFI'na göre
+// (biriyle destekleniyorsa supported; DYK kancaları editörlerce kaynaklı)
 // supported | unsupported | unclear.
 //   - bir unsupported → rejected:unsupported_claim
 //   - unclear varsa → bir kez yeniden yazım (unclear iddialar prompt'a) + yeniden doğrulama;
@@ -10,7 +11,7 @@
 import { contentHash } from '../../dedup/index.js';
 import { VERIFY_MAX_TOKENS, buildVerifyPrompt } from '../prompts/verify.js';
 import { WRITE_MAX_TOKENS, buildUnclearFixMessages, buildWritePrompt } from '../prompts/write.js';
-import { STATUS, forEachCandidate, newStats, nowIso, reject } from './common.js';
+import { STATUS, forEachCandidate, newStats, nowIso, reject, roleMaxTokens } from './common.js';
 import { cardText } from './dedup-card.js';
 import { checkWriteRules, normalizeDraft, writeInput } from './write.js';
 
@@ -48,11 +49,11 @@ export function parseVerification(json) {
   return { ok: true, claims, verdict };
 }
 
-async function verifyOnce(llm, draft, support) {
+async function verifyOnce(llm, draft, support, { hook, maxTokens = VERIFY_MAX_TOKENS } = {}) {
   const res = await llm.chat('verifier', {
-    ...buildVerifyPrompt({ title: draft.title, content: draft.content, support }),
+    ...buildVerifyPrompt({ hook, title: draft.title, content: draft.content, support }),
     json: true,
-    maxTokens: VERIFY_MAX_TOKENS,
+    maxTokens,
   });
   const parsed = parseVerification(res?.json);
   if (!parsed.ok) throw new Error(parsed.error);
@@ -70,6 +71,8 @@ function draftJson(draft) {
 export async function runVerify(deps, { limit = 50 } = {}) {
   const stats = newStats('verify');
   const cands = await deps.repo.listByStatus(STATUS.WRITTEN, limit, { scoresHas: 'dedup_card' });
+  const verifyMax = roleMaxTokens(deps.config, 'verifier', VERIFY_MAX_TOKENS);
+  const writeMax = roleMaxTokens(deps.config, 'writer', WRITE_MAX_TOKENS);
 
   await forEachCandidate(deps, cands, stats, async (cand) => {
     let draft = cand.scores?.draft;
@@ -78,7 +81,9 @@ export async function runVerify(deps, { limit = 50 } = {}) {
     if (!support) throw new Error('support_paragraph yok');
 
     const rounds = [];
-    const first = await verifyOnce(deps.llm, draft, support);
+    // Kanıt = kanca + destek paragrafı (kanca editörlerce kaynaklı).
+    const evidence = { hook: cand.hook_text, maxTokens: verifyMax };
+    const first = await verifyOnce(deps.llm, draft, support, evidence);
     rounds.push({ verdict: first.verdict, claims: first.claims, model: first.model });
     const base = { ...cand.scores };
     const verification = () => ({ rounds, checked_at: nowIso(deps.now) });
@@ -94,7 +99,7 @@ export async function runVerify(deps, { limit = 50 } = {}) {
       const res = await deps.llm.chat('writer', {
         messages: [...messages, ...buildUnclearFixMessages(draftJson(draft), unclear)],
         json: true,
-        maxTokens: WRITE_MAX_TOKENS,
+        maxTokens: writeMax,
       });
       if (res?.json?.skip === true || res?.json?.skip === 'true') {
         await reject(deps, cand, 'writer_skip', stats, { scores: { ...base, verification: verification() } });
@@ -117,7 +122,7 @@ export async function runVerify(deps, { limit = 50 } = {}) {
         rewrites: (draft.rewrites ?? 0) + 1,
         rewritten_for: 'unclear',
       };
-      const second = await verifyOnce(deps.llm, draft, support);
+      const second = await verifyOnce(deps.llm, draft, support, evidence);
       rounds.push({ verdict: second.verdict, claims: second.claims, model: second.model });
       if (second.verdict !== 'supported') {
         const reason = second.verdict === 'unsupported' ? 'unsupported_claim' : 'unclear_claim';

@@ -6,8 +6,14 @@
 // Arayüz:
 //   listByStatus(status, limit, filter?)  filter: { scoresHas?, scoresLacks?, hasSupport? }
 //   updateCandidate(id, patch)
-//   matchSimilar(embedding, threshold, limit)  → [{ kind, id, text, similarity, status? }]
+//   matchSimilar(embedding, threshold, limit, { kinds?, excludeCandidate? })
+//                                               → [{ kind, id, text, similarity }]
+//     match_similar(p_embedding, p_threshold, p_limit, p_kinds text[], p_exclude_candidate uuid):
+//     DB tarafında aday için rejected + p_exclude_candidate, fact için published/queued dışı elenir.
 //   insertQueuedFact(row)                       → { id }; unique çakışmada DuplicateInsertError
+//
+// Vektörler: yazarken düz JS dizisi gönderilir; PostgREST vector kolonunu metin ("[0.1,0.2]")
+// döndürür → parseVector ile diziye çevrilir.
 import { cosineSimilarity } from '../../dedup/index.js';
 
 export class DuplicateInsertError extends Error {
@@ -19,6 +25,35 @@ export class DuplicateInsertError extends Error {
 
 const CANDIDATE_COLUMNS =
   'id, source_key, source, lang, hook_text, hook_hash, source_url, source_meta, support_paragraph, status, scores, reject_reason, fact_id, attempts, created_at';
+
+export const DEFAULT_MATCH_KINDS = Object.freeze(['fact', 'candidate']);
+
+/** PostgREST vector metni ("[0.1,0.2]") → dizi; dizi/null olduğu gibi. Bozuk metin → null. */
+export function parseVector(v) {
+  if (Array.isArray(v) || v == null) return v ?? null;
+  if (typeof v !== 'string') return null;
+  try {
+    const parsed = JSON.parse(v);
+    return Array.isArray(parsed) && parsed.every((x) => typeof x === 'number') ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Satırdaki vektör alanlarını (embedding, scores.draft_embedding) diziye çevirir. */
+function parseRowVectors(row) {
+  if (!row || typeof row !== 'object') return row;
+  const out = { ...row };
+  if (typeof out.embedding === 'string') out.embedding = parseVector(out.embedding);
+  if (out.scores && typeof out.scores.draft_embedding === 'string') {
+    out.scores = { ...out.scores, draft_embedding: parseVector(out.scores.draft_embedding) };
+  }
+  return out;
+}
+
+function matchOptions({ kinds = DEFAULT_MATCH_KINDS, excludeCandidate = null } = {}) {
+  return { kinds: [...kinds], excludeCandidate: excludeCandidate ?? null };
+}
 
 function fail(what, error) {
   const err = new Error(`[steps-repo] ${what}: ${error?.message ?? error}`);
@@ -43,7 +78,7 @@ export function createStepsRepo(client) {
       if (filter.hasSupport === false) q = q.is('support_paragraph', null);
       const { data, error } = await q.order('created_at', { ascending: true }).limit(limit);
       if (error) throw fail('listByStatus', error);
-      return data ?? [];
+      return (data ?? []).map(parseRowVectors);
     },
 
     async updateCandidate(id, patch) {
@@ -51,21 +86,17 @@ export function createStepsRepo(client) {
       if (error) throw fail('updateCandidate', error);
     },
 
-    async matchSimilar(embedding, threshold, limit) {
+    async matchSimilar(embedding, threshold, limit, opts = {}) {
+      const { kinds, excludeCandidate } = matchOptions(opts);
       const { data, error } = await client.rpc('match_similar', {
         p_embedding: embedding,
         p_threshold: threshold,
         p_limit: limit,
+        p_kinds: kinds,
+        p_exclude_candidate: excludeCandidate,
       });
       if (error) throw fail('matchSimilar', error);
-      const rows = data ?? [];
-      // RPC durum döndürmüyor; aday eşleşmelerinin durumunu ayrıca oku (rejected filtrelensin).
-      const candIds = rows.filter((r) => r.kind === 'candidate').map((r) => r.id);
-      if (candIds.length === 0) return rows;
-      const { data: st, error: stErr } = await client.from('fact_candidates').select('id, status').in('id', candIds);
-      if (stErr) throw fail('matchSimilar(status)', stErr);
-      const byId = new Map((st ?? []).map((r) => [r.id, r.status]));
-      return rows.map((r) => (r.kind === 'candidate' ? { ...r, status: byId.get(r.id) ?? null } : r));
+      return (data ?? []).map(parseRowVectors);
     },
 
     async insertQueuedFact(row) {
@@ -82,8 +113,9 @@ export function createStepsRepo(client) {
 const clone = (v) => (v === undefined ? v : structuredClone(v));
 
 /**
- * Bellek içi repo. `match_similar` RPC'sini taklit eder: facts (published/queued,
- * metin = title\ncontent) + embedding'i olan adaylar (metin = hook_text).
+ * Bellek içi repo. `match_similar` RPC'sini taklit eder: p_kinds içindeki türler;
+ * facts (sadece published/queued, metin = title\ncontent) + embedding'i olan, rejected
+ * olmayan ve p_exclude_candidate dışındaki adaylar (metin = hook_text).
  * @param {{ candidates?: object[], facts?: object[] }} [seed]
  */
 export function createMemoryStepsRepo({ candidates = [], facts = [] } = {}) {
@@ -101,6 +133,7 @@ export function createMemoryStepsRepo({ candidates = [], facts = [] } = {}) {
   }));
   const factRows = facts.map((f, i) => ({ id: f.id ?? `fact-seed-${i + 1}`, status: 'published', ...clone(f) }));
   let factSeq = 0;
+  let lastMatchArgs = null;
   const calls = { listByStatus: 0, updateCandidate: 0, matchSimilar: 0, insertQueuedFact: 0 };
 
   const hasKey = (c, k) => c.scores != null && c.scores[k] !== undefined && c.scores[k] !== null;
@@ -128,17 +161,20 @@ export function createMemoryStepsRepo({ candidates = [], facts = [] } = {}) {
       Object.assign(c, clone(patch));
     },
 
-    async matchSimilar(embedding, threshold, limit) {
+    async matchSimilar(embedding, threshold, limit, opts = {}) {
       calls.matchSimilar += 1;
+      const { kinds, excludeCandidate } = matchOptions(opts);
+      lastMatchArgs = { threshold, limit, kinds, excludeCandidate };
       const out = [];
-      for (const f of factRows) {
+      for (const f of kinds.includes('fact') ? factRows : []) {
         if (!Array.isArray(f.embedding) || !['published', 'queued'].includes(f.status)) continue;
         if (f.embedding.length !== embedding.length) continue;
         out.push({ kind: 'fact', id: f.id, text: `${f.title}\n${f.content}`, similarity: cosineSimilarity(f.embedding, embedding) });
       }
-      for (const c of cands) {
+      for (const c of kinds.includes('candidate') ? cands : []) {
+        if (c.status === 'rejected' || (excludeCandidate !== null && c.id === excludeCandidate)) continue;
         if (!Array.isArray(c.embedding) || c.embedding.length !== embedding.length) continue;
-        out.push({ kind: 'candidate', id: c.id, text: c.hook_text, similarity: cosineSimilarity(c.embedding, embedding), status: c.status });
+        out.push({ kind: 'candidate', id: c.id, text: c.hook_text, similarity: cosineSimilarity(c.embedding, embedding) });
       }
       return out
         .filter((m) => m.similarity >= threshold)
@@ -162,5 +198,6 @@ export function createMemoryStepsRepo({ candidates = [], facts = [] } = {}) {
     candidates: () => cands.map(clone),
     facts: () => factRows.map(clone),
     get: (id) => clone(cands.find((x) => x.id === id)),
+    lastMatchArgs: () => clone(lastMatchArgs),
   };
 }

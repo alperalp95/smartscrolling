@@ -172,6 +172,24 @@ export function createUsageTracker({ providers, store, now = () => Date.now() })
       return n;
     },
 
+    /**
+     * Başarısız istek (HTTP hatası, geçersiz/kesik çıktı). Bütçe sayaçlarını DEĞİŞTİRMEZ;
+     * sadece "denendi ama düştü" izini bırakır (usage dosyasında 0 istek ≠ hiç denenmedi).
+     * @param {{ kind?: string, status?: number, message?: string }} info  anahtar içermemeli
+     */
+    async recordFailure(provider, model, { kind, status, message } = {}) {
+      const d = await current();
+      const m = modelBucket(d, provider, model);
+      m.failures = (m.failures ?? 0) + 1;
+      m.lastError = {
+        kind: kind ?? 'unknown',
+        ...(status ? { status } : {}),
+        message: String(message ?? '').slice(0, 200),
+        at: new Date(now()).toISOString(),
+      };
+      await persist();
+    },
+
     /** Sağlayıcı günlük kotanın bittiğini söylediyse (ör. 429 TPD) bugün için kapat. */
     async markExhausted(provider, model, scope = 'model') {
       const d = await current();

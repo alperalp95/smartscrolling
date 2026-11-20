@@ -70,7 +70,12 @@ function normalizeMember(member, providers, at) {
   if (member.params !== undefined && !isObject(member.params)) {
     throw new LlmConfigError("'params' bir nesne olmalı", { path: `${at}.params` });
   }
-  return { provider: member.provider, model: member.model, params: member.params ?? {} };
+  if (member.userSuffix !== undefined && typeof member.userSuffix !== 'string') {
+    throw new LlmConfigError("'userSuffix' bir metin olmalı (ör. \" /no_think\")", { path: `${at}.userSuffix` });
+  }
+  const out = { provider: member.provider, model: member.model, params: member.params ?? {} };
+  if (member.userSuffix) out.userSuffix = member.userSuffix;
+  return out;
 }
 
 function normalizeChain(chain, providers, at) {
@@ -183,6 +188,15 @@ export function validateConfig(rawConfig) {
       throw new LlmConfigError('sameAs başka bir sameAs rolünü gösteremez', { path: `roles.${role}.sameAs` });
     }
     roles[role] = { ...roles[def.sameAs], ...def, steps: roles[def.sameAs].steps };
+  }
+
+  for (const [role, def] of Object.entries(roles)) {
+    if (def.maxTokens === undefined) continue;
+    if (!Number.isInteger(def.maxTokens) || def.maxTokens <= 0) {
+      throw new LlmConfigError(`'maxTokens' pozitif bir tam sayı olmalı (şu an: ${JSON.stringify(def.maxTokens)})`, {
+        path: `roles.${role}.maxTokens`,
+      });
+    }
   }
 
   const emb = roles.embedding;

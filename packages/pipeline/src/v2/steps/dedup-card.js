@@ -1,10 +1,13 @@
 // src/v2/steps/dedup-card.js
 // Tekrar-2: `written` kart taslağının (title + content) contentHash'i ve embedding'i
-// çıkarılır, yayınlanmış/kuyruktaki kartlara (match_similar, kind='fact') karşı
+// çıkarılır, yayınlanmış/kuyruktaki kartlara (match_similar, p_kinds=['fact']) VE aynı run'da
+// daha önce Tekrar-2'yi geçmiş taslaklara (bellek içi liste, deps.runDrafts) karşı
 // decideDuplicate. Tekrar → rejected:duplicate_card_<reason>.
+// Neden bellek içi liste: yazılan kartlar enqueue'dan önce facts'te yok; aynı olguyu farklı
+// kancayla taşıyan iki aday aynı run'da birbirini göremezdi.
 // Geçen kartta scores.dedup_card işaretlenir; hash taslağa, embedding scores.draft_embedding'e
 // yazılır (enqueue facts.embedding için kullanır). Embedding hatasında aday `written` kalır.
-import { buildJudgePrompt, contentHash, decideDuplicate } from '../../dedup/index.js';
+import { buildJudgePrompt, contentHash, cosineSimilarity, decideDuplicate } from '../../dedup/index.js';
 import {
   STATUS,
   createJudge,
@@ -14,10 +17,25 @@ import {
   newStats,
   nowIso,
   reject,
+  roleMaxTokens,
 } from './common.js';
 
-/** RPC sonucu kart + aday karışık ve tek limitli; adaylar elendikten sonra yeterli kart kalsın diye geniş. */
-export const DEDUP_CARD_MATCH_LIMIT = 10;
+/** match_similar artık p_kinds=['fact'] ile sadece kart döndürür. */
+export const DEDUP_CARD_MATCH_LIMIT = 5;
+
+/**
+ * Aynı run'daki taslaklarla benzerlik (match_similar satırı biçiminde, kind='run_draft').
+ * @param {Array<{ id, text, embedding }>} runDrafts
+ */
+export function matchRunDrafts(runDrafts, embedding, threshold, selfId) {
+  const out = [];
+  for (const d of runDrafts ?? []) {
+    if (d.id === selfId || !Array.isArray(d.embedding) || d.embedding.length !== embedding.length) continue;
+    const similarity = cosineSimilarity(d.embedding, embedding);
+    if (similarity >= threshold) out.push({ kind: 'run_draft', id: d.id, text: d.text, similarity });
+  }
+  return out.sort((a, b) => b.similarity - a.similarity);
+}
 
 /** facts.content_hash ve match_similar ile aynı metin biçimi: title\ncontent */
 export function cardText(draft) {
@@ -33,6 +51,8 @@ export async function runDedupCard(deps, { limit = 50 } = {}) {
   const cands = await deps.repo.listByStatus(STATUS.WRITTEN, limit, { scoresLacks: 'dedup_card' });
   const thresholds = dedupThresholds(deps.config);
   const low = grayZoneLow(deps.config);
+  // runSteps run başına bir liste verir; adım tek başına çağrılırsa yerel liste.
+  const runDrafts = Array.isArray(deps.runDrafts) ? deps.runDrafts : [];
 
   await forEachCandidate(deps, cands, stats, async (cand) => {
     const draft = cand.scores?.draft;
@@ -44,10 +64,10 @@ export async function runDedupCard(deps, { limit = 50 } = {}) {
     const embedding = vectors?.[0];
     if (!Array.isArray(embedding)) throw new Error('embedding dönmedi');
 
-    const raw = await deps.repo.matchSimilar(embedding, low, DEDUP_CARD_MATCH_LIMIT);
-    const matches = (raw ?? []).filter((m) => m.kind === 'fact');
+    const raw = await deps.repo.matchSimilar(embedding, low, DEDUP_CARD_MATCH_LIMIT, { kinds: ['fact'] });
+    const matches = [...(raw ?? []).filter((m) => m.kind === 'fact'), ...matchRunDrafts(runDrafts, embedding, low, cand.id)];
 
-    const { judge, state } = createJudge(deps.llm, buildJudgePrompt);
+    const { judge, state } = createJudge(deps.llm, buildJudgePrompt, { maxTokens: roleMaxTokens(deps.config, 'judge', 200) });
     const decision = await decideDuplicate({
       candidate: { sourceKey: cand.source_key, text, embedding },
       matches,
@@ -55,6 +75,7 @@ export async function runDedupCard(deps, { limit = 50 } = {}) {
       judge,
     });
     if (state.exhausted) throw state.exhausted;
+    if (state.error) throw state.error; // hakem çıktısı bozuk → tekrar sayma, aday hata (attempts++)
 
     const scores = {
       ...cand.scores,
@@ -66,6 +87,7 @@ export async function runDedupCard(deps, { limit = 50 } = {}) {
       return;
     }
     await deps.repo.updateCandidate(cand.id, { scores: { ...scores, draft_embedding: embedding } });
+    runDrafts.push({ id: cand.id, text, embedding });
     stats.advanced += 1;
   });
   return stats;

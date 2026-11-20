@@ -83,6 +83,20 @@ export function normalizeCategory(value) {
   return null;
 }
 
+/** Model çalıştı ama çıktı kullanılamadı (geçersiz JSON / kesik yanıt): tükenme değil, hata. */
+export function isOutputError(err) {
+  return err?.name === 'LlmOutputError';
+}
+
+/**
+ * Rol başına maxTokens: config.roles.<rol>.maxTokens, yoksa fallback.
+ * (LLM katmanı da aynı değeri varsayılan olarak kullanır; adımlar açıkça geçirir.)
+ */
+export function roleMaxTokens(config, role, fallback) {
+  const v = config?.roles?.[role]?.maxTokens;
+  return Number.isInteger(v) && v > 0 ? v : fallback;
+}
+
 export function isExhausted(err) {
   return err?.name === 'LlmExhaustedError';
 }
@@ -93,7 +107,7 @@ export function isFatal(err) {
 }
 
 export function newStats(step) {
-  return { step, seen: 0, advanced: 0, rejected: {}, failed: 0, deferred: 0, exhaustedRole: null, errors: [] };
+  return { step, seen: 0, advanced: 0, rejected: {}, failed: 0, deferred: 0, exhaustedRole: null, exhaustedReason: null, errors: [] };
 }
 
 export function nowIso(now) {
@@ -151,7 +165,12 @@ export async function forEachCandidate(ctx, cands, stats, fn) {
 export function markDeferred(ctx, stats, err, count) {
   stats.deferred += count;
   stats.exhaustedRole = err?.role ?? stats.exhaustedRole ?? 'unknown';
-  ctx.log?.(`[${stats.step}] LLM zinciri tükendi (role=${stats.exhaustedRole}); ${count} aday ertesi run'a kaldı`);
+  // Neden (her model için hata türü + kısa mesaj) log'a ve stats'a yazılır; anahtar içermez (LLM katmanı temizler).
+  const why = Array.isArray(err?.attempts) && err.attempts.length
+    ? err.attempts.map((a) => `${a.provider}/${a.model}: ${a.reason}`).join(' | ')
+    : String(err?.message ?? err ?? 'bilinmiyor');
+  stats.exhaustedReason = why.slice(0, 600);
+  ctx.log?.(`[${stats.step}] LLM zinciri tükendi (role=${stats.exhaustedRole}); ${count} aday ertesi run'a kaldı. Neden: ${stats.exhaustedReason}`);
 }
 
 /**
@@ -160,7 +179,9 @@ export function markDeferred(ctx, stats, err, count) {
  * LlmExhaustedError ayrıca yakalanır ve çağıran `exhausted` alanına bakar.
  */
 export function createJudge(llm, buildJudgePrompt, { maxTokens = 200 } = {}) {
-  const state = { exhausted: null, calls: 0 };
+  // exhausted: zincir tükendi → adım erteler. error: hakem çıktısı kullanılamadı → aday hata
+  // sayılır (attempts++); ikisi de "tekrar" (judge_error → duplicate) sayılmaz.
+  const state = { exhausted: null, error: null, calls: 0 };
   const judge = async ({ a, b }) => {
     state.calls += 1;
     try {
@@ -171,6 +192,7 @@ export function createJudge(llm, buildJudgePrompt, { maxTokens = 200 } = {}) {
       return { sameFact: same === true || same === 'true', reason: typeof v.reason === 'string' ? v.reason : undefined };
     } catch (err) {
       if (isExhausted(err) || isFatal(err)) state.exhausted = err;
+      else if (isOutputError(err)) state.error = err;
       throw err;
     }
   };
