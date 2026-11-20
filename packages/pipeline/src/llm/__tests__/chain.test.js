@@ -201,7 +201,7 @@ test('bütçe %90 -> Cloudflare Neuron (sağlayıcı geneli) dolunca doğrulayı
   const res = await llm.chat('verifier', { messages: MESSAGES });
 
   assert.equal(res.provider, 'gemini');
-  assert.equal(res.model, 'gemini-3.5-flash-lite');
+  assert.equal(res.model, 'gemini-3.1-flash-lite');
   assert.equal(fetch.calls.length, 1);
   assert.equal(fetch.calls[0].url, 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
   assert.ok(isGemini(fetch.calls[0]));

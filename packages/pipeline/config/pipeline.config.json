@@ -29,7 +29,7 @@
       "_aciklama": "Doğrulayıcı: kartı iddialara böler, kaynağa karşı kontrol eder. Yazardan farklı aile (Google) olmalı.",
       "chain": [
         { "provider": "cloudflare", "model": "@cf/google/gemma-4-26b-a4b-it" },
-        { "provider": "gemini", "model": "gemini-3.5-flash-lite" }
+        { "provider": "gemini", "model": "gemini-3.1-flash-lite" }
       ]
     },
     "judge": {

@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test \"src/**/__tests__/*.test.js\"",
     "run:wikipedia": "node src/runners/wikipedia.js",
     "run:nasa": "node src/runners/nasa.js",
     "run:pdf-curated": "node src/runners/pdf-curated.js",

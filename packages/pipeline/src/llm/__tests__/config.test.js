@@ -28,7 +28,7 @@ test('gerçek config dosyası geçerli ve beklenen değerleri içeriyor', () => 
   assert.equal(cfg.roles.writer.steps[0].strategy, 'round_robin');
   assert.deepEqual(cfg.roles.writer.steps[0].members.map((m) => m.model), ['openai/gpt-oss-120b', 'openai/gpt-oss-20b']);
   assert.equal(cfg.roles.writer.steps[1].members[0].model, '@cf/openai/gpt-oss-20b');
-  assert.deepEqual(cfg.roles.verifier.steps.map((s) => s.members[0].model), ['@cf/google/gemma-4-26b-a4b-it', 'gemini-3.5-flash-lite']);
+  assert.deepEqual(cfg.roles.verifier.steps.map((s) => s.members[0].model), ['@cf/google/gemma-4-26b-a4b-it', 'gemini-3.1-flash-lite']);
   assert.deepEqual(cfg.roles.judge.steps, cfg.roles.scorer.steps);
   assert.equal(cfg.roles.embedding.dimensions, 1024);
   assert.equal(cfg.roles.embedding.steps[0].members[0].model, '@cf/baai/bge-m3');

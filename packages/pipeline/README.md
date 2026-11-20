@@ -62,7 +62,7 @@ Doğrulayıcıya üçüncü bir yedek eklemek için zincirin sonuna yeni bir sat
 "verifier": {
   "chain": [
     { "provider": "cloudflare", "model": "@cf/google/gemma-4-26b-a4b-it" },
-    { "provider": "gemini", "model": "gemini-3.5-flash-lite" },
+    { "provider": "gemini", "model": "gemini-3.1-flash-lite" },
     { "provider": "gemini", "model": "gemma-4-31b-it" }
   ]
 }
