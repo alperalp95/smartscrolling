@@ -1,0 +1,121 @@
+{
+  "_aciklama": "İçerik hattı v2 ayarları. '_aciklama' ile başlayan alanlar sadece açıklamadır, program bunları okumaz. Ayrıntılı anlatım: packages/pipeline/README.md",
+  "version": 1,
+
+  "roles": {
+    "_aciklama": "Her iş (rol) için hangi yapay zeka modelinin kullanılacağı. 'chain' listesi sırayla denenir: ilki dolarsa ya da hata verirse bir sonrakine geçilir.",
+    "scorer": {
+      "_aciklama": "Puanlayıcı: aday bilgileri 0-10 arası şaşırtıcılık vb. puanlar.",
+      "chain": [
+        { "provider": "groq", "model": "qwen/qwen3.8-27b" },
+        { "provider": "cloudflare", "model": "@cf/qwen/qwen3-30b-a3b-fp8" }
+      ]
+    },
+    "writer": {
+      "_aciklama": "Yazar: Türkçe kartı yazar. İlk adımdaki 'pool' içindeki iki model sırayla (bir o, bir bu) kullanılır; ikisi de doluysa Cloudflare'e geçilir.",
+      "chain": [
+        {
+          "_aciklama": "round_robin = yük havuzdaki modellere sırayla dağıtılır.",
+          "strategy": "round_robin",
+          "pool": [
+            { "provider": "groq", "model": "openai/gpt-oss-120b", "params": { "reasoning_effort": "low" } },
+            { "provider": "groq", "model": "openai/gpt-oss-20b", "params": { "reasoning_effort": "low" } }
+          ]
+        },
+        { "provider": "cloudflare", "model": "@cf/openai/gpt-oss-20b" }
+      ]
+    },
+    "verifier": {
+      "_aciklama": "Doğrulayıcı: kartı iddialara böler, kaynağa karşı kontrol eder. Yazardan farklı aile (Google) olmalı.",
+      "chain": [
+        { "provider": "cloudflare", "model": "@cf/google/gemma-4-26b-a4b-it" },
+        { "provider": "gemini", "model": "gemini-3.5-flash-lite" }
+      ]
+    },
+    "judge": {
+      "_aciklama": "Hakem: benzerliği gri bölgede kalan iki kart 'aynı bilgi mi?' diye sorulur. 'sameAs' = puanlayıcıyla aynı model zincirini kullan.",
+      "sameAs": "scorer"
+    },
+    "embedding": {
+      "_aciklama": "Tekrar kontrolü için metni sayı dizisine (vektör) çevirir. Bu modeli değiştirirseniz tüm eski vektörler yeniden hesaplanmalı; boyut (dimensions) veritabanıyla aynı kalmalı.",
+      "dimensions": 1024,
+      "batchSize": 50,
+      "chain": [
+        { "provider": "cloudflare", "model": "@cf/baai/bge-m3" }
+      ]
+    }
+  },
+
+  "providers": {
+    "_aciklama": "Yapay zeka sağlayıcıları. Anahtarlar bu dosyada DURMAZ; sadece hangi ortam değişkeninde (apiKeyEnv) olduğu yazılır.",
+    "groq": {
+      "_aciklama": "Groq ücretsiz katman. Limit her model için ayrı sayılır.",
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "apiKeyEnv": "GROQ_API_KEY",
+      "jsonMode": true,
+      "stopAtPercent": 90,
+      "dailyLimits": {
+        "_aciklama": "Günlük üst sınır, her model için ayrı: istek sayısı ve token sayısı.",
+        "perModel": { "requests": 1000, "tokens": 200000 }
+      }
+    },
+    "cloudflare": {
+      "_aciklama": "Cloudflare Workers AI. Limit tüm modeller için ortak: günde 10.000 Neuron (00:00 UTC'de sıfırlanır).",
+      "baseUrl": "https://api.cloudflare.com/client/v4/accounts/{accountId}/ai",
+      "apiKeyEnv": "CLOUDFLARE_API_TOKEN",
+      "accountIdEnv": "CLOUDFLARE_ACCOUNT_ID",
+      "jsonMode": false,
+      "stopAtPercent": 90,
+      "dailyLimits": {
+        "_aciklama": "Sağlayıcı geneli günlük Neuron sınırı.",
+        "provider": { "neurons": 10000 }
+      },
+      "neuronsPerMillionTokens": {
+        "_aciklama": "Neuron tahmini için: 1 milyon token başına Neuron (girdi / çıktı). Kaynak: Cloudflare fiyat sayfası, 2026-11-20. Listede olmayan model için 'default' kullanılır.",
+        "@cf/qwen/qwen3-30b-a3b-fp8": { "input": 4625, "output": 30475 },
+        "@cf/openai/gpt-oss-20b": { "input": 18182, "output": 27273 },
+        "@cf/openai/gpt-oss-120b": { "input": 31818, "output": 68182 },
+        "@cf/google/gemma-4-26b-a4b-it": { "input": 9091, "output": 27273 },
+        "@cf/qwen/qwen3.8-27b": { "input": 40909, "output": 290909 },
+        "@cf/baai/bge-m3": { "input": 1075, "output": 0 },
+        "default": { "input": 40909, "output": 290909 }
+      }
+    },
+    "gemini": {
+      "_aciklama": "Google Gemini API ücretsiz katman (sadece yedek). Google ücretsiz sayıları yayınlamıyor; aşağıdaki sınır temkinli bir tahmindir, AI Studio > Rate limit sayfasından kontrol edip güncelleyin.",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "apiKeyEnv": "GEMINI_API_KEY",
+      "jsonMode": false,
+      "stopAtPercent": 90,
+      "dailyLimits": {
+        "perModel": { "requests": 20 }
+      }
+    }
+  },
+
+  "retry": {
+    "_aciklama": "Hata olunca (çok istek / sunucu hatası / zaman aşımı) aynı modeli kaç kez deneyeceği ve denemeler arası bekleme (milisaniye). Bekleme her denemede ikiye katlanır, maxDelayMs'i geçmez.",
+    "maxAttempts": 3,
+    "baseDelayMs": 2000,
+    "maxDelayMs": 30000,
+    "requestTimeoutMs": 60000
+  },
+
+  "scoring": {
+    "_aciklama": "Puanlama: bir çağrıda kaç aday puanlanır, en iyi yüzde kaçı geçer.",
+    "batchSize": 15,
+    "passPercent": 30
+  },
+
+  "dedup": {
+    "_aciklama": "Tekrar önleme: benzerlik bu değerin üstündeyse kart tekrar sayılır (0-1 arası). grayZoneLow ile duplicateThreshold arası 'gri bölge'dir, hakeme sorulur.",
+    "duplicateThreshold": 0.92,
+    "grayZoneLow": 0.85
+  },
+
+  "publish": {
+    "_aciklama": "Yayın: günde kaç kart yayınlanır, stokta en az kaç günlük kart beklesin.",
+    "dailyCount": 100,
+    "minStockDays": 7
+  }
+}
