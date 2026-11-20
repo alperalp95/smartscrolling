@@ -31,3 +31,4 @@ apps/*/.git/
 # Supabase local machine state
 supabase/.temp/
 supabase/.branches/
+packages/pipeline/.cache/
