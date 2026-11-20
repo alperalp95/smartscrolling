@@ -113,7 +113,9 @@ export async function mediawikiApi(http, host, params) {
   }
   const json = await http.getJson(url);
   if (json?.error) {
-    throw new HttpError(`MediaWiki API error ${json.error.code}: ${json.error.info}`, null, String(url));
+    const error = new HttpError(`MediaWiki API error ${json.error.code}: ${json.error.info}`, null, String(url));
+    error.code = json.error.code; // ör. "missingtitle" (sayfa yok)
+    throw error;
   }
   return json;
 }
