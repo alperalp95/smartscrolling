@@ -53,7 +53,7 @@ test('gerçek config dosyası geçerli ve beklenen değerleri içeriyor', () => 
     { a: cfg.retry.maxAttempts, b: cfg.retry.baseDelayMs, c: cfg.retry.maxDelayMs, t: cfg.retry.requestTimeoutMs },
     { a: 3, b: 2000, c: 30000, t: 60000 },
   );
-  assert.deepEqual(cfg.scoring, { batchSize: 10, passPercent: 30, minSurprise: 6, minTrRelevance: 4 });
+  assert.deepEqual(cfg.scoring, { batchSize: 10, passPercent: 50, minSurprise: 6, minTrRelevance: 4 });
   assert.deepEqual(
     { s: cfg.roles.scorer.maxTokens, w: cfg.roles.writer.maxTokens, v: cfg.roles.verifier.maxTokens, j: cfg.roles.judge.maxTokens },
     { s: 600, w: 1000, v: 800, j: 200 },
