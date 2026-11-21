@@ -25,7 +25,7 @@ Hatta beş iş (rol) var:
 |---|---|
 | `scorer` | Puanlayıcı. Aday bilgilere şaşırtıcılık, Türk okur için ilgi gibi puanlar verir. |
 | `writer` | Yazar. Türkçe kartı yazar. |
-| `verifier` | Doğrulayıcı. Kartı iddialara böler, her iddiayı kancaya ve destek paragrafına karşı kontrol eder (iddia ikisinden birinde açıkça ya da doğrudan çıkarılabilir şekilde geçiyorsa geçer). Desteklenmeyen iddia varsa kart hemen elenmez: yazara **bir kez** onarım için geri gider ("şu iddiaları çıkar ya da kaynakla uyumlu hale getir"), sonra yeniden doğrulanır. Yazardan farklı bir model ailesinden ve "düşünmeyen" bir model olmalı. |
+| `verifier` | Doğrulayıcı. Kartı iddialara böler, her iddiayı kancaya ve destek paragrafına karşı kontrol eder (iddia ikisinden birinde açıkça ya da doğrudan çıkarılabilir şekilde geçiyorsa geçer). Başlık da bir iddiadır; ayrıca "başlık metindeki olguyla aynı şeyi mi söylüyor, terimler doğru çevrilmiş mi?" diye sorulur. Desteklenmeyen iddia ya da uyumsuz başlık varsa kart hemen elenmez: yazara **bir kez** onarım için geri gider ("şu iddiaları çıkar ya da kaynakla uyumlu hale getir", "başlığı düzelt"), sonra yeniden doğrulanır. Yazardan farklı bir model ailesinden ve "düşünmeyen" bir model olmalı. |
 | `judge` | Hakem. Benzerliği "gri bölgede" kalan iki kart için "aynı bilgi mi?" diye karar verir. |
 | `embedding` | Metni sayı dizisine (vektör) çevirir. Tekrar eden kartları bulmak için kullanılır. |
 
@@ -41,12 +41,29 @@ Her rolde `maxTokens` modelin tek yanıtta en fazla kaç token yazabileceğidir:
 
 | Rol | Değer | Not |
 |---|---|---|
-| `scorer` | `1500` | 15 kanca ≈ 700 token; düşünme kapalıyken bol pay. |
-| `writer` | `1500` | Kart ≈ 150 token + gpt-oss "low" düşünme. |
-| `verifier` | `800` | En fazla 6 kısa iddia ≈ 150-250 token (düşünmeyen model). |
+| `scorer` | `600` | 10 kanca, kısa anahtarlı JSON ≈ 300-400 token. Groq'un dakikalık çıktı sınırının (1000) altında kalmalı. |
+| `writer` | `1000` | Kart ≈ 120 token + gpt-oss "low" düşünme ≈ 180. Groq'un dakikalık çıktı sınırını (1000) aşmamalı. |
+| `verifier` | `800` | Başlık + en fazla 5 kısa iddia ≈ 170-270 token (düşünmeyen model). |
 | `judge` | `200` | Tek karar. |
 
-Yanıt bu sınırda kesilirse (sağlayıcı `finish_reason: length` der) yanıt kullanılmaz, hata sayılır ve zincirde sıradaki model denenir. Log'da `[llm] truncated ...` görürseniz o rolün `maxTokens` değerini artırın.
+Yanıt bu sınırda kesilirse (sağlayıcı `finish_reason: length` der) yanıt kullanılmaz, hata sayılır ve zincirde sıradaki model denenir. Log'da `[llm] truncated ...` görürseniz o rolün `maxTokens` değerini artırın. Groq'ta kullanılan rollerde `maxTokens`'ı 1000'in üstüne çıkarmayın (aşağıda "dakikalık sınırlar").
+
+Bir zincir satırına ayrıca `"maxTokens"` yazılabilir; o model için rolünkinin yerine geçer. Puanlayıcının Groq yedeği `openai/gpt-oss-20b` "düşünen" bir model olduğu için kendi değeri `1000`'dir (600'de düşünürken kesilirdi):
+
+```json
+{ "provider": "groq", "model": "openai/gpt-oss-20b", "params": { "reasoning_effort": "low" }, "maxTokens": 1000 }
+```
+
+`expectedOutputTokens` (isteğe bağlı) bir yanıtın **tahmini** uzunluğudur: `scorer` 400, `writer` 350, `verifier` 250. Hat Groq'un dakikalık çıktı sınırı için her isteğe bu kadar yer ayırır. Gerçek yanıtlar sürekli daha uzunsa artırın, daha kısaysa azaltın (azaltmak hattı hızlandırır).
+
+#### Puanlayıcı zinciri
+
+1. `groq / qwen/qwen3.8-27b` (`reasoning_effort: none`, düşünmez).
+2. `groq / openai/gpt-oss-20b` (`reasoning_effort: low`): Groq'ta aynı ücretsiz sınırlara sahip ikinci model. Yazar havuzuyla aynı modeldir; puanlayıcı ona sadece qwen dolunca ya da hata verince gider.
+3. `cloudflare / @cf/mistralai/mistral-small-3.1-24b-instruct`: düşünmez, Türkçe destekli. 10 kancalık bir grup ≈ 47 Neuron.
+4. `cloudflare / @cf/meta/llama-4-scout-17b-16e-instruct`: düşünmez, çok dilli. 10 kancalık bir grup ≈ 52 Neuron.
+
+Cloudflare'in önceki yedeği `@cf/qwen/qwen3-30b-a3b-fp8` 20.11.2026'da kapatıldı (HTTP 410 "Model has been deprecated"). Ücretsiz modeller böyle aniden kapanabilir; bu yüzden zincirde birden fazla yedek var.
 
 #### Doğrulayıcı zinciri ve Gemma'nın "düşünme" modu
 
@@ -63,7 +80,7 @@ Gemma'da düşünme gerçekten kapanıyorsa (çağrı başına ≈ 12 Neuron) Ge
 Qwen3 modelleri cevaptan önce uzun bir "düşünme" metni yazabilir; bu hem token harcar hem de `maxTokens`'i doldurup JSON'u bozabilir. Puanlayıcıda kapalıdır:
 
 - Groq: `"params": { "reasoning_effort": "none" }` (Groq dokümanı: Qwen 3.8 27B için `none` düşünmeyi kapatır).
-- Cloudflare: `"userSuffix": " /no_think"`. `userSuffix` isteğin son kullanıcı mesajının sonuna eklenen metindir; Qwen3'ün resmi "yumuşak anahtarı" `/no_think` düşünmeyi kapatır.
+- Zincire ileride Cloudflare'de bir Qwen3 modeli eklerseniz: `"userSuffix": " /no_think"`. `userSuffix` isteğin son kullanıcı mesajının sonuna eklenen metindir; Qwen3'ün resmi "yumuşak anahtarı" `/no_think` düşünmeyi kapatır.
 
 Model yine de `<think>...</think>` bloğu yazarsa hat bunu yanıttan ayıklar.
 
@@ -81,14 +98,18 @@ Groq puanlayıcı modelini kapattı ve yerine `qwen/qwen4-32b` geldi diyelim. `s
 "scorer": {
   "chain": [
     { "provider": "groq", "model": "qwen/qwen4-32b" },
-    { "provider": "cloudflare", "model": "@cf/qwen/qwen3-30b-a3b-fp8" }
+    { "provider": "groq", "model": "openai/gpt-oss-20b", "params": { "reasoning_effort": "low" }, "maxTokens": 1000 },
+    { "provider": "cloudflare", "model": "@cf/mistralai/mistral-small-3.1-24b-instruct" },
+    { "provider": "cloudflare", "model": "@cf/meta/llama-4-scout-17b-16e-instruct" }
   ]
 }
 ```
 
+Yeni Groq modelinin dakikalık sınırlarını da `providers.groq.perMinuteLimits` altına ekleyin (bilmiyorsanız `default` satırı kullanılır).
+
 Model adını sağlayıcının model sayfasından **birebir** kopyalayın (Groq: console.groq.com/docs/models, Cloudflare: developers.cloudflare.com/workers-ai/models).
 
-Kapatılan bir model için ayrıca acele etmenize gerek yok. Sağlayıcı "model kapatıldı / bulunamadı" derse hat o gün kendiliğinden zincirdeki sıradaki modele geçer ve bir `model_unavailable` olayı kaydeder. Config'i düzeltmek kalıcı çözümdür.
+Kapatılan bir model için ayrıca acele etmenize gerek yok. Sağlayıcı "model kapatıldı / bulunamadı / deprecated" derse (HTTP 404, 410 ya da mesajda "deprecated") hat kendiliğinden zincirdeki sıradaki modele geçer, o model o run'da bir daha denenmez ve bir `model_unavailable` olayı kaydedilir. Run sonunda bu olaylar sonuç dosyasında `stats.modelEvents` altında listelenir ve log'a `[v2-process] model olayı: model_unavailable cloudflare/... (HTTP 410)` satırı düşer. Config'i düzeltmek kalıcı çözümdür: Cloudflare'de yeni model seçerken model sayfasında "Deprecated" satırı **olmayan** bir model seçin.
 
 #### Örnek: yedek model nasıl eklenir
 
@@ -162,6 +183,26 @@ Her sağlayıcı için:
 
 Bir sınırı bilmiyorsanız `null` yazabilirsiniz; o zaman o ölçüt sayılır ama sınır uygulanmaz (sağlayıcı "çok istek" hatası verince hat yine yedeğe geçer).
 
+#### `perMinuteLimits`: dakikalık sınırlar (Groq)
+
+Groq'un ücretsiz katmanında günlük sınırların yanında **dakikalık** sınırlar da var:
+
+| Alan | Anlamı |
+|---|---|
+| `tokensPerMinute` | TPM: son 60 saniyede girdi + çıktı toplam token. Groq tablosunda 8.000. |
+| `outputTokensPerMinute` | OTPM: son 60 saniyede sadece **çıktı** token. Konsol tablosunda görünmeyebilir; Groq hata mesajında yazar ("output tokens per minute (OTPM): Limit 1000"). |
+
+```json
+"perMinuteLimits": {
+  "qwen/qwen3.8-27b": { "tokensPerMinute": 8000, "outputTokensPerMinute": 1000 },
+  "default": { "tokensPerMinute": 8000, "outputTokensPerMinute": 1000 }
+}
+```
+
+Hat her model için son 60 saniyede harcananı sayar. Yeni istek sınırı aşacaksa pencere açılana kadar bekler (en fazla 60 saniye). Groq yine de "çok istek" (429) derse mesajdaki "try again in 6.5s" süresine uyar ve mesajdaki "Limit N" değerini o run için o modelin sınırı olarak kullanır. Groq "Request too large" derse (tek istek sınırdan büyük) puanlayıcı grubu otomatik olarak **ikiye bölünür** ve tekrar denenir. Bekleme ve bölmeler sonuç dosyasında `stats.rateEvents` altında görünür.
+
+`gpt-oss` modellerinin OTPM değeri yayınlanmıyor; şimdilik qwen ile aynı (1000) varsayıldı. Groq konsolunun Limits sayfasında TPM'in üstüne gelince "X in / Y out" görüyorsanız oradaki değeri yazın. Bilmiyorsanız `null` yazın (o ölçüt uygulanmaz).
+
 Örnek: Groq konsolunda gerçek günlük token sınırınızın 500.000 olduğunu gördünüz:
 
 ```json
@@ -189,7 +230,7 @@ Sağlayıcı "günlük kotanız bitti" derse (ör. Groq "tokens per day") boşun
 
 | Alan | Varsayılan | Anlamı |
 |---|---|---|
-| `scoring.batchSize` | `15` | Puanlayıcıya tek seferde kaç aday gönderilir. |
+| `scoring.batchSize` | `10` | Puanlayıcıya tek seferde kaç aday gönderilir. 10 adayın yanıtı ≈ 400 token; Groq'un dakikalık çıktı sınırına (1000) sığar. Artırırsanız `roles.scorer.maxTokens` ve `expectedOutputTokens`'ı da artırmanız gerekir. |
 | `scoring.passPercent` | `30` | Puanlanan adayların en iyi yüzde kaçı yazıma geçer. |
 | `scoring.minSurprise` | `6` | Şaşırtıcılık puanı (0–10) bunun altındaysa aday elenir (`low_surprise`). Kartlar yeterince "Aa!" dedirtmiyorsa artırın. |
 | `scoring.minTrRelevance` | `4` | Türk okur için ilgi puanı (0–10) bunun altındaysa aday elenir (`low_relevance`). |
@@ -223,10 +264,13 @@ import { createLlm, loadConfig, createFileUsageStore } from './src/llm/index.js'
 const llm = createLlm(loadConfig(), { usageStore: createFileUsageStore() });
 const { json, provider, model, usage } = await llm.chat('scorer', { messages, json: true, maxTokens: 800 });
 const { vectors } = await llm.embed(['metin 1', 'metin 2']);
-// llm.events: model_unavailable, budget_skip, quota_exhausted, retry, json_repair ... olayları
+// llm.events: model_unavailable, budget_skip, quota_exhausted, retry, json_repair,
+//             rate_wait, rate_limit_learned, request_too_large ... olayları
 ```
 
-Zincir tükenirse `LlmExhaustedError` fırlatılır; işi ertesi güne bırakmak çağıranın kararıdır. Modeller çalıştı ama hepsi bozuk çıktı verdiyse `LlmOutputError` fırlatılır (adımlar bunu aday hatası sayar). `maxTokens` verilmezse `roles.<rol>.maxTokens` kullanılır.
+Zincir tükenirse `LlmExhaustedError` fırlatılır; işi ertesi güne bırakmak çağıranın kararıdır. Modeller çalıştı ama hepsi bozuk çıktı verdiyse `LlmOutputError` fırlatılır (adımlar bunu aday hatası sayar). `maxTokens` verilmezse `roles.<rol>.maxTokens` kullanılır; zincir üyesinin kendi `maxTokens`'ı varsa o önceliklidir. `chat(..., { splittable: true })` verilirse "Request too large" durumunda zincirde ilerlemek yerine `LlmRequestTooLargeError` fırlatılır; çağıran işi bölüp tekrar dener (puanlayıcı böyle yapar).
+
+Kart başlığı kodda da düzeltilir: ilk harf büyük yapılır (Türkçe kuralıyla: "istanbul" → "İstanbul") ve sondaki nokta silinir.
 
 Testler (gerçek API çağrısı yapmaz):
 

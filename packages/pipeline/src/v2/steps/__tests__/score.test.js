@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMemoryStepsRepo } from '../../db/steps-repo.js';
-import { buildScorePrompt } from '../../prompts/score.js';
+import { CATEGORY_NAMES, buildScorePrompt } from '../../prompts/score.js';
 import { CATEGORIES, normalizeCategory } from '../common.js';
 import { decideBatch, passCount, runScore, wowScore } from '../score.js';
 import { baseCandidate, deps, exhausted, fakeLlm, parseScoreRequest } from './helpers.js';
@@ -138,10 +138,15 @@ test('runScore: LlmExhaustedError → stats.deferred, adaylar new kalır, attemp
   assert.ok(repo.candidates().every((c) => c.status === 'new' && c.attempts === 0));
 });
 
-test('buildScorePrompt: kısa id + dil + kanca satırları, 3+3 kalibrasyon örneği', () => {
+test('buildScorePrompt: kısa id + dil + kanca satırları, 3+3 kalibrasyon örneği, emojisiz kategori adları', () => {
   const { messages } = buildScorePrompt([{ id: 1, lang: 'tr', hook: 'Ahtapotun  üç\nkalbi var' }]);
   assert.equal(messages[1].content, 'Kancalar:\n1 [tr] Ahtapotun üç kalbi var');
   assert.match(messages[0].content, /ÇOK İLGİNÇ/);
   assert.match(messages[0].content, /SIKICI \/ TANIM/);
-  for (const c of CATEGORIES) assert.ok(messages[0].content.includes(c));
+  // Kategori adları emojisiz yazılır (çıktı token'ı) ama hepsi 8 sabit değere geri çevrilir.
+  assert.equal(CATEGORY_NAMES.length, CATEGORIES.length);
+  CATEGORY_NAMES.forEach((name, i) => {
+    assert.ok(messages[0].content.includes(name), name);
+    assert.equal(normalizeCategory(name), CATEGORIES[i]);
+  });
 });

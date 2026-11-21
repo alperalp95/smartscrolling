@@ -55,8 +55,80 @@ export async function runSteps(names, deps, opts = {}) {
   const stats = {};
   // Run başına bellek içi liste: dedup-card aynı run'da geçen taslakları birbirine karşı da kontrol eder.
   const runDeps = { ...deps, runDrafts: Array.isArray(deps.runDrafts) ? deps.runDrafts : [] };
+  const llmEvents = Array.isArray(deps.llm?.events) ? deps.llm.events : null;
+  const firstEvent = llmEvents ? llmEvents.length : 0;
   for (const name of steps) {
     stats[name] = await STEPS[name](runDeps, opts);
   }
+  // Run sonunda kapanan/bulunamayan modeller (404/410 → model_unavailable). V2-08'de alarm Issue'su olur.
+  const runEvents = llmEvents ? llmEvents.slice(firstEvent) : [];
+  stats.modelEvents = summarizeModelEvents(runEvents);
+  // Dakikalık sınır özeti (Groq TPM/OTPM): job süresini ve bölmeleri dry-run çıktısında görmek için.
+  stats.rateEvents = summarizeRateEvents(runEvents);
+  if (stats.rateEvents.waits || stats.rateEvents.tooLarge || stats.rateEvents.learned.length) {
+    const r = stats.rateEvents;
+    deps.log?.(
+      `[v2-process] dakikalık sınır: bekleme=${r.waits} (toplam ${Math.round(r.waitMs / 1000)} sn) çok-büyük-istek=${r.tooLarge}` +
+        `${r.learned.length ? ` öğrenilen=${r.learned.map((l) => `${l.provider}/${l.model} ${l.metric}=${l.limit}`).join(', ')}` : ''}`,
+    );
+  }
+  for (const e of stats.modelEvents) {
+    deps.log?.(
+      `[v2-process] model olayı: ${e.type} ${e.provider}/${e.model}${e.status ? ` (HTTP ${e.status})` : ''} roller=${e.roles.join(',')} ×${e.count} :: ${e.error}`,
+    );
+  }
   return { steps, stats };
+}
+
+/**
+ * rate_wait / request_too_large / rate_limit_learned olaylarının özeti.
+ * @returns {{ waits: number, waitMs: number, tooLarge: number, learned: Array<{ provider, model, metric, limit }> }}
+ */
+export function summarizeRateEvents(events) {
+  const out = { waits: 0, waitMs: 0, tooLarge: 0, learned: [] };
+  for (const e of events ?? []) {
+    if (e?.type === 'rate_wait') {
+      out.waits += 1;
+      out.waitMs += Number(e.delayMs) || 0;
+    } else if (e?.type === 'request_too_large') {
+      out.tooLarge += 1;
+    } else if (e?.type === 'rate_limit_learned') {
+      out.learned.push({ provider: e.provider, model: e.model, metric: e.metric, limit: e.limit });
+    }
+  }
+  return out;
+}
+
+/** Model olayları (şimdilik model_unavailable), sağlayıcı/model başına tek satır. */
+export const MODEL_EVENT_TYPES = Object.freeze(['model_unavailable']);
+
+/**
+ * @param {Array<object>} events  llm.events dilimi
+ * @returns {Array<{ type, provider, model, roles: string[], status?: number, error: string, count: number, first_at: string, last_at: string }>}
+ */
+export function summarizeModelEvents(events) {
+  const byKey = new Map();
+  for (const e of events ?? []) {
+    if (!MODEL_EVENT_TYPES.includes(e?.type)) continue;
+    const key = `${e.type}|${e.provider}|${e.model}`;
+    const cur = byKey.get(key);
+    if (cur) {
+      cur.count += 1;
+      if (e.role && !cur.roles.includes(e.role)) cur.roles.push(e.role);
+      cur.last_at = e.at ?? cur.last_at;
+      continue;
+    }
+    byKey.set(key, {
+      type: e.type,
+      provider: e.provider,
+      model: e.model,
+      roles: e.role ? [e.role] : [],
+      ...(e.status ? { status: e.status } : {}),
+      error: String(e.error ?? '').slice(0, 200),
+      count: 1,
+      first_at: e.at ?? null,
+      last_at: e.at ?? null,
+    });
+  }
+  return [...byKey.values()];
 }

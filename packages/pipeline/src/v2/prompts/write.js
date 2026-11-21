@@ -1,13 +1,13 @@
 // src/v2/prompts/write.js
-// Yazar (writer) istemi. Tahmini token: sistem ~600 (≈2.000 karakter, yorum yasağı + 4 kısa örnek
-// dahil), kullanıcı ~70 + destek paragrafı (ortalama ~700, en çok 1.500 karakter ≈ 200-430)
-// → çağrı başına ≈ 870-1.100 girdi; çıktı ≈ 120 JSON (2-4 cümle) + gpt-oss "low" akıl yürütme ~180
-// ≈ 300. Kural düzeltmesi / onarımda önceki yanıt + not ≈ +250-300 girdi.
-// Sınır: config roles.writer.maxTokens (1500).
+// Yazar (writer) istemi. Tahmini token: sistem ~990 (≈3.270 karakter; yorum yasağı, başlık kuralları
+// ve 3 kötü/iyi başlık örneği dahil), kullanıcı ~70 + destek paragrafı (ortalama ~700, en çok 1.500
+// karakter ≈ 200-430) → çağrı başına ≈ 1.260-1.500 girdi; çıktı ≈ 120 JSON (2-4 cümle) + gpt-oss
+// "low" akıl yürütme ~180 ≈ 300. Kural düzeltmesi / onarımda önceki yanıt + not ≈ +250-300 girdi.
+// Sınır: config roles.writer.maxTokens (1000; Groq OTPM 1000'i aşmaz).
 // Tahmin: Türkçe ~3,2-3,5, İngilizce ~4 karakter/token.
 
 /** config.roles.writer.maxTokens yoksa kullanılır. */
-export const WRITE_MAX_TOKENS = 1500;
+export const WRITE_MAX_TOKENS = 1000;
 
 const DEFAULT_LIMITS = Object.freeze({ minSentences: 2, maxSentences: 4 });
 
@@ -36,9 +36,17 @@ Dil:
 - Kaynak İngilizceyse anla ve kendi cümlelerinle doğal Türkçe yaz; kelime kelime çevirme.
 - Yabancı terimleri Türkçeye çevir; gerekirse orijinalini ilk geçtiği yerde parantezde ver: "Kafaya verilen zayıf elektrik akımı (CES)".
 - Anlamından emin olmadığın terimi tahminle çevirme (ör. "forced conversion" = zorla din değiştirtme, "evrim" değil).
+- Terimin bağlamdaki doğru Türkçe karşılığını kullan, sözlükteki ilk anlamını değil: "rehearsal" = prova ("rehberlik" ya da "tatbikat" değil), "thesis" = tez.
 - İlk cümle yabancı bir terimle ya da kısaltmayla başlamaz.
+Başlık:
+- 12-58 karakter. Olguyu söyleyen, yüklemli, tam ve doğal bir Türkçe cümle; yarım kalmış bir parça ya da sadece isim tamlaması değil.
+- Türkçe cümle düzeni: ilk harf büyük, sonra sadece özel adlar büyük ("Ahtapotun üç kalbi var", "Her Kelimesi Büyük Başlık" değil). Sonda nokta yok.
+- Gövdedeki olguyla aynı şeyi söyler; gövdede olmayan bilgi ya da yorum eklemez. "X nedir", "X kimdir" kalıbı yasak.
+Kötü başlık: "hamlet en çok filme çekilen öykü" (küçük harf, eksik) · İyi: "Hamlet, Külkedisi'nden sonra en çok filme çekilen hikâye"
+Kötü başlık: "Helmi Kurrik'in 1930'larda kanlı yemekler üzerine tez" (yüklem yok) · İyi: "Helmi Kurrik yüksek lisans tezini kanlı yemeklere ayırdı"
+Kötü başlık: "Rehberlik tatbikatı dört gün sürdü" ("rehearsal" yanlış çevrilmiş) · İyi: "Bin Ladin baskınının son provası dört gün sürdü"
 Biçim:
-- title: 12-58 karakter, şaşırtıcı noktayı söyler. Türkçe cümle düzeni: sadece ilk harf ve özel adlar büyük ("Ahtapotun üç kalbi var", "Her Kelimesi Büyük Başlık" değil). "X nedir", "X kimdir" kalıbı yasak. Başlık da sadece olgu söyler.
+- title: yukarıdaki başlık kuralları.
 - content: ${range} cümle, Türkçe karakterlerle (ı, ğ, ş, ç, ö, ü). İlk cümle şaşırtıcı olgunun kendisi; tanımla başlama.
 - tags: 3-5 küçük harfli Türkçe etiket. read_time_sq: tahmini okuma süresi (saniye).
 Kaynak paragraf kancayla çelişiyorsa ya da kart ilginç olmayacaksa yazma, şunu dön: {"skip":true,"reason":"..."}
@@ -78,6 +86,7 @@ export function buildRuleFixMessages(previousText, violations) {
 export const REPAIR_MARKER = 'Kartı onar';
 
 const VERDICT_LABEL = { unsupported: 'kaynakta yok', unclear: 'kaynakta açık değil' };
+const TITLE_LABEL = 'başlık metindeki olguyla aynı şeyi söylemiyor ya da bir terim yanlış çevrilmiş';
 
 /**
  * Doğrulayıcı unsupported/unclear iddia bulduğunda TEK onarım turu için ek mesajlar.
@@ -89,7 +98,8 @@ export function buildRepairMessages(previousText, problems, limits = DEFAULT_LIM
   const list = problems
     .map((c) => {
       const why = String(c.why ?? '').trim();
-      return `- "${c.claim}" (${VERDICT_LABEL[c.verdict] ?? c.verdict}${why ? `: ${why}` : ''})`;
+      const label = c.kind === 'title' ? TITLE_LABEL : VERDICT_LABEL[c.verdict] ?? c.verdict;
+      return `- "${c.claim}" (${label}${why ? `: ${why}` : ''})`;
     })
     .join('\n');
   return [
@@ -99,7 +109,8 @@ export function buildRepairMessages(previousText, problems, limits = DEFAULT_LIM
       content:
         `Doğrulama şu iddiaları kancada ya da kaynak paragrafta bulamadı:\n${list}\n` +
         `${REPAIR_MARKER}: bu iddiaları çıkar ya da kancaya/kaynağa birebir uyacak şekilde düzelt. ` +
-        'Yeni bilgi, yorum ya da genelleme ekleme. Sorunlu ifade başlıktaysa başlığı da düzelt; diğer cümlelere dokunma. ' +
+        'Yeni bilgi, yorum ya da genelleme ekleme. Sorunlu ifade başlıktaysa başlığı da düzelt: başlık gövdedeki olguyu ' +
+        'söyleyen, yüklemli, doğal bir Türkçe cümle olsun; terimleri doğru çevir. Diğer cümlelere dokunma. ' +
         `Gövde ${sentenceRange(limits)} cümle kalmalı; aynı kurallar ve aynı JSON biçimi. ` +
         'Düzeltince ilginç bir kart kalmıyorsa {"skip":true,"reason":"..."} dön.',
     },

@@ -1,35 +1,47 @@
 // src/v2/prompts/score.js
-// Puanlayıcı (scorer) istemi. Tahmini token: sistem ~560 (1.850 karakter, 8 emoji dahil),
-// kanca başına ~30 girdi + ~45 çıktı. 15 kancalık bir çağrı ≈ 1.010 girdi + 680 çıktı ≈ 1.700 token.
-// Qwen3 düşünme modu config'te kapalı (Groq reasoning_effort=none, Cloudflare " /no_think");
-// yine de <think> blokları LLM katmanında ayıklanır. Sınır: config roles.scorer.maxTokens (1500).
+// Puanlayıcı (scorer) istemi. Çıktı KISA ANAHTARLI tek satır JSON:
+//   {"items":[{"i":1,"s":7,"r":6,"d":0,"c":"TARİH","w":"kısa gerekçe"}]}
+//   i = kanca no, s = surprise, r = tr_relevance, d = is_definition (0/1), c = kategori adı (emojisiz),
+//   w = gerekçe, SADECE s ≥ 6 olanlarda, en fazla 6 kelime.
+// Neden: Groq qwen3.8-27b'nin dakikalık çıktı sınırı (OTPM) 1000 token. Eski uzun anahtarlı çıktı
+// 15 kancada ≈ 1.180 token yazdı (dry-run 3) ve ikinci batch 429 ile düştü.
+// Tahmini token (batch = 10 kanca): sistem ~560, kanca başına ~30 girdi → ≈ 860 girdi.
+// Çıktı: gerekçesiz öğe ≈ 22, gerekçeli ≈ 40 token; kancaların ~%35'i s ≥ 6 → ≈ 10×22 + 4×18 + 10
+// ≈ 300 (en kötü durum, hepsi gerekçeli: ≈ 410). Hedef ≤ 400 / batch.
+// Sınır: config roles.scorer.maxTokens (600; OTPM 1000'in altında). Qwen3 düşünme modu config'te
+// kapalı (Groq reasoning_effort=none); <think> blokları LLM katmanında yine ayıklanır.
 // Tahmin: Türkçe ~3,2-3,5, İngilizce ~4 karakter/token.
 import { CATEGORIES } from '../steps/common.js';
 
 /** config.roles.scorer.maxTokens yoksa kullanılır. */
-export const SCORE_MAX_TOKENS = 1500;
+export const SCORE_MAX_TOKENS = 600;
+
+/** İstemde emojisiz kategori adları (normalizeCategory bunları 8 sabit değere çevirir). */
+export const CATEGORY_NAMES = Object.freeze(
+  CATEGORIES.map((c) => c.replace(/^[^\p{L}]+/u, '').split(' & ')[0].trim()),
+);
 
 const SYSTEM = `Türk okur için bilgi kartı adaylarını puanlıyorsun. Hedef tepki: "Aa, bunu bilmiyordum, ne garipmiş!"
-Her kanca (TR ya da EN) için:
-- surprise 0-10: sıradan okuru ne kadar şaşırtır? Yüksek: zıtlık, rekor, beklenmedik bağlantı, yaygın yanlış bilinen gerçek. Düşük: bilinen, beklenen ya da sıradan bilgi; "X şunu tedavi eder / şunu yapar / şurada kullanılır" türü ürün-yöntem-kurum açıklaması; "eser filme uyarlandı", "kişi şu ödülü aldı" türü olağan haber.
-- tr_relevance 0-10: Türk okur anlar ve ilgilenir mi? Çok yerel/niş (küçük kasaba yöneticisi, alt lig oyuncusu) düşük.
-- is_definition: kanca sadece "X nedir / kimdir / nerededir / ne işe yarar" bilgisiyse true.
-- category: ${CATEGORIES.join(', ')}
-- reason: en fazla 8 kelime.
-Kalibrasyon (surprise/tr_relevance):
+Her kanca (TR ya da EN) için kısa anahtarlarla:
+- s (surprise) 0-10: sıradan okuru ne kadar şaşırtır? Yüksek: zıtlık, rekor, beklenmedik bağlantı, yaygın yanlış bilinen gerçek. Düşük: bilinen, beklenen ya da sıradan bilgi; "X şunu tedavi eder / şunu yapar / şurada kullanılır" türü ürün-yöntem-kurum açıklaması; "eser filme uyarlandı", "kişi şu ödülü aldı" türü olağan haber.
+- r (tr_relevance) 0-10: Türk okur anlar ve ilgilenir mi? Çok yerel/niş (küçük kasaba yöneticisi, alt lig oyuncusu) düşük.
+- d (is_definition): kanca sadece "X nedir / kimdir / nerededir / ne işe yarar" bilgisiyse 1, değilse 0.
+- c (kategori): ${CATEGORY_NAMES.join(', ')}
+- w (gerekçe): SADECE s 6 ve üstüyse, en fazla 6 kelime; s 6'nın altındaysa w yazma.
+Kalibrasyon (s/r):
 ÇOK İLGİNÇ
 - "Ahtapotun üç kalbi ve mavi kanı vardır." 9/8
 - "Kleopatra, piramitlerin yapımından çok Ay'a inişe daha yakın bir zamanda yaşadı." 10/8
 - "Oxford Üniversitesi, Aztek İmparatorluğu'ndan daha eskidir." 9/7
 - "Vikingler boynuzlu miğfer takmazdı; bu imaj 19. yüzyıl operasından gelir." 8/7
 SIKICI / TANIM / SIRADAN
-- "Paris, Fransa'nın başkentidir." 1/5, is_definition=true
+- "Paris, Fransa'nın başkentidir." 1/5, d=1
 - "Kafaya elektrik veren bir cihaz kaygı ve uykusuzluk tedavisinde kullanılabilir." 3/5
 - "Ünlü bir oyun iki kez filme uyarlandı ve Broadway'de yeniden sahnelendi." 3/4
 - "John Smith 1950-1954 arasında Ohio'da bir kasabanın belediye başkanıydı." 2/1
-- "Fotosentez, bitkilerin ışıkla besin üretmesidir." 1/6, is_definition=true
+- "Fotosentez, bitkilerin ışıkla besin üretmesidir." 1/6, d=1
 Emin değilsen düşük puan ver; 6 ve üstü gerçekten şaşırtıcı olanlara.
-Sadece JSON dön: {"items":[{"id":1,"surprise":0,"tr_relevance":0,"is_definition":false,"category":"${CATEGORIES[0]}","reason":"..."}]}`;
+Sadece tek satır JSON dön, boşluksuz: {"items":[{"i":1,"s":3,"r":5,"d":0,"c":"${CATEGORY_NAMES[0]}"},{"i":2,"s":8,"r":7,"d":0,"c":"${CATEGORY_NAMES[1]}","w":"yaygın inanışın tersi"}]}`;
 
 /**
  * @param {Array<{ id: number, lang?: string, hook: string }>} items  kısa sayısal id'ler

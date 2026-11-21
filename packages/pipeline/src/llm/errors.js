@@ -46,20 +46,47 @@ export class LlmOutputError extends Error {
 }
 
 /**
+ * Tek istek sağlayıcının dakikalık sınırından (TPM/OTPM) büyük: Groq "Request too large".
+ * Sadece çağıran `splittable: true` dediyse fırlatılır; çağıran işi (ör. puanlama batch'ini)
+ * ikiye bölüp tekrar dener. Kapasite tükenmesi DEĞİLDİR.
+ */
+export class LlmRequestTooLargeError extends Error {
+  constructor(role, { provider, model, limit, metric, attempts = [], events = [] } = {}) {
+    super(
+      `istek dakikalık sınırdan büyük (role=${role} ${provider}/${model}` +
+        `${metric ? ` ${metric}` : ''}${limit ? ` limit=${limit}` : ''}); iş bölünüp tekrar denenmeli`,
+    );
+    this.name = 'LlmRequestTooLargeError';
+    this.role = role;
+    this.provider = provider;
+    this.model = model;
+    this.limit = limit;
+    this.metric = metric;
+    this.attempts = attempts;
+    this.events = events;
+  }
+}
+
+/**
  * Tek bir sağlayıcı çağrısının sınıflandırılmış hatası (iç kullanım).
- * kind: 'retryable' | 'unavailable' | 'quota' | 'fatal' | 'invalid_json' | 'truncated' | 'empty'
- * (invalid_json, truncated, empty "çıktı hatası"dır; diğerleri kapasite/erişim hatası.)
+ * kind: 'retryable' | 'unavailable' | 'quota' | 'fatal' | 'invalid_json' | 'truncated' | 'empty' | 'too_large'
+ * (invalid_json, truncated, empty, too_large "istek/çıktı hatası"dır; diğerleri kapasite/erişim hatası.)
+ * rateLimit: 429/413 gövdesinden okunan { metric: 'OTPM'|'TPM'|..., limit: N } (varsa).
  */
 export class ProviderCallError extends Error {
-  constructor(kind, message, { status, retryAfterMs, failedGeneration } = {}) {
+  constructor(kind, message, { status, retryAfterMs, failedGeneration, rateLimit } = {}) {
     super(message);
     this.name = 'ProviderCallError';
     this.kind = kind;
     this.status = status;
     this.retryAfterMs = retryAfterMs;
     this.failedGeneration = failedGeneration;
+    this.rateLimit = rateLimit;
   }
 }
 
-/** Çıktı hatası türleri: zincir bunlarla biterse LlmExhaustedError değil LlmOutputError atılır. */
-export const OUTPUT_ERROR_KINDS = Object.freeze(['invalid_json', 'truncated', 'empty']);
+/**
+ * Çıktı/istek hatası türleri: zincir bunlarla biterse LlmExhaustedError değil LlmOutputError atılır
+ * (aday/batch hata sayılır, adım sürer).
+ */
+export const OUTPUT_ERROR_KINDS = Object.freeze(['invalid_json', 'truncated', 'empty', 'too_large']);

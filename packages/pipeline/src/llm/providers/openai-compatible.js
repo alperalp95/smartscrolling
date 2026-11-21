@@ -73,7 +73,9 @@ export function parseOpenAiChatResponse(body) {
 }
 
 const UNAVAILABLE_RE =
-  /model_decommissioned|model_not_found|decommissioned|no such model|model .{0,80}(does not exist|not found|is not supported)|unknown model/i;
+  /model_decommissioned|model_not_found|decommissioned|no such model|model .{0,80}(does not exist|not found|is not supported)|unknown model|model has been deprecated|model .{0,80}(is|was|has been) deprecated|was deprecated on/i;
+// Groq: "Request too large for model ... on output tokens per minute (OTPM): Limit 1000, Requested 1500"
+const TOO_LARGE_RE = /request too large|request_too_large|reduce your message size/i;
 const QUOTA_RE =
   /tokens per day|requests per day|\(TPD\)|\(RPD\)|per[_ ]day|daily free allocation|daily limit|quota exceeded|exceeded your current quota/i;
 const JSON_FAIL_RE = /json_validate_failed|failed to validate json|JSON Mode couldn't be met/i;
@@ -101,6 +103,22 @@ export function parseRetryHintMs(bodyText) {
   return Math.ceil(minutes * 60000 + ms);
 }
 
+/**
+ * 429/413 gövdesindeki dakikalık sınır: "... per minute (OTPM): Limit 1000, Used 850, Requested 400".
+ * @returns {{ metric: string, limit: number, used?: number, requested?: number } | undefined}
+ */
+export function parseRateLimitInfo(bodyText) {
+  const text = String(bodyText ?? '');
+  const m = text.match(/\((OTPM|ITPM|TPM|RPM)\)\s*:?\s*Limit\s+(\d+)/i);
+  if (!m) return undefined;
+  const out = { metric: m[1].toUpperCase(), limit: Number(m[2]) };
+  const used = text.match(/Used\s+(\d+)/i);
+  const requested = text.match(/Requested\s+(\d+)/i);
+  if (used) out.used = Number(used[1]);
+  if (requested) out.requested = Number(requested[1]);
+  return out;
+}
+
 function extractFailedGeneration(bodyText) {
   try {
     const parsed = JSON.parse(bodyText);
@@ -112,25 +130,32 @@ function extractFailedGeneration(bodyText) {
 
 /**
  * HTTP hata yanıtını sınıflandırır.
- * - unavailable: 404 / model kapatıldı / model yok -> hemen sonraki sağlayıcı
+ * - unavailable: 404 / 410 / model kapatıldı (decommissioned, deprecated) / model yok -> hemen sonraki sağlayıcı
  * - quota: günlük kota bitti -> bugün için atla (tekrar denemek boşuna)
- * - retryable: 429 / 5xx -> üstel bekleme
+ * - too_large: tek istek dakikalık sınırdan büyük ("Request too large", 413) -> aynı isteği tekrar
+ *   denemek boşuna; çağıran izin verdiyse işi böler, yoksa sonraki sağlayıcı
+ * - retryable: 429 / 5xx -> bekleme ("try again in Xs" / retry-after'a uyulur)
  * - invalid_json: JSON modu geçerli JSON üretemedi -> tamir denemesi
  * - fatal: diğer 4xx (401/403/400...) -> sonraki sağlayıcı, tekrar yok
  */
 export function classifyHttpFailure(status, bodyText = '', headers) {
   const snippet = String(bodyText).slice(0, 300);
   const msg = `HTTP ${status}: ${snippet}`;
-  if (status === 404 || UNAVAILABLE_RE.test(bodyText)) {
+  if (status === 404 || status === 410 || UNAVAILABLE_RE.test(bodyText)) {
     return new ProviderCallError('unavailable', msg, { status });
   }
   if (status === 429 && QUOTA_RE.test(bodyText)) {
     return new ProviderCallError('quota', msg, { status });
   }
+  const rateLimit = parseRateLimitInfo(bodyText);
+  if (status === 413 || ((status === 429 || status === 400) && TOO_LARGE_RE.test(bodyText))) {
+    return new ProviderCallError('too_large', msg, { status, rateLimit });
+  }
   if (status === 429 || status === 408 || status === 498 || status >= 500) {
     return new ProviderCallError('retryable', msg, {
       status,
       retryAfterMs: parseRetryAfterMs(headers) ?? parseRetryHintMs(bodyText),
+      rateLimit,
     });
   }
   if (JSON_FAIL_RE.test(bodyText)) {

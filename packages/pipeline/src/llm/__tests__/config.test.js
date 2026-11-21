@@ -23,8 +23,18 @@ test('gerçek config dosyası geçerli ve beklenen değerleri içeriyor', () => 
   for (const role of REQUIRED_ROLES) assert.ok(cfg.roles[role], role);
   assert.deepEqual(cfg.roles.scorer.steps.map((s) => s.members.map((m) => `${m.provider}:${m.model}`)), [
     ['groq:qwen/qwen3.8-27b'],
-    ['cloudflare:@cf/qwen/qwen3-30b-a3b-fp8'],
+    ['groq:openai/gpt-oss-20b'],
+    ['cloudflare:@cf/mistralai/mistral-small-3.1-24b-instruct'],
+    ['cloudflare:@cf/meta/llama-4-scout-17b-16e-instruct'],
   ]);
+  // Düşünen Groq yedeği kendi maxTokens'ı ile (rolün 600'ü onu keserdi).
+  assert.equal(cfg.roles.scorer.steps[1].members[0].maxTokens, 1000);
+  assert.ok(!JSON.stringify(cfg.roles).includes('qwen3-30b-a3b-fp8'), 'kapanan Cloudflare Qwen3 30B zincirde olmamalı');
+  assert.deepEqual(cfg.providers.groq.perMinuteLimits['qwen/qwen3.8-27b'], { tokensPerMinute: 8000, outputTokensPerMinute: 1000 });
+  for (const m of ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'default']) {
+    assert.deepEqual(cfg.providers.groq.perMinuteLimits[m], { tokensPerMinute: 8000, outputTokensPerMinute: 1000 }, m);
+  }
+  assert.deepEqual(cfg.providers.cloudflare.neuronsPerMillionTokens['@cf/meta/llama-4-scout-17b-16e-instruct'], { input: 24545, output: 77273 });
   assert.equal(cfg.roles.writer.steps[0].strategy, 'round_robin');
   assert.deepEqual(cfg.roles.writer.steps[0].members.map((m) => m.model), ['openai/gpt-oss-120b', 'openai/gpt-oss-20b']);
   assert.equal(cfg.roles.writer.steps[1].members[0].model, '@cf/openai/gpt-oss-20b');
@@ -43,14 +53,19 @@ test('gerçek config dosyası geçerli ve beklenen değerleri içeriyor', () => 
     { a: cfg.retry.maxAttempts, b: cfg.retry.baseDelayMs, c: cfg.retry.maxDelayMs, t: cfg.retry.requestTimeoutMs },
     { a: 3, b: 2000, c: 30000, t: 60000 },
   );
-  assert.deepEqual(cfg.scoring, { batchSize: 15, passPercent: 30, minSurprise: 6, minTrRelevance: 4 });
+  assert.deepEqual(cfg.scoring, { batchSize: 10, passPercent: 30, minSurprise: 6, minTrRelevance: 4 });
   assert.deepEqual(
     { s: cfg.roles.scorer.maxTokens, w: cfg.roles.writer.maxTokens, v: cfg.roles.verifier.maxTokens, j: cfg.roles.judge.maxTokens },
-    { s: 1500, w: 1500, v: 800, j: 200 },
+    { s: 600, w: 1000, v: 800, j: 200 },
   );
-  // Qwen3 düşünme kapalı: Groq reasoning_effort=none, Cloudflare /no_think yumuşak anahtarı
+  // Groq'a giden maxTokens OTPM (1000) sınırını aşmaz.
+  assert.ok(cfg.roles.scorer.maxTokens <= 1000 && cfg.roles.writer.maxTokens <= 1000);
+  assert.deepEqual(
+    { s: cfg.roles.scorer.expectedOutputTokens, w: cfg.roles.writer.expectedOutputTokens, v: cfg.roles.verifier.expectedOutputTokens },
+    { s: 400, w: 350, v: 250 },
+  );
+  // Qwen3 düşünme kapalı: Groq reasoning_effort=none
   assert.deepEqual(cfg.roles.scorer.steps[0].members[0].params, { reasoning_effort: 'none' });
-  assert.equal(cfg.roles.scorer.steps[1].members[0].userSuffix, ' /no_think');
   assert.deepEqual(cfg.dedup, { duplicateThreshold: 0.92, grayZoneLow: 0.85 });
   assert.deepEqual(cfg.publish, { dailyCount: 100, minStockDays: 7 });
   assert.deepEqual(cfg.writing, { minSentences: 2, maxSentences: 4 });
