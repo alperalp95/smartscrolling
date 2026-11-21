@@ -8,6 +8,8 @@ import { LlmConfigError } from './errors.js';
 export const REQUIRED_ROLES = ['scorer', 'writer', 'verifier', 'judge', 'embedding'];
 export const SUPPORTED_PROVIDERS = ['groq', 'cloudflare', 'gemini'];
 const STRATEGIES = ['round_robin'];
+/** providers.<ad>.perMinuteLimits.<model> alanları (Groq TPM / OTPM). */
+const PER_MINUTE_KEYS = ['tokensPerMinute', 'outputTokensPerMinute'];
 
 export const DEFAULT_CONFIG_PATH = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -73,8 +75,14 @@ function normalizeMember(member, providers, at) {
   if (member.userSuffix !== undefined && typeof member.userSuffix !== 'string') {
     throw new LlmConfigError("'userSuffix' bir metin olmalı (ör. \" /no_think\")", { path: `${at}.userSuffix` });
   }
+  if (member.maxTokens !== undefined && (!Number.isInteger(member.maxTokens) || member.maxTokens <= 0)) {
+    throw new LlmConfigError(`'maxTokens' pozitif bir tam sayı olmalı (şu an: ${JSON.stringify(member.maxTokens)})`, {
+      path: `${at}.maxTokens`,
+    });
+  }
   const out = { provider: member.provider, model: member.model, params: member.params ?? {} };
   if (member.userSuffix) out.userSuffix = member.userSuffix;
+  if (member.maxTokens !== undefined) out.maxTokens = member.maxTokens;
   return out;
 }
 
@@ -138,9 +146,33 @@ function validateProvider(name, p) {
       }
     }
   }
+  const perMinute = p.perMinuteLimits ?? {};
+  if (!isObject(perMinute)) {
+    throw new LlmConfigError("'perMinuteLimits' bir nesne olmalı", { path: `${at}.perMinuteLimits` });
+  }
+  for (const [model, lim] of Object.entries(perMinute)) {
+    if (!isObject(lim)) {
+      throw new LlmConfigError('{ "tokensPerMinute": ..., "outputTokensPerMinute": ... } biçiminde olmalı', {
+        path: `${at}.perMinuteLimits.${model}`,
+      });
+    }
+    for (const [k, v] of Object.entries(lim)) {
+      if (!PER_MINUTE_KEYS.includes(k)) {
+        throw new LlmConfigError(`bilinmeyen alan (geçerli: ${PER_MINUTE_KEYS.join(', ')})`, {
+          path: `${at}.perMinuteLimits.${model}.${k}`,
+        });
+      }
+      if (v !== null && (typeof v !== 'number' || !Number.isFinite(v) || v <= 0)) {
+        throw new LlmConfigError(`pozitif bir sayı ya da null olmalı (şu an: ${JSON.stringify(v)})`, {
+          path: `${at}.perMinuteLimits.${model}.${k}`,
+        });
+      }
+    }
+  }
   return {
     ...p,
     name,
+    perMinuteLimits: perMinute,
     stopAtPercent: pct,
     jsonMode: p.jsonMode === true,
     dailyLimits: { perModel: limits.perModel ?? {}, provider: limits.provider ?? {} },
@@ -219,11 +251,13 @@ export function validateConfig(rawConfig) {
   }
 
   for (const [role, def] of Object.entries(roles)) {
-    if (def.maxTokens === undefined) continue;
-    if (!Number.isInteger(def.maxTokens) || def.maxTokens <= 0) {
-      throw new LlmConfigError(`'maxTokens' pozitif bir tam sayı olmalı (şu an: ${JSON.stringify(def.maxTokens)})`, {
-        path: `roles.${role}.maxTokens`,
-      });
+    for (const key of ['maxTokens', 'expectedOutputTokens']) {
+      if (def[key] === undefined) continue;
+      if (!Number.isInteger(def[key]) || def[key] <= 0) {
+        throw new LlmConfigError(`'${key}' pozitif bir tam sayı olmalı (şu an: ${JSON.stringify(def[key])})`, {
+          path: `roles.${role}.${key}`,
+        });
+      }
     }
   }
 

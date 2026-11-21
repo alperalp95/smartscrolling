@@ -118,35 +118,42 @@ test('istek zaman aşımı (requestTimeoutMs) iptal eder ve tekrar dener', async
   assert.match(llm.events[0].error, /zaman aşımı \(20 ms\)/);
 });
 
-test('429 maxAttempts kadar -> yedeğe geçer', async () => {
+test('429 maxAttempts kadar -> yedeğe geçer (iki Groq puanlayıcı da dolu → Cloudflare Mistral)', async () => {
   const { llm, fetch, sleep } = setup((call) => (isGroq(call) ? rateLimited() : chatOk('yedekten', { prompt: 1000, completion: 1000 })));
 
   const res = await llm.chat('scorer', { messages: MESSAGES });
 
   assert.equal(res.provider, 'cloudflare');
-  assert.equal(res.model, '@cf/qwen/qwen3-30b-a3b-fp8');
-  assert.equal(fetch.calls.filter(isGroq).length, 3);
+  assert.equal(res.model, '@cf/mistralai/mistral-small-3.1-24b-instruct');
+  assert.equal(fetch.calls.filter(isGroq).length, 6, 'qwen 3 + gpt-oss-20b 3 deneme');
   assert.equal(fetch.calls.filter(isCloudflare).length, 1);
-  assert.equal(fetch.calls[3].url, 'https://api.cloudflare.com/client/v4/accounts/acc123/ai/v1/chat/completions');
-  assert.equal(fetch.calls[3].headers.authorization, `Bearer ${TEST_ENV.CLOUDFLARE_API_TOKEN}`);
-  assert.deepEqual(sleep.waits, [2000, 4000]);
-  // Neuron tahmini: 1000*4625/1e6 + 1000*30475/1e6 = 35.1
-  assert.equal(res.usage.neurons, 35.1);
+  assert.equal(fetch.calls[6].url, 'https://api.cloudflare.com/client/v4/accounts/acc123/ai/v1/chat/completions');
+  assert.equal(fetch.calls[6].headers.authorization, `Bearer ${TEST_ENV.CLOUDFLARE_API_TOKEN}`);
+  assert.deepEqual(sleep.waits, [2000, 4000, 2000, 4000]);
+  // Neuron tahmini: 1000*31876/1e6 + 1000*50488/1e6 = 82.364
+  assert.equal(res.usage.neurons, 82.364);
   assert.ok(llm.events.some((e) => e.type === 'provider_failed' && e.provider === 'groq'));
 });
 
-test('404 decommissioned -> anında yedeğe geçer + model_unavailable olayı', async () => {
+test('404 decommissioned -> anında yedeğe geçer + model_unavailable olayı; aynı run’da tekrar denenmez', async () => {
+  const isQwen = (call) => isGroq(call) && call.body.model === 'qwen/qwen3.8-27b';
   const { llm, fetch, sleep } = setup((call) =>
-    isGroq(call)
+    isQwen(call)
       ? json(404, { error: { message: 'The model `qwen/qwen3.8-27b` has been decommissioned', code: 'model_decommissioned' } })
       : chatOk('yedek'),
   );
 
   const res = await llm.chat('scorer', { messages: MESSAGES });
 
-  assert.equal(res.provider, 'cloudflare');
-  assert.equal(fetch.calls.filter(isGroq).length, 1);
+  assert.equal(res.provider, 'groq');
+  assert.equal(res.model, 'openai/gpt-oss-20b');
+  assert.equal(fetch.calls.filter(isQwen).length, 1);
   assert.deepEqual(sleep.waits, []);
+  // İkinci çağrıda kapanan model hiç denenmez (tek model_unavailable olayı).
+  const res2 = await llm.chat('scorer', { messages: MESSAGES });
+  assert.equal(res2.model, 'openai/gpt-oss-20b');
+  assert.equal(fetch.calls.filter(isQwen).length, 1);
+  assert.equal(llm.events.filter((e) => e.type === 'model_unavailable').length, 1);
   const ev = llm.events.find((e) => e.type === 'model_unavailable');
   assert.ok(ev);
   assert.equal(ev.provider, 'groq');
@@ -161,7 +168,7 @@ test('400 + model_decommissioned kodu da model_unavailable sayılır', async () 
   );
   const res = await llm.chat('scorer', { messages: MESSAGES });
   assert.equal(res.provider, 'cloudflare');
-  assert.equal(fetch.calls.filter(isGroq).length, 1);
+  assert.equal(fetch.calls.filter(isGroq).length, 2, 'iki Groq üyesi birer kez');
   assert.ok(llm.events.some((e) => e.type === 'model_unavailable' && e.provider === 'groq'));
 });
 
@@ -181,8 +188,10 @@ test('bütçe %90 -> sağlayıcı atlanır (model başına istek sınırı)', as
 
   const res = await llm.chat('scorer', { messages: MESSAGES });
 
-  assert.equal(res.provider, 'cloudflare');
-  assert.equal(fetch.calls.filter(isGroq).length, 0);
+  // Sınır model başına: qwen atlanır, Groq'taki ikinci puanlayıcı (gpt-oss-20b) kullanılır.
+  assert.equal(res.provider, 'groq');
+  assert.equal(res.model, 'openai/gpt-oss-20b');
+  assert.equal(fetch.calls.filter((c) => c.body.model === 'qwen/qwen3.8-27b').length, 0);
   const ev = llm.events.find((e) => e.type === 'budget_skip');
   assert.equal(ev.provider, 'groq');
   assert.equal(ev.metric, 'requests');
@@ -215,9 +224,15 @@ test('bütçe sayacı kullanım biriktikçe sağlayıcıyı kapatır', async () 
   const fetch = fakeFetch(() => chatOk('x'));
   const llm = createLlm(config, { env: TEST_ENV, fetch, sleep: fakeSleep(), now: () => FIXED_NOW });
 
-  const providers = [];
-  for (let i = 0; i < 3; i += 1) providers.push((await llm.chat('scorer', { messages: MESSAGES })).provider);
-  assert.deepEqual(providers, ['groq', 'groq', 'cloudflare']);
+  const models = [];
+  for (let i = 0; i < 5; i += 1) models.push((await llm.chat('scorer', { messages: MESSAGES })).model);
+  assert.deepEqual(models, [
+    'qwen/qwen3.8-27b',
+    'qwen/qwen3.8-27b',
+    'openai/gpt-oss-20b',
+    'openai/gpt-oss-20b',
+    '@cf/mistralai/mistral-small-3.1-24b-instruct',
+  ]);
 });
 
 test('gün değişince sayaç sıfırlanır (UTC)', async () => {
@@ -228,10 +243,11 @@ test('gün değişince sayaç sıfırlanır (UTC)', async () => {
   const fetch = fakeFetch(() => chatOk('x'));
   const llm = createLlm(config, { env: TEST_ENV, fetch, sleep: fakeSleep(), now: () => nowValue });
 
-  assert.equal((await llm.chat('scorer', { messages: MESSAGES })).provider, 'groq');
+  assert.equal((await llm.chat('scorer', { messages: MESSAGES })).model, 'qwen/qwen3.8-27b');
+  assert.equal((await llm.chat('scorer', { messages: MESSAGES })).model, 'openai/gpt-oss-20b');
   assert.equal((await llm.chat('scorer', { messages: MESSAGES })).provider, 'cloudflare');
   nowValue = Date.parse('2026-11-21T00:01:00Z');
-  assert.equal((await llm.chat('scorer', { messages: MESSAGES })).provider, 'groq');
+  assert.equal((await llm.chat('scorer', { messages: MESSAGES })).model, 'qwen/qwen3.8-27b');
 });
 
 test('tüm zincir dolu -> LlmExhaustedError', async () => {
@@ -244,13 +260,18 @@ test('tüm zincir dolu -> LlmExhaustedError', async () => {
       assert.equal(err.role, 'scorer');
       assert.deepEqual(
         err.attempts.map((a) => `${a.provider}/${a.model}`),
-        ['groq/qwen/qwen3.8-27b', 'cloudflare/@cf/qwen/qwen3-30b-a3b-fp8'],
+        [
+          'groq/qwen/qwen3.8-27b',
+          'groq/openai/gpt-oss-20b',
+          'cloudflare/@cf/mistralai/mistral-small-3.1-24b-instruct',
+          'cloudflare/@cf/meta/llama-4-scout-17b-16e-instruct',
+        ],
       );
       assert.ok(err.events.length > 0);
       return true;
     },
   );
-  assert.equal(fetch.calls.length, 6);
+  assert.equal(fetch.calls.length, 12);
 });
 
 test('günlük kota (TPD) 429 -> tekrar denenmez, model bugün için kapanır', async () => {
@@ -258,13 +279,13 @@ test('günlük kota (TPD) 429 -> tekrar denenmez, model bugün için kapanır', 
     isGroq(call) ? rateLimited({}, 'Rate limit reached ... on tokens per day (TPD): Limit 200000') : chatOk('cf'),
   );
   assert.equal((await llm.chat('scorer', { messages: MESSAGES })).provider, 'cloudflare');
-  assert.equal(fetch.calls.filter(isGroq).length, 1);
+  assert.equal(fetch.calls.filter(isGroq).length, 2, 'iki Groq üyesi birer kez');
   assert.deepEqual(sleep.waits, []);
   assert.ok(llm.events.some((e) => e.type === 'quota_exhausted' && e.scope === 'model'));
 
   // İkinci çağrıda Groq hiç denenmez
   await llm.chat('scorer', { messages: MESSAGES });
-  assert.equal(fetch.calls.filter(isGroq).length, 1);
+  assert.equal(fetch.calls.filter(isGroq).length, 2);
 });
 
 test('anahtar env’de yoksa sağlayıcı atlanır; anahtar değeri hiçbir yere yazılmaz', async () => {

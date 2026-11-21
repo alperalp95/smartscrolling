@@ -9,6 +9,9 @@
 //     yeni bilgi ekleme") → onarılmış kart yeniden doğrulanır.
 //       · ikinci tur supported → verified
 //       · ikinci turda unsupported → rejected:unsupported_claim; yalnız unclear → rejected:unclear_claim
+//   - Başlık da bir iddiadır (ilk iddia) ve ayrıca anlam/çeviri uyumu sorulur (title_match).
+//     title_match=false → başlık iddiası unsupported sayılır (kind: 'title') → onarım turu;
+//     onarımda yazara "başlık metindeki olguyla aynı şeyi söylemiyor / terim yanlış çevrilmiş" denir.
 //   - En fazla 1 onarım turu (en fazla 2 doğrulama + 1 yazar çağrısı).
 // Onarım da kod kurallarından geçer (ihlal → write_rules, skip → writer_skip; ek retry yok).
 import { contentHash } from '../../dedup/index.js';
@@ -29,8 +32,23 @@ const VERDICT_ALIASES = {
   belirsiz: 'unclear',
 };
 
-/** Doğrulayıcı çıktısını normalize eder; tanınmayan karar "unclear" sayılır. */
-export function parseVerification(json) {
+const TITLE_MATCH = { true: true, yes: true, evet: true, uyumlu: true, false: false, no: false, hayir: false, hayır: false, uyumsuz: false };
+
+/** title_match alanı: true/false (ya da "evet"/"hayır"...); yoksa null. */
+export function parseTitleMatch(json) {
+  const v = json?.title_match ?? json?.titleMatch;
+  if (typeof v === 'boolean') return v;
+  if (typeof v === 'string') return TITLE_MATCH[v.trim().toLocaleLowerCase('tr-TR')] ?? null;
+  return null;
+}
+
+/**
+ * Doğrulayıcı çıktısını normalize eder; tanınmayan karar "unclear" sayılır.
+ * title_match=false ise başlık için unsupported bir iddia (kind: 'title') eklenir → onarım turu.
+ * @param {object} json
+ * @param {{ title?: string }} [card]
+ */
+export function parseVerification(json, { title } = {}) {
   const list = Array.isArray(json?.claims) ? json.claims : Array.isArray(json) ? json : null;
   if (!list || list.length === 0) return { ok: false, error: 'doğrulayıcı iddia listesi döndürmedi' };
   const claims = list
@@ -44,12 +62,21 @@ export function parseVerification(json) {
       };
     });
   if (claims.length === 0) return { ok: false, error: 'doğrulayıcı iddia listesi boş' };
+  const titleMatch = parseTitleMatch(json);
+  if (titleMatch === false) {
+    claims.unshift({
+      claim: `Başlık: ${String(title ?? '').trim() || '(başlık)'}`.slice(0, 300),
+      verdict: 'unsupported',
+      why: String(json?.title_why ?? json?.titleWhy ?? 'başlık metindeki olguyla uyuşmuyor').slice(0, 200),
+      kind: 'title',
+    });
+  }
   const verdict = claims.some((c) => c.verdict === 'unsupported')
     ? 'unsupported'
     : claims.some((c) => c.verdict === 'unclear')
       ? 'unclear'
       : 'supported';
-  return { ok: true, claims, verdict };
+  return { ok: true, claims, verdict, ...(titleMatch === null ? {} : { title_match: titleMatch }) };
 }
 
 async function verifyOnce(llm, draft, support, { hook, maxTokens = VERIFY_MAX_TOKENS } = {}) {
@@ -58,9 +85,13 @@ async function verifyOnce(llm, draft, support, { hook, maxTokens = VERIFY_MAX_TO
     json: true,
     maxTokens,
   });
-  const parsed = parseVerification(res?.json);
+  const parsed = parseVerification(res?.json, { title: draft.title });
   if (!parsed.ok) throw new Error(parsed.error);
   return { ...parsed, model: res?.model ?? null };
+}
+
+function roundRecord(r) {
+  return { verdict: r.verdict, claims: r.claims, model: r.model, ...(r.title_match === undefined ? {} : { title_match: r.title_match }) };
 }
 
 function draftJson(draft) {
@@ -88,7 +119,7 @@ export async function runVerify(deps, { limit = 50 } = {}) {
     // Kanıt = kanca + destek paragrafı (kanca editörlerce kaynaklı).
     const evidence = { hook: cand.hook_text, maxTokens: verifyMax };
     const first = await verifyOnce(deps.llm, draft, support, evidence);
-    rounds.push({ verdict: first.verdict, claims: first.claims, model: first.model });
+    rounds.push(roundRecord(first));
     const base = { ...cand.scores };
     let repair = null;
     const verification = () => ({ rounds, ...(repair ? { repair } : {}), checked_at: nowIso(deps.now) });
@@ -96,7 +127,7 @@ export async function runVerify(deps, { limit = 50 } = {}) {
     if (first.verdict !== 'supported') {
       // Tek onarım turu: unsupported + unclear iddialar (gerekçeleriyle) yazara geri gider.
       const problems = first.claims.filter((c) => c.verdict !== 'supported');
-      repair = { for: first.verdict, claims: problems.map((c) => c.claim) };
+      repair = { for: first.verdict, claims: problems.map((c) => c.claim), ...(first.title_match === false ? { title: true } : {}) };
       const { messages } = buildWritePrompt(writeInput(cand, limits));
       const res = await deps.llm.chat('writer', {
         messages: [...messages, ...buildRepairMessages(draftJson(draft), problems, limits)],
@@ -127,7 +158,7 @@ export async function runVerify(deps, { limit = 50 } = {}) {
         rewritten_for: first.verdict,
       };
       const second = await verifyOnce(deps.llm, draft, support, evidence);
-      rounds.push({ verdict: second.verdict, claims: second.claims, model: second.model });
+      rounds.push(roundRecord(second));
       if (second.verdict !== 'supported') {
         const reason = second.verdict === 'unsupported' ? 'unsupported_claim' : 'unclear_claim';
         await reject(deps, cand, reason, stats, { scores: { ...base, draft, verification: verification() } });

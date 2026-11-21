@@ -40,9 +40,9 @@ test('puanlayıcı: Groq geçersiz JSON (tamir de bozuk) → Cloudflare yedeği 
   const res = await llm.chat('scorer', { messages: MESSAGES, json: true });
 
   assert.equal(res.provider, 'cloudflare');
-  assert.equal(res.model, '@cf/qwen/qwen3-30b-a3b-fp8');
+  assert.equal(res.model, '@cf/mistralai/mistral-small-3.1-24b-instruct');
   assert.deepEqual(res.json, { items: [{ id: 1, surprise: 7 }] });
-  assert.equal(fetch.calls.filter(isGroq).length, 2, 'ilk istek + bir tamir');
+  assert.equal(fetch.calls.filter(isGroq).length, 4, 'iki Groq üyesi × (ilk istek + bir tamir)');
   assert.equal(fetch.calls.filter(isCloudflare).length, 1);
   const failed = llm.events.find((e) => e.type === 'provider_failed');
   assert.equal(failed.kind, 'invalid_json');
@@ -52,7 +52,7 @@ test('puanlayıcı: Groq geçersiz JSON (tamir de bozuk) → Cloudflare yedeği 
   const groq = snap.providers.groq.models['qwen/qwen3.8-27b'];
   assert.equal(groq.failures, 1);
   assert.equal(groq.lastError.kind, 'invalid_json');
-  assert.equal(snap.providers.cloudflare.models['@cf/qwen/qwen3-30b-a3b-fp8'].requests, 1);
+  assert.equal(snap.providers.cloudflare.models['@cf/mistralai/mistral-small-3.1-24b-instruct'].requests, 1);
 });
 
 test('tüm zincir sadece JSON hatası verirse LlmOutputError (tükenme DEĞİL); nedenler mesajda', async () => {
@@ -61,10 +61,10 @@ test('tüm zincir sadece JSON hatası verirse LlmOutputError (tükenme DEĞİL);
   assert.ok(err instanceof LlmOutputError, err?.name);
   assert.ok(!(err instanceof LlmExhaustedError));
   assert.equal(err.name, 'LlmOutputError');
-  assert.equal(err.attempts.length, 2);
+  assert.equal(err.attempts.length, 4);
   assert.ok(err.attempts.every((a) => a.kind === 'invalid_json'));
   assert.match(err.message, /groq\/qwen\/qwen3\.8-27b: invalid_json/);
-  assert.match(err.message, /cloudflare\/@cf\/qwen\/qwen3-30b-a3b-fp8: invalid_json/);
+  assert.match(err.message, /cloudflare\/@cf\/mistralai\/mistral-small-3\.1-24b-instruct: invalid_json/);
 });
 
 test('kapasite hatası + JSON hatası karışık → yine LlmOutputError; sadece kapasite → LlmExhaustedError', async () => {
@@ -114,7 +114,7 @@ test('finish_reason=length JSON olmayan çağrıda da hata; geçerli JSON gibi g
   assert.ok(err.attempts.every((a) => a.kind === 'truncated'));
 });
 
-test('Qwen3 düşünme kapalı: Groq gövdesinde reasoning_effort=none, Cloudflare isteğinde son kullanıcı mesajına " /no_think"', async () => {
+test('Qwen3 düşünme kapalı (Groq reasoning_effort=none); userSuffix config’te verilirse son kullanıcı mesajına eklenir', async () => {
   const { llm, fetch } = setup((call) => (isGroq(call) ? json(404, { error: { message: 'model_not_found' } }) : chatOk('{"ok":true}')));
   const msgs = [
     { role: 'system', content: 'sistem' },
@@ -125,9 +125,19 @@ test('Qwen3 düşünme kapalı: Groq gövdesinde reasoning_effort=none, Cloudfla
   const [cfCall] = fetch.calls.filter(isCloudflare);
   assert.equal(groqCall.body.reasoning_effort, 'none');
   assert.equal(groqCall.body.messages.at(-1).content, 'kancalar', 'Groq mesajı değişmez');
-  assert.equal(cfCall.body.messages.at(-1).content, 'kancalar /no_think');
-  assert.equal(cfCall.body.messages[0].content, 'sistem');
+  assert.equal(cfCall.body.model, '@cf/mistralai/mistral-small-3.1-24b-instruct');
+  assert.equal(cfCall.body.messages.at(-1).content, 'kancalar', 'Mistral düşünmez; /no_think eklenmez');
   assert.equal(msgs[1].content, 'kancalar', 'çağıranın mesaj dizisi değişmez');
+
+  // userSuffix mekanizması (ör. ileride bir Qwen3 yedeği için " /no_think") hâlâ çalışır.
+  const config = realConfig();
+  config.roles.scorer.steps[2].members[0].userSuffix = ' /no_think';
+  const fetch2 = fakeFetch((call) => (isGroq(call) ? json(404, { error: { message: 'model_not_found' } }) : chatOk('{"ok":true}')));
+  const llm2 = createLlm(config, { env: TEST_ENV, fetch: fetch2, sleep: fakeSleep(), now: () => FIXED_NOW });
+  await llm2.chat('scorer', { messages: msgs, json: true });
+  const [cf2] = fetch2.calls.filter(isCloudflare);
+  assert.equal(cf2.body.messages.at(-1).content, 'kancalar /no_think');
+  assert.equal(cf2.body.messages[0].content, 'sistem');
 });
 
 test('JSON olmayan yanıtta da <think> ayıklanır; sadece düşünce dönerse hata (empty) ve yedek denenir', async () => {
@@ -148,7 +158,7 @@ test('maxTokens çağrıda verilmezse config roles.<rol>.maxTokens kullanılır'
   await llm.chat('scorer', { messages: MESSAGES, json: true, maxTokens: 321 });
   assert.deepEqual(
     fetch.calls.map((c) => c.body.max_completion_tokens),
-    [1500, 200, 321],
+    [600, 200, 321],
   );
 });
 

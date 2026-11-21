@@ -7,10 +7,18 @@
 //
 // API anahtarları sadece env'den okunur; hiçbir log/olay/hata mesajına yazılmaz.
 import { ensureConfig, loadConfig, validateConfig } from './config.js';
-import { LlmConfigError, LlmExhaustedError, LlmOutputError, OUTPUT_ERROR_KINDS, ProviderCallError } from './errors.js';
+import {
+  LlmConfigError,
+  LlmExhaustedError,
+  LlmOutputError,
+  LlmRequestTooLargeError,
+  OUTPUT_ERROR_KINDS,
+  ProviderCallError,
+} from './errors.js';
 import { extractJson, JSON_REPAIR_INSTRUCTION, stripThinking } from './json.js';
 import { adapters } from './providers/index.js';
 import { classifyHttpFailure } from './providers/openai-compatible.js';
+import { createRateLimiter, estimateMessageTokens } from './rate.js';
 import {
   createFileUsageStore,
   createMemoryUsageStore,
@@ -24,6 +32,7 @@ export {
   LlmConfigError,
   LlmExhaustedError,
   LlmOutputError,
+  LlmRequestTooLargeError,
   createFileUsageStore,
   createMemoryUsageStore,
   createUsageTracker,
@@ -82,6 +91,8 @@ export function createLlm(config, deps = {}) {
   });
   const events = [];
   const rrCounters = new Map();
+  // Bu run'da "model kapatıldı / yok" (404/410) diyen modeller: sonraki çağrılarda denenmez.
+  const unavailable = new Map();
   const { maxAttempts, baseDelayMs, maxDelayMs, requestTimeoutMs } = cfg.retry;
   // Olay/hata metinlerinden silinecek değerler: tüm sağlayıcıların anahtar ve hesap kimlikleri.
   const secrets = Object.values(cfg.providers)
@@ -96,6 +107,8 @@ export function createLlm(config, deps = {}) {
     deps.onEvent?.(full);
     return full;
   }
+
+  const rate = createRateLimiter({ providers: cfg.providers, now, sleep, emit });
 
   function roleDef(role) {
     const def = cfg.roles[role];
@@ -161,6 +174,8 @@ export function createLlm(config, deps = {}) {
       try {
         return await fn();
       } catch (err) {
+        // 429 / "Request too large" gövdesindeki "Limit N" → o modelin dakikalık sınırı güncellenir.
+        if (err instanceof ProviderCallError && err.rateLimit) rate.learn(ctx.provider, ctx.model, err.rateLimit, ctx);
         if (!(err instanceof ProviderCallError) || err.kind !== 'retryable' || attempt >= maxAttempts) throw err;
         const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
         const delayMs = Math.min(maxDelayMs, Math.max(backoff, err.retryAfterMs ?? 0));
@@ -170,7 +185,7 @@ export function createLlm(config, deps = {}) {
     }
   }
 
-  async function runChain(role, perMember, { only } = {}) {
+  async function runChain(role, perMember, { only, splittable = false } = {}) {
     const attempts = [];
     const firstEvent = events.length;
     let candidates = candidatesFor(role);
@@ -180,6 +195,11 @@ export function createLlm(config, deps = {}) {
       const { provider, model } = member;
       const adapter = adapters[provider];
       const providerCfg = cfg.providers[provider];
+      const gone = unavailable.get(`${provider}/${model}`);
+      if (gone) {
+        attempts.push({ provider, model, kind: 'unavailable', reason: `model bu run'da kapalı (${gone})` });
+        continue;
+      }
       const creds = adapter.credentials(providerCfg, env);
       if (!creds.ok) {
         emit({ type: 'missing_credentials', role, provider, model, env: creds.missing });
@@ -198,7 +218,21 @@ export function createLlm(config, deps = {}) {
         if (!(err instanceof ProviderCallError)) throw err;
         const error = redactSecrets(err.message, secrets).replace(/\s+/g, ' ').slice(0, 200);
         if (err.kind === 'unavailable') {
+          unavailable.set(`${provider}/${model}`, err.status ? `HTTP ${err.status}` : 'unavailable');
           emit({ type: 'model_unavailable', role, provider, model, status: err.status, error });
+        } else if (err.kind === 'too_large') {
+          emit({ type: 'request_too_large', role, provider, model, status: err.status, ...(err.rateLimit ?? {}), error });
+          if (splittable) {
+            await usage.recordFailure(provider, model, { kind: err.kind, status: err.status, message: error });
+            throw new LlmRequestTooLargeError(role, {
+              provider,
+              model,
+              limit: err.rateLimit?.limit,
+              metric: err.rateLimit?.metric,
+              attempts: [...attempts, { provider, model, kind: err.kind, reason: `too_large: ${error.slice(0, 120)}` }],
+              events: events.slice(firstEvent),
+            });
+          }
         } else if (err.kind === 'quota') {
           const scope = Object.keys(providerCfg.dailyLimits.provider ?? {}).length ? 'provider' : 'model';
           await usage.markExhausted(provider, model, scope);
@@ -233,33 +267,51 @@ export function createLlm(config, deps = {}) {
 
   /**
    * @param {string} role  scorer | writer | verifier | judge
-   * @param {{ messages: Array<{role:string, content:string}>, json?: boolean, maxTokens?: number }} req
+   * splittable: true → tek istek dakikalık sınırdan büyükse ("Request too large") zincirde ilerlemek
+   * yerine LlmRequestTooLargeError fırlatılır; çağıran işi ikiye bölüp tekrar dener.
+   * @param {{ messages: Array<{role:string, content:string}>, json?: boolean, maxTokens?: number, splittable?: boolean }} req
    */
-  async function chat(role, { messages, json = false, maxTokens: requestedMaxTokens } = {}) {
+  async function chat(role, { messages, json = false, maxTokens: requestedMaxTokens, splittable = false } = {}) {
     const def = roleDef(role);
-    // Öncelik: çağrıdaki maxTokens > config roles.<rol>.maxTokens.
-    const maxTokens = requestedMaxTokens ?? def.maxTokens;
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new LlmConfigError('chat: messages boş olamaz');
     }
 
     return runChain(role, async ({ member, adapter, providerCfg, creds }) => {
       const { provider, model, params, userSuffix } = member;
+      // Öncelik: zincir üyesinin maxTokens'ı (modele özgü, ör. düşünen yedek model) >
+      // çağrıdaki maxTokens > config roles.<rol>.maxTokens.
+      const maxTokens = member.maxTokens ?? requestedMaxTokens ?? def.maxTokens;
       const ctx = { role, provider, model };
       const total = { inputTokens: 0, outputTokens: 0 };
 
       const send = async (msgs) => {
+        const finalMessages = withUserSuffix(msgs, userSuffix);
         const req = adapter.chatRequest({
           creds,
           providerCfg,
           model,
-          messages: withUserSuffix(msgs, userSuffix),
+          messages: finalMessages,
           json,
           maxTokens,
           params,
         });
+        // Dakikalık pencere ihtiyacı: girdi tahmini + bu istek için ayrılan çıktı
+        // (roles.<rol>.expectedOutputTokens; en çok maxTokens ve OTPM kadar).
+        const limits = rate.limitsFor(provider, model);
+        const outCaps = [def.expectedOutputTokens, maxTokens, limits.outputTokensPerMinute].filter(
+          (v) => Number.isFinite(v) && v > 0,
+        );
+        const need = { input: estimateMessageTokens(finalMessages), output: outCaps.length ? Math.min(...outCaps) : 0 };
         try {
-          const out = await withRetry(ctx, () => callOnce(req, adapter.parseChat));
+          const out = await withRetry(ctx, async () => {
+            await rate.acquire(provider, model, need, ctx);
+            return callOnce(req, adapter.parseChat);
+          });
+          rate.record(provider, model, {
+            input: out.usage?.inputTokens || need.input,
+            output: out.usage?.outputTokens ?? need.output,
+          });
           addUsage(total, out.usage, await recordUsage(provider, model, out.usage));
           // finish_reason=length: yanıt maxTokens'ta kesildi → tamir de kesilir; doğrudan yedeğe.
           if (out.finishReason === 'length') {
@@ -301,7 +353,7 @@ export function createLlm(config, deps = {}) {
       const result = { text, provider, model, usage: total };
       if (json) result.json = parsed.value;
       return result;
-    });
+    }, { splittable });
   }
 
   /**
@@ -350,5 +402,5 @@ export function createLlm(config, deps = {}) {
     return { vectors, provider: pinned.provider, model: pinned.model, usage: total };
   }
 
-  return { chat, embed, events, usage, config: cfg };
+  return { chat, embed, events, usage, rate, config: cfg };
 }

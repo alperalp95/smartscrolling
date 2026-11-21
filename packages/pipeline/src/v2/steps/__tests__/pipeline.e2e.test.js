@@ -153,5 +153,8 @@ test('uçtan uca: 10 aday → 2 queued, 8 farklı red nedeni', async () => {
   assert.equal(llm.count('verifier'), 5);
   assert.equal(stats.score.advanced, 5);
   assert.equal(stats.enqueue.advanced, 2);
-  assert.ok(Object.values(stats).every((s) => s.deferred === 0 && s.failed === 0));
+  const { modelEvents, rateEvents, ...stepStats } = stats;
+  assert.deepEqual(modelEvents, [], 'kapanan model yok');
+  assert.deepEqual(rateEvents, { waits: 0, waitMs: 0, tooLarge: 0, learned: [] });
+  assert.ok(Object.values(stepStats).every((s) => s.deferred === 0 && s.failed === 0));
 });

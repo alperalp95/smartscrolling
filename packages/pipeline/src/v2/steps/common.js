@@ -101,6 +101,11 @@ export function isExhausted(err) {
   return err?.name === 'LlmExhaustedError';
 }
 
+/** Tek istek sağlayıcının dakikalık sınırından büyük ("Request too large"): çağıran işi böler. */
+export function isTooLarge(err) {
+  return err?.name === 'LlmRequestTooLargeError';
+}
+
 /** Config hatası: adayı cezalandırmak yerine run durur. */
 export function isFatal(err) {
   return err?.name === 'LlmConfigError';

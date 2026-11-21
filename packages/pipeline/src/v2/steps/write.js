@@ -1,5 +1,6 @@
 // src/v2/steps/write.js
 // Yaz: `scored` + destek paragrafı olan aday → Türkçe kart taslağı (scores.draft), durum `written`.
+// Başlık normalize edilir (kod): ilk harf büyük (Türkçe: i → İ), sondaki nokta silinir.
 // Kod tarafı kurallar (basit kurallar, içerik regex'i yok): başlık 12–58 karakter,
 // başlıkta "nedir"/"kimdir" yok, başlık Türkçe cümle düzeninde (Her Kelimesi Büyük değil),
 // gövde config writing.minSentences–maxSentences cümle (varsayılan 2–4), Türkçe karakter var.
@@ -103,9 +104,25 @@ function estimateReadTime(content) {
   return Math.min(60, Math.max(10, Math.round(words / 3)));
 }
 
-/** Model çıktısını kart taslağına çevirir (etiket ve okuma süresi normalize edilir). */
+/**
+ * Başlık düzeltmesi (kod kuralı): ilk harf büyük (toLocaleUpperCase('tr-TR'): "istanbul" →
+ * "İstanbul"), sondaki nokta(lar) silinir. Baştaki tırnak/parantez atlanır; "iPhone" gibi ikinci
+ * harfi zaten büyük olan marka adlarına dokunulmaz. Soru/ünlem işareti korunur.
+ */
+export function normalizeTitle(raw) {
+  let title = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  title = title.replace(/\s*\.+$/u, '').trim();
+  const m = title.match(/^([^\p{L}\p{N}]*)(\p{L})(\p{L})?/u);
+  if (m && /\p{Ll}/u.test(m[2]) && !(m[3] && /\p{Lu}/u.test(m[3]))) {
+    const at = m[1].length;
+    title = title.slice(0, at) + m[2].toLocaleUpperCase('tr-TR') + title.slice(at + m[2].length);
+  }
+  return title;
+}
+
+/** Model çıktısını kart taslağına çevirir (başlık, etiket ve okuma süresi normalize edilir). */
 export function normalizeDraft(json) {
-  const title = String(json?.title ?? '').replace(/\s+/g, ' ').trim();
+  const title = normalizeTitle(json?.title);
   const content = String(json?.content ?? '').replace(/\s+/g, ' ').trim();
   const tags = [
     ...new Set(

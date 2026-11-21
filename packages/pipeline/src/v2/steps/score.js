@@ -1,5 +1,8 @@
 // src/v2/steps/score.js
-// Puanla: Tekrar-1'i geçmiş `new` adaylar config.scoring.batchSize'lık gruplarla tek çağrıda.
+// Puanla: Tekrar-1'i geçmiş `new` adaylar config.scoring.batchSize'lık (10) gruplarla tek çağrıda.
+// Model çıktısı kısa anahtarlı (i, s, r, d, c, w); eski uzun anahtarlar da kabul edilir.
+// Sağlayıcı "Request too large" derse (tek istek dakikalık sınırı aşıyor) batch ikiye bölünüp
+// tekrar denenir (tek adaya inene kadar; tek aday yine büyükse zincirdeki yedek modele gider).
 // wow = 0.6*surprise + 0.4*tr_relevance.
 // Eleme sırası: is_definition → definition; surprise < scoring.minSurprise (6) → low_surprise;
 // tr_relevance < scoring.minTrRelevance (4) → low_relevance; kategori tanınmazsa → invalid_category.
@@ -10,6 +13,7 @@ import { SCORE_MAX_TOKENS, buildScorePrompt } from '../prompts/score.js';
 import {
   STATUS,
   isExhausted,
+  isTooLarge,
   isFatal,
   markDeferred,
   newStats,
@@ -48,9 +52,14 @@ function toScore(v) {
 
 function toBool(v) {
   if (typeof v === 'boolean') return v;
-  if (v === 'true') return true;
-  if (v === 'false') return false;
+  if (v === 'true' || v === 1 || v === '1') return true;
+  if (v === 'false' || v === 0 || v === '0') return false;
   return null;
+}
+
+/** Kısa anahtar (i, s, r, d, c, w) ya da eski uzun anahtar. */
+function pick(item, short, long) {
+  return item[short] !== undefined ? item[short] : item[long];
 }
 
 /**
@@ -59,21 +68,23 @@ function toBool(v) {
  */
 export function parseScoreItem(item) {
   if (!item || typeof item !== 'object') return { ok: false, error: 'öğe nesne değil' };
-  const surprise = toScore(item.surprise);
-  const tr = toScore(item.tr_relevance);
-  const isDef = toBool(item.is_definition);
+  const surprise = toScore(pick(item, 's', 'surprise'));
+  const tr = toScore(pick(item, 'r', 'tr_relevance'));
+  const isDef = toBool(pick(item, 'd', 'is_definition'));
   if (surprise === null || tr === null || isDef === null) {
-    return { ok: false, error: 'surprise/tr_relevance/is_definition eksik ya da geçersiz' };
+    return { ok: false, error: 's/r/d (surprise/tr_relevance/is_definition) eksik ya da geçersiz' };
   }
+  const category = pick(item, 'c', 'category');
+  const reason = pick(item, 'w', 'reason');
   return {
     ok: true,
     value: {
       surprise,
       tr_relevance: tr,
       is_definition: isDef,
-      category_raw: item.category ?? null,
-      category: normalizeCategory(item.category),
-      reason: typeof item.reason === 'string' ? item.reason.slice(0, 200) : '',
+      category_raw: category ?? null,
+      category: normalizeCategory(category),
+      reason: typeof reason === 'string' ? reason.slice(0, 200) : '',
       wow: wowScore(surprise, tr),
     },
   };
@@ -127,23 +138,42 @@ export function decideBatch(scored, batchLength, passPercent, thresholds = {}) {
  */
 export async function runScore(deps, { limit = 50 } = {}) {
   const stats = newStats('score');
-  const batchSize = deps.config?.scoring?.batchSize ?? 15;
+  const batchSize = deps.config?.scoring?.batchSize ?? 10;
   const passPercent = deps.config?.scoring?.passPercent ?? 30;
   const thresholds = scoringThresholds(deps.config);
   const maxTokens = roleMaxTokens(deps.config, 'scorer', SCORE_MAX_TOKENS);
   const cands = await deps.repo.listByStatus(STATUS.NEW, limit, { scoresHas: 'dedup_hook' });
+  stats.splits = 0;
 
-  for (let start = 0; start < cands.length; start += batchSize) {
-    const batch = cands.slice(start, start + batchSize);
+  const queue = [];
+  for (let start = 0; start < cands.length; start += batchSize) queue.push(cands.slice(start, start + batchSize));
+
+  while (queue.length > 0) {
+    const batch = queue.shift();
     const items = batch.map((c, i) => ({ id: i + 1, lang: c.lang, hook: c.hook_text }));
 
     let res;
     try {
-      res = await deps.llm.chat('scorer', { ...buildScorePrompt(items), json: true, maxTokens });
+      res = await deps.llm.chat('scorer', {
+        ...buildScorePrompt(items),
+        json: true,
+        maxTokens,
+        // Tek adaylık batch bölünemez: "çok büyük" derse zincir yedek modele geçer.
+        splittable: batch.length > 1,
+      });
     } catch (err) {
       if (isFatal(err)) throw err;
+      if (isTooLarge(err) && batch.length > 1) {
+        const mid = Math.ceil(batch.length / 2);
+        queue.unshift(batch.slice(0, mid), batch.slice(mid));
+        stats.splits += 1;
+        deps.log?.(
+          `[score] istek dakikalık sınırdan büyük (${err.provider}/${err.model}${err.metric ? ` ${err.metric}` : ''}${err.limit ? ` limit=${err.limit}` : ''}); batch ${batch.length} → ${mid} + ${batch.length - mid}`,
+        );
+        continue;
+      }
       if (isExhausted(err)) {
-        markDeferred(deps, stats, err, cands.length - start);
+        markDeferred(deps, stats, err, batch.length + queue.reduce((n, b) => n + b.length, 0));
         return stats;
       }
       for (const c of batch) {
@@ -157,7 +187,7 @@ export async function runScore(deps, { limit = 50 } = {}) {
     const list = extractItems(res?.json);
     const byId = new Map();
     for (const it of list ?? []) {
-      const id = Number(it?.id);
+      const id = Number(it?.i ?? it?.id);
       if (Number.isInteger(id) && !byId.has(id)) byId.set(id, it);
     }
 
