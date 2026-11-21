@@ -127,11 +127,34 @@ export function formatLlmEvent(e) {
   return `[llm] ${e.type} ${where}${extra.length ? ` ${extra.join(' ')}` : ''}${msg}`;
 }
 
+/** Dakikalık sınır olayları: her biri ayrı satır, [rate] önekiyle (V2-05f). */
+const RATE_EVENTS = new Set(['rate_wait', 'request_too_large', 'rate_limit_learned']);
+
+/** Dakikalık sınır olayını tek satır log'a çevirir. */
+export function formatRateEvent(e) {
+  const where = `role=${e.role} ${e.provider}/${e.model}`;
+  if (e.type === 'rate_wait') {
+    const limits = [
+      e.tokensPerMinute && `TPM=${e.tokensPerMinute}`,
+      e.outputTokensPerMinute && `OTPM=${e.outputTokensPerMinute}`,
+    ].filter(Boolean);
+    const sec = Math.round((e.delayMs ?? 0) / 100) / 10;
+    return `[rate] bekleme ${where} süre=${sec}sn pencere=${e.windowTokens ?? '?'}/${e.windowOutputTokens ?? '?'}çıktı istek=${e.needInput ?? '?'}+${e.needOutput ?? '?'}${limits.length ? ` ${limits.join(' ')}` : ''}`;
+  }
+  if (e.type === 'rate_limit_learned') {
+    return `[rate] sınır öğrenildi ${where} ${e.metric}=${e.limit} (önceki=${e.previous ?? 'yok'})`;
+  }
+  const extra = [e.status && `status=${e.status}`, e.metric && `${e.metric}`, e.limit && `limit=${e.limit}`].filter(Boolean);
+  const msg = e.error ? ` :: ${String(e.error).slice(0, 300)}` : '';
+  return `[rate] çok büyük istek ${where}${extra.length ? ` ${extra.join(' ')}` : ''}${msg}`;
+}
+
 function defaultCreateLlm(config, log) {
   return createLlm(config, {
     usageStore: createFileUsageStore(),
     onEvent: (e) => {
       if (LOGGED_EVENTS.has(e.type)) log(formatLlmEvent(e));
+      else if (RATE_EVENTS.has(e.type)) log(formatRateEvent(e));
     },
   });
 }

@@ -1,6 +1,6 @@
 // src/v2/prompts/write.js
-// Yazar (writer) istemi. Tahmini token: sistem ~990 (≈3.270 karakter; yorum yasağı, başlık kuralları
-// ve 3 kötü/iyi başlık örneği dahil), kullanıcı ~70 + destek paragrafı (ortalama ~700, en çok 1.500
+// Yazar (writer) istemi. Tahmini token: sistem ~1.130 (≈3.740 karakter; yorum yasağı, başlık kuralları,
+// 3 kötü/iyi başlık örneği, V2-05f ad/sayı sadakati ve bağımsız ilk cümle kuralı dahil), kullanıcı ~70 + destek paragrafı (ortalama ~700, en çok 1.500
 // karakter ≈ 200-430) → çağrı başına ≈ 1.260-1.500 girdi; çıktı ≈ 120 JSON (2-4 cümle) + gpt-oss
 // "low" akıl yürütme ~180 ≈ 300. Kural düzeltmesi / onarımda önceki yanıt + not ≈ +250-300 girdi.
 // Sınır: config roles.writer.maxTokens (1000; Groq OTPM 1000'i aşmaz).
@@ -24,6 +24,8 @@ Odak:
 - Kart kancadaki şaşırtıcı olgunun etrafında kalır. Kaynak paragraftan sadece bu olguyu açıklayan ya da destekleyen bilgiyi al.
 - Kancayla ilgisi olmayan ayrıntı (hastalık, kariyer, başka olaylar, tarih listesi) ekleme. Az ama ilgili cümle, çok ama dağınık cümleden iyidir.
 - Sadece kancada ya da kaynak paragrafta yazanı kullan. Sayı, tarih, isim uydurma.
+- Kişi adlarını kaynaktaki yazımıyla aynen yaz, başka bir adla değiştirme ("Osama bin Laden"; "Ömer bin Laden" değil). Yer adlarının yerleşik Türkçesi olur (Hindistan, Viyana).
+- Sayı ve yılları kaynaktaki gibi yaz; birim çevirme, yaş/süre/fark hesaplama.
 Sadece olgu, yorum yok:
 - Her cümle kancadaki ya da kaynak paragraftaki bir olguyu aktarır.
 - Yorum, genelleme, çıkarım, değerlendirme cümlesi yasak: "bu da gösteriyor ki", "nadir bir örnek", "ilginç bir şekilde", "hızla yayıldı", "komedi unsuru oluşturuyor" gibi.
@@ -48,6 +50,7 @@ Kötü başlık: "Rehberlik tatbikatı dört gün sürdü" ("rehearsal" yanlış
 Biçim:
 - title: yukarıdaki başlık kuralları.
 - content: ${range} cümle, Türkçe karakterlerle (ı, ğ, ş, ç, ö, ü). İlk cümle şaşırtıcı olgunun kendisi; tanımla başlama.
+- İlk cümle başlık okunmadan tek başına anlaşılır: konuyu açıkça adlandırır, öznesi vardır. Kötü: "1932 yılında resmi olarak başlatıldı." (ne başlatıldı?) · İyi: "Türkiye'de ezan 1932'den 1950'ye kadar Türkçe okundu."
 - tags: 3-5 küçük harfli Türkçe etiket. read_time_sq: tahmini okuma süresi (saniye).
 Kaynak paragraf kancayla çelişiyorsa ya da kart ilginç olmayacaksa yazma, şunu dön: {"skip":true,"reason":"..."}
 Sadece JSON dön: {"title":"...","content":"...","tags":["..."],"read_time_sq":20}`;
@@ -86,6 +89,8 @@ export function buildRuleFixMessages(previousText, violations) {
 export const REPAIR_MARKER = 'Kartı onar';
 
 const VERDICT_LABEL = { unsupported: 'kaynakta yok', unclear: 'kaynakta açık değil' };
+// Kod sadakat kontrolü (steps/fidelity.js): claim zaten "bu ad/sayı kaynakta yok: X".
+const FIDELITY_KINDS = new Set(['name', 'number']);
 const TITLE_LABEL = 'başlık metindeki olguyla aynı şeyi söylemiyor ya da bir terim yanlış çevrilmiş';
 
 /**
@@ -98,6 +103,7 @@ export function buildRepairMessages(previousText, problems, limits = DEFAULT_LIM
   const list = problems
     .map((c) => {
       const why = String(c.why ?? '').trim();
+      if (FIDELITY_KINDS.has(c.kind)) return `- ${c.claim}${why ? ` (${why})` : ''}`;
       const label = c.kind === 'title' ? TITLE_LABEL : VERDICT_LABEL[c.verdict] ?? c.verdict;
       return `- "${c.claim}" (${label}${why ? `: ${why}` : ''})`;
     })

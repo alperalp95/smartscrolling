@@ -4,7 +4,7 @@
 // Sağlayıcı "Request too large" derse (tek istek dakikalık sınırı aşıyor) batch ikiye bölünüp
 // tekrar denenir (tek adaya inene kadar; tek aday yine büyükse zincirdeki yedek modele gider).
 // wow = 0.6*surprise + 0.4*tr_relevance.
-// Eleme sırası: is_definition → definition; surprise < scoring.minSurprise (6) → low_surprise;
+// Eleme sırası: x (hassas: ölüm/şiddet/güncel siyaset) → sensitive; is_definition → definition; surprise < scoring.minSurprise (6) → low_surprise;
 // tr_relevance < scoring.minTrRelevance (4) → low_relevance; kategori tanınmazsa → invalid_category.
 // maxTokens: config.roles.scorer.maxTokens (yoksa SCORE_MAX_TOKENS).
 // Kalanlardan batch başına en iyi passPercent (batch boyutunun %'si, en az 1) → scored;
@@ -76,12 +76,15 @@ export function parseScoreItem(item) {
   }
   const category = pick(item, 'c', 'category');
   const reason = pick(item, 'w', 'reason');
+  // x: sadece hassassa yazılır; yoksa ya da tanınmazsa hassas değil.
+  const sensitive = toBool(pick(item, 'x', 'sensitive')) === true;
   return {
     ok: true,
     value: {
       surprise,
       tr_relevance: tr,
       is_definition: isDef,
+      sensitive,
       category_raw: category ?? null,
       category: normalizeCategory(category),
       reason: typeof reason === 'string' ? reason.slice(0, 200) : '',
@@ -116,7 +119,8 @@ export function decideBatch(scored, batchLength, passPercent, thresholds = {}) {
   for (const entry of scored) {
     const s = entry.score;
     let reason = null;
-    if (s.is_definition) reason = 'definition';
+    if (s.sensitive) reason = 'sensitive';
+    else if (s.is_definition) reason = 'definition';
     else if (s.surprise < minSurprise) reason = 'low_surprise';
     else if (s.tr_relevance < minTr) reason = 'low_relevance';
     else if (!s.category) reason = 'invalid_category';
@@ -209,6 +213,7 @@ export async function runScore(deps, { limit = 50 } = {}) {
         surprise: score.surprise,
         tr_relevance: score.tr_relevance,
         is_definition: score.is_definition,
+        ...(score.sensitive ? { sensitive: true } : {}),
         category: score.category,
         category_raw: score.category_raw,
         reason: score.reason,

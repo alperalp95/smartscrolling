@@ -12,6 +12,10 @@
 //   - Başlık da bir iddiadır (ilk iddia) ve ayrıca anlam/çeviri uyumu sorulur (title_match).
 //     title_match=false → başlık iddiası unsupported sayılır (kind: 'title') → onarım turu;
 //     onarımda yazara "başlık metindeki olguyla aynı şeyi söylemiyor / terim yanlış çevrilmiş" denir.
+//   - Özel ad / sayı sadakati (V2-05f, kod: steps/fidelity.js): karttaki özel adlar ve sayılar kanca +
+//     destek paragrafında geçmeli. Geçmeyen → "bu ad/sayı kaynakta yok: X" ile aynı onarım turuna girer
+//     (doğrulayıcı supported dese bile); onarımdan sonra hâlâ varsa → rejected:name_mismatch
+//     (ikinci doğrulama çağrısı yapılmaz).
 //   - En fazla 1 onarım turu (en fazla 2 doğrulama + 1 yazar çağrısı).
 // Onarım da kod kurallarından geçer (ihlal → write_rules, skip → writer_skip; ek retry yok).
 import { contentHash } from '../../dedup/index.js';
@@ -19,6 +23,7 @@ import { VERIFY_MAX_TOKENS, buildVerifyPrompt } from '../prompts/verify.js';
 import { WRITE_MAX_TOKENS, buildRepairMessages, buildWritePrompt } from '../prompts/write.js';
 import { STATUS, forEachCandidate, newStats, nowIso, reject, roleMaxTokens } from './common.js';
 import { cardText } from './dedup-card.js';
+import { checkFidelity, fidelityProblems } from './fidelity.js';
 import { checkWriteRules, normalizeDraft, writeInput, writingLimits } from './write.js';
 
 const VERDICT_ALIASES = {
@@ -94,6 +99,11 @@ function roundRecord(r) {
   return { verdict: r.verdict, claims: r.claims, model: r.model, ...(r.title_match === undefined ? {} : { title_match: r.title_match }) };
 }
 
+/** Sadakat sonucu tur kaydına: sorun yoksa alan eklenmez. */
+function fidelityRecord(fid) {
+  return fid.ok ? {} : { fidelity: { names: fid.names, numbers: fid.numbers } };
+}
+
 function draftJson(draft) {
   return JSON.stringify({ title: draft.title, content: draft.content, tags: draft.tags, read_time_sq: draft.read_time_sq });
 }
@@ -119,15 +129,24 @@ export async function runVerify(deps, { limit = 50 } = {}) {
     // Kanıt = kanca + destek paragrafı (kanca editörlerce kaynaklı).
     const evidence = { hook: cand.hook_text, maxTokens: verifyMax };
     const first = await verifyOnce(deps.llm, draft, support, evidence);
-    rounds.push(roundRecord(first));
+    // Özel ad / sayı sadakati (kod, LLM'den bağımsız): kaynakta olmayan ad ya da sayı → onarım turu.
+    const source = { hook: cand.hook_text, support };
+    const fid1 = checkFidelity(draft, source);
+    rounds.push({ ...roundRecord(first), ...fidelityRecord(fid1) });
     const base = { ...cand.scores };
     let repair = null;
     const verification = () => ({ rounds, ...(repair ? { repair } : {}), checked_at: nowIso(deps.now) });
 
-    if (first.verdict !== 'supported') {
-      // Tek onarım turu: unsupported + unclear iddialar (gerekçeleriyle) yazara geri gider.
-      const problems = first.claims.filter((c) => c.verdict !== 'supported');
-      repair = { for: first.verdict, claims: problems.map((c) => c.claim), ...(first.title_match === false ? { title: true } : {}) };
+    if (first.verdict !== 'supported' || !fid1.ok) {
+      // Tek onarım turu: unsupported + unclear iddialar ve sadakat sorunları (gerekçeleriyle) yazara geri gider.
+      const problems = [...first.claims.filter((c) => c.verdict !== 'supported'), ...fidelityProblems(fid1)];
+      const repairFor = first.verdict !== 'supported' ? first.verdict : 'name_mismatch';
+      repair = {
+        for: repairFor,
+        claims: problems.map((c) => c.claim),
+        ...(first.title_match === false ? { title: true } : {}),
+        ...(fid1.ok ? {} : { fidelity: true }),
+      };
       const { messages } = buildWritePrompt(writeInput(cand, limits));
       const res = await deps.llm.chat('writer', {
         messages: [...messages, ...buildRepairMessages(draftJson(draft), problems, limits)],
@@ -140,7 +159,7 @@ export async function runVerify(deps, { limit = 50 } = {}) {
         });
         return;
       }
-      const repaired = normalizeDraft(res?.json);
+      const repaired = normalizeDraft(res?.json, { hook: cand.hook_text });
       const violations = checkWriteRules(repaired, limits);
       if (violations.length > 0) {
         await reject(deps, cand, 'write_rules', stats, {
@@ -155,8 +174,15 @@ export async function runVerify(deps, { limit = 50 } = {}) {
         content_hash: contentHash(cardText(repaired)),
         writer_model: res?.model ?? draft.writer_model,
         rewrites: (draft.rewrites ?? 0) + 1,
-        rewritten_for: first.verdict,
+        rewritten_for: repairFor,
       };
+      // Onarımdan sonra hâlâ kaynakta olmayan ad/sayı varsa ikinci doğrulamaya gerek yok.
+      const fid2 = checkFidelity(draft, source);
+      if (!fid2.ok) {
+        repair.fidelity_after = fidelityRecord(fid2).fidelity;
+        await reject(deps, cand, 'name_mismatch', stats, { scores: { ...base, draft, verification: verification() } });
+        return;
+      }
       const second = await verifyOnce(deps.llm, draft, support, evidence);
       rounds.push(roundRecord(second));
       if (second.verdict !== 'supported') {

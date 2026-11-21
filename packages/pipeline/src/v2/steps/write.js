@@ -3,12 +3,14 @@
 // Başlık normalize edilir (kod): ilk harf büyük (Türkçe: i → İ), sondaki nokta silinir.
 // Kod tarafı kurallar (basit kurallar, içerik regex'i yok): başlık 12–58 karakter,
 // başlıkta "nedir"/"kimdir" yok, başlık Türkçe cümle düzeninde (Her Kelimesi Büyük değil),
-// gövde config writing.minSentences–maxSentences cümle (varsayılan 2–4), Türkçe karakter var.
+// gövde config writing.minSentences–maxSentences cümle (varsayılan 2–4), Türkçe karakter var,
+// ilk cümle başlık okunmadan anlaşılır (firstSentenceIssue, V2-05f).
 // maxTokens: config roles.writer.maxTokens.
 // İhlal → BİR kez yeniden yazım (ihlaller prompt'a eklenir); yine ihlal → rejected:write_rules.
 // Model `{ skip: true }` dönerse → rejected:writer_skip, yeniden deneme yok.
 import { WRITE_MAX_TOKENS, buildRuleFixMessages, buildWritePrompt } from '../prompts/write.js';
 import { STATUS, forEachCandidate, newStats, nowIso, reject, roleMaxTokens } from './common.js';
+import { firstSentence, fold } from './fidelity.js';
 
 export const TITLE_MIN = 12;
 export const TITLE_MAX = 58;
@@ -79,6 +81,54 @@ function titleWords(title) {
     .filter(Boolean);
 }
 
+// Bağımsız ilk cümle kuralında konu sayılmayan sıradan kelimeler (katlanmış).
+const ANCHOR_STOPWORDS = new Set(
+  ['arasında', 'boyunca', 'sonra', 'önce', 'olarak', 'kadar', 'için', 'gibi', 'ile', 'daha', 'çok', 'en', 'bir', 'olan', 'oldu', 'olduğu', 'aslında',
+    'tarafından', 'beri', 'itibaren', 'yaklaşık', 'sadece', 'yalnızca', 'ilk', 'son', 'kez', 'kere', 'resmi', 'resmî', 'var', 'yok', 'değil', 'aynı', 'tam',
+    'yüzyıl', 'yüzyılda', 'yüzyıldan', 'yüzyılın', 'dönem', 'döneminde', 'zaman', 'sırasında', 'gün', 'günü', 'ay', 'hafta'].map(fold),
+);
+// Öznesiz başlangıç: zaman/sayı ifadesi ya da geri gönderme ("Bu uygulama...", "Ayrıca ...").
+const SUBJECTLESS_STARTERS = new Set(
+  ['bu', 'bunun', 'buna', 'bunu', 'şu', 'o', 'onun', 'ona', 'onu', 'bunlar', 'onlar', 'ayrıca', 'ancak', 'sonra', 'daha', 'ardından', 'böylece', 'üstelik', 'aynı', 'söz'].map(fold),
+);
+// Edilgen yüklem (katlanmış): başlatıldı, okundu, kurulmuştur, edilmiş, yapılacak...
+const PASSIVE_END = /(?:[iu]l|[aeiou]n)(?:d[iu]|m[iu]s|[iu]r|[ae]c[ae]k|[iu]yor)(?:l[ae]r)?(?:d[iu]r|t[iu]r)?$/u;
+const YEAR_WORD = /^yil/u;
+
+function anchorWords(text) {
+  return String(text ?? '')
+    .split(/\s+/)
+    .map((w) => fold(w.split(/['’]/u)[0]).replace(/[^\p{L}\p{N}]+/gu, ''))
+    .filter((w) => w && !/^\d/u.test(w) && !ANCHOR_STOPWORDS.has(w) && !YEAR_WORD.test(w));
+}
+
+function sharesStem(a, b) {
+  if (a === b) return true;
+  const n = Math.min(5, a.length, b.length);
+  return n >= 3 && a.slice(0, n) === b.slice(0, n);
+}
+
+/**
+ * Bağımsız ilk cümle (V2-05f, basit sezgisel kural): ilk cümle başlıktaki ana adı ya da ana ismi
+ * içermiyorsa VE öznesiz bir yüklemle başlıyorsa (sayı/zaman ifadesi ya da "Bu ..." ile başlıyor
+ * veya yüklemi edilgen: "1932 yılında ... resmi olarak başlatıldı.") ihlal döner.
+ * @returns {string|null}
+ */
+export function firstSentenceIssue(card) {
+  const sentence = firstSentence(card?.content ?? '');
+  if (!sentence) return null;
+  const anchors = anchorWords(card?.title).filter((w) => w.length >= 3 || /^\p{L}{2}$/u.test(w));
+  if (anchors.length === 0) return null;
+  const words = anchorWords(sentence);
+  if (words.some((w) => anchors.some((a) => (a.length < 3 ? w === a : sharesStem(a, w))))) return null;
+  const firstRaw = sentence.split(/\s+/)[0] ?? '';
+  const first = fold(firstRaw.split(/['’]/u)[0]).replace(/[^\p{L}\p{N}]+/gu, '');
+  const last = fold(sentence.split(/\s+/).at(-1) ?? '').replace(/[^\p{L}]+/gu, '');
+  const subjectless = /^\d/u.test(firstRaw) || SUBJECTLESS_STARTERS.has(first) || PASSIVE_END.test(last);
+  if (!subjectless) return null;
+  return 'ilk cümle başlık okunmadan anlaşılmıyor: konuyu açıkça adlandır (özne zorunlu), başlıktaki ana adı ya da ismi ilk cümlede kullan';
+}
+
 /**
  * Kart taslağını kod kurallarına göre denetler.
  * @param {object} card
@@ -96,6 +146,8 @@ export function checkWriteRules(card, { minSentences = SENTENCES_MIN, maxSentenc
   const n = countSentences(content);
   if (n < minSentences || n > maxSentences) v.push(`gövde ${minSentences}-${maxSentences} cümle olmalı (şu an ${n})`);
   if (!hasTurkishChars(`${title} ${content}`)) v.push('Türkçe karakter (ı, ğ, ş, ç, ö, ü) kullanılmalı');
+  const first = firstSentenceIssue({ title, content });
+  if (first) v.push(first);
   return v;
 }
 
@@ -104,25 +156,44 @@ function estimateReadTime(content) {
   return Math.min(60, Math.max(10, Math.round(words / 3)));
 }
 
-/**
- * Başlık düzeltmesi (kod kuralı): ilk harf büyük (toLocaleUpperCase('tr-TR'): "istanbul" →
- * "İstanbul"), sondaki nokta(lar) silinir. Baştaki tırnak/parantez atlanır; "iPhone" gibi ikinci
- * harfi zaten büyük olan marka adlarına dokunulmaz. Soru/ünlem işareti korunur.
- */
-export function normalizeTitle(raw) {
-  let title = String(raw ?? '').replace(/\s+/g, ' ').trim();
-  title = title.replace(/\s*\.+$/u, '').trim();
-  const m = title.match(/^([^\p{L}\p{N}]*)(\p{L})(\p{L})?/u);
-  if (m && /\p{Ll}/u.test(m[2]) && !(m[3] && /\p{Lu}/u.test(m[3]))) {
-    const at = m[1].length;
-    title = title.slice(0, at) + m[2].toLocaleUpperCase('tr-TR') + title.slice(at + m[2].length);
-  }
-  return title;
+/** Kancada küçük harfle başlayan ve sıradan kelime biçiminde olmayan terim mi (.bv, x.com, web3, eBay)? */
+function lowercaseTermInHook(word, hook) {
+  if (!hook || !word) return false;
+  const special = (w) => /[.\d]/u.test(w) || /^\p{Ll}.*\p{Lu}/u.test(w);
+  const terms = String(hook)
+    .split(/\s+/)
+    .map((w) => w.replace(/^["'“‘«(\[]+/u, '').replace(/[,;:!?)\]"”»]+$|\.$/gu, '').split(/['’]/u)[0])
+    .filter((w) => w && /^[^\p{Lu}]/u.test(w) && special(w));
+  return terms.includes(word);
 }
 
-/** Model çıktısını kart taslağına çevirir (başlık, etiket ve okuma süresi normalize edilir). */
-export function normalizeDraft(json) {
-  const title = normalizeTitle(json?.title);
+/**
+ * Başlık düzeltmesi (kod kuralı): ilk harf büyük (toLocaleUpperCase('tr-TR'): "istanbul" →
+ * "İstanbul"), sondaki nokta(lar) silinir. Soru/ünlem işareti korunur.
+ * Büyütme YAPILMAZ (V2-05f):
+ *   - ilk karakter harf değilse (".bv", "1930'larda", "#etiket"); sadece açılış tırnağı/parantezi atlanır
+ *   - ilk kelimenin içinde büyük harf varsa ("iPhone", "eBay", "macOS")
+ *   - ilk kelime kancada küçük harfle geçen özel biçimli bir terimse ("x.com", "web3"; { hook } ile)
+ */
+export function normalizeTitle(raw, { hook } = {}) {
+  let title = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  title = title.replace(/\s*\.+$/u, '').trim();
+  const m = title.match(/^(["'“‘«(\[]*)(\p{L})/u);
+  if (!m || !/\p{Ll}/u.test(m[2])) return title;
+  const at = m[1].length;
+  const firstWord = title.slice(at).split(/[\s,;:!?)"”»]/u)[0].split(/['’]/u)[0];
+  if (/\p{Lu}/u.test(firstWord.slice(1))) return title; // iPhone, eBay, macOS
+  if (lowercaseTermInHook(firstWord, hook)) return title;
+  return title.slice(0, at) + m[2].toLocaleUpperCase('tr-TR') + title.slice(at + m[2].length);
+}
+
+/**
+ * Model çıktısını kart taslağına çevirir (başlık, etiket ve okuma süresi normalize edilir).
+ * @param {object} json
+ * @param {{ hook?: string }} [opts]  kanca: başlık büyük harf kenar durumları için
+ */
+export function normalizeDraft(json, { hook } = {}) {
+  const title = normalizeTitle(json?.title, { hook });
   const content = String(json?.content ?? '').replace(/\s+/g, ' ').trim();
   const tags = [
     ...new Set(
@@ -147,10 +218,10 @@ function isSkip(json) {
  * @param {Array} messages  ilk istem mesajları
  * @returns {Promise<{ outcome: 'ok', draft, text, model, rewrites } | { outcome: 'skip', reason } | { outcome: 'rules', violations }>}
  */
-export async function writeWithRules(llm, messages, { maxTokens = WRITE_MAX_TOKENS, limits } = {}) {
+export async function writeWithRules(llm, messages, { maxTokens = WRITE_MAX_TOKENS, limits, hook } = {}) {
   let res = await llm.chat('writer', { messages, json: true, maxTokens });
   if (isSkip(res?.json)) return { outcome: 'skip', reason: String(res.json.reason ?? '').slice(0, 200) };
-  let draft = normalizeDraft(res?.json);
+  let draft = normalizeDraft(res?.json, { hook });
   let violations = checkWriteRules(draft, limits);
   let rewrites = 0;
   if (violations.length > 0) {
@@ -161,7 +232,7 @@ export async function writeWithRules(llm, messages, { maxTokens = WRITE_MAX_TOKE
       maxTokens,
     });
     if (isSkip(res?.json)) return { outcome: 'skip', reason: String(res.json.reason ?? '').slice(0, 200) };
-    draft = normalizeDraft(res?.json);
+    draft = normalizeDraft(res?.json, { hook });
     violations = checkWriteRules(draft, limits);
     if (violations.length > 0) return { outcome: 'rules', violations };
   }
@@ -190,7 +261,7 @@ export async function runWrite(deps, { limit = 50 } = {}) {
 
   await forEachCandidate(deps, cands, stats, async (cand) => {
     const { messages } = buildWritePrompt(writeInput(cand, limits));
-    const r = await writeWithRules(deps.llm, messages, { maxTokens, limits });
+    const r = await writeWithRules(deps.llm, messages, { maxTokens, limits, hook: cand.hook_text });
     if (r.outcome === 'skip') {
       await reject(deps, cand, 'writer_skip', stats, { scores: { ...(cand.scores ?? {}), writer_skip: r.reason } });
       return;

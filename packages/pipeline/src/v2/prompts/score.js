@@ -3,6 +3,10 @@
 //   {"items":[{"i":1,"s":7,"r":6,"d":0,"c":"TARİH","w":"kısa gerekçe"}]}
 //   i = kanca no, s = surprise, r = tr_relevance, d = is_definition (0/1), c = kategori adı (emojisiz),
 //   w = gerekçe, SADECE s ≥ 6 olanlarda, en fazla 6 kelime.
+//   x = hassas (V2-05f): SADECE hassassa "x":1 yazılır; değilse alan yok (çıktı token'ı artmaz).
+//       Hassas = odak ölüm/şiddet/trajedi ya da güncel siyaset (siyasi figür/parti/seçim, terör, savaş,
+//       cinayet, intihar, felaket ölümleri, yakın tarihli ölüm) → rejected:sensitive. Tarihsel olay
+//       tek başına hassas değil. İstem ≈ +90 token.
 // Neden: Groq qwen3.8-27b'nin dakikalık çıktı sınırı (OTPM) 1000 token. Eski uzun anahtarlı çıktı
 // 15 kancada ≈ 1.180 token yazdı (dry-run 3) ve ikinci batch 429 ile düştü.
 // Tahmini token (batch = 10 kanca): sistem ~560, kanca başına ~30 girdi → ≈ 860 girdi.
@@ -28,6 +32,8 @@ Her kanca (TR ya da EN) için kısa anahtarlarla:
 - d (is_definition): kanca sadece "X nedir / kimdir / nerededir / ne işe yarar" bilgisiyse 1, değilse 0.
 - c (kategori): ${CATEGORY_NAMES.join(', ')}
 - w (gerekçe): SADECE s 6 ve üstüyse, en fazla 6 kelime; s 6'nın altındaysa w yazma.
+- x (hassas): odak ölüm/şiddet/trajedi ya da güncel siyasetse (siyasi figür/parti/seçim, terör, savaş, cinayet, intihar, felaket ölümleri, yakın tarihli ölüm) "x":1 yaz; değilse x yazma. Tarihsel olay tek başına hassas değil.
+  Örnek: "Charlie Kirk'ün yüzü suikastinin ardından memelere yerleştirildi" → x:1 · "Bookland, barkodlara göre kitapların geldiği hayali ülke" → x yok
 Kalibrasyon (s/r):
 ÇOK İLGİNÇ
 - "Ahtapotun üç kalbi ve mavi kanı vardır." 9/8
