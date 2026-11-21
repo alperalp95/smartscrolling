@@ -148,6 +148,9 @@ export async function runScore(deps, { limit = 50 } = {}) {
   const maxTokens = roleMaxTokens(deps.config, 'scorer', SCORE_MAX_TOKENS);
   const cands = await deps.repo.listByStatus(STATUS.NEW, limit, { scoresHas: 'dedup_hook' });
   stats.splits = 0;
+  stats.rescored = 0;
+  // Modelin hiç döndürmediği adaylar aynı run'da bir kez, sadece eksiklerden oluşan küçük batch'le yeniden puanlanır.
+  const retryBatches = new WeakSet();
 
   const queue = [];
   for (let start = 0; start < cands.length; start += batchSize) queue.push(cands.slice(start, start + batchSize));
@@ -169,7 +172,9 @@ export async function runScore(deps, { limit = 50 } = {}) {
       if (isFatal(err)) throw err;
       if (isTooLarge(err) && batch.length > 1) {
         const mid = Math.ceil(batch.length / 2);
-        queue.unshift(batch.slice(0, mid), batch.slice(mid));
+        const halves = [batch.slice(0, mid), batch.slice(mid)];
+        if (retryBatches.has(batch)) halves.forEach((h) => retryBatches.add(h));
+        queue.unshift(...halves);
         stats.splits += 1;
         deps.log?.(
           `[score] istek dakikalık sınırdan büyük (${err.provider}/${err.model}${err.metric ? ` ${err.metric}` : ''}${err.limit ? ` limit=${err.limit}` : ''}); batch ${batch.length} → ${mid} + ${batch.length - mid}`,
@@ -187,7 +192,8 @@ export async function runScore(deps, { limit = 50 } = {}) {
       continue;
     }
 
-    stats.seen += batch.length;
+    const isRetry = retryBatches.has(batch);
+    if (!isRetry) stats.seen += batch.length;
     const list = extractItems(res?.json);
     const byId = new Map();
     for (const it of list ?? []) {
@@ -196,14 +202,26 @@ export async function runScore(deps, { limit = 50 } = {}) {
     }
 
     const valid = [];
+    const missing = [];
     for (let i = 0; i < batch.length; i += 1) {
       const cand = batch[i];
+      if (!byId.has(i + 1) && !isRetry) {
+        missing.push(cand);
+        continue;
+      }
       const parsed = byId.has(i + 1) ? parseScoreItem(byId.get(i + 1)) : { ok: false, error: 'puanlayıcı bu adayı döndürmedi' };
       if (!parsed.ok) {
         await recordFailure(deps, cand, new Error(parsed.error), stats);
         continue;
       }
       valid.push({ cand, score: parsed.value });
+    }
+
+    if (missing.length > 0) {
+      retryBatches.add(missing);
+      stats.rescored += missing.length;
+      queue.unshift(missing);
+      deps.log?.(`[score] ${missing.length} aday puansız döndü; küçük batch'le bir kez daha puanlanacak`);
     }
 
     // Kesim, modelin geçerli puan verdiği aday sayısına göre değil batch boyutuna göre.

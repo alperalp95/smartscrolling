@@ -177,8 +177,8 @@ test('madde 2 · onarım mesajı: iddialar, gerekçeler, cümle aralığı confi
 
 test('madde 1 · cümle sayısı 2-4: 1 ve 5 cümle ihlal, 2 ve 4 cümle geçer', () => {
   const card = (content) => ({ ...GOOD_CARD, content });
-  assert.ok(checkWriteRules(card('Ahtapotun üç kalbi var.')).some((v) => v.includes('2-4 cümle')));
-  assert.deepEqual(checkWriteRules(card('Ahtapotun üç kalbi var. Kanı mavidir.')), []);
+  assert.ok(checkWriteRules(card('Bu hayvanda üç kalp çalışır.')).some((v) => v.includes('2-4 cümle')));
+  assert.deepEqual(checkWriteRules(card('Bu hayvanda üç kalp çalışır. Kanı mavidir.')), []);
   assert.deepEqual(checkWriteRules(card('Bir cümle ış. İki cümle. Üç cümle. Dört cümle.')), []);
   assert.ok(checkWriteRules(card('Bir cümle ış. İki. Üç. Dört. Beş.')).some((v) => v.includes('(şu an 5)')));
 });
@@ -188,7 +188,7 @@ test('madde 1 · cümle sınırı config writing.minSentences / maxSentences\'ta
   assert.deepEqual(writingLimits({ writing: { minSentences: 3, maxSentences: 5 } }), { minSentences: 3, maxSentences: 5 });
   assert.deepEqual(writingLimits({ writing: { minSentences: 'x' } }), { minSentences: 2, maxSentences: 4 });
 
-  const twoSentences = { ...GOOD_CARD, content: 'Ahtapotun üç kalbi var. Kanı mavidir.' };
+  const twoSentences = { ...GOOD_CARD, content: 'Bu hayvanda üç kalp çalışır. Kanı mavidir.' };
   const repo = createMemoryStepsRepo({
     candidates: [baseCandidate({ id: 'w1', status: 'scored', support_paragraph: SUPPORT, scores: { category: '🔬 BİLİM' } })],
   });

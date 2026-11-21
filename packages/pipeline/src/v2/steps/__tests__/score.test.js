@@ -118,10 +118,24 @@ test('runScore: batchSize kadar gruplar halinde çağırır; dedup_hook işareti
   assert.equal(repo.get('s7').status, 'new');
 });
 
-test('runScore: modelin döndürmediği aday attempts++ ile new kalır', async () => {
-  const repo = repoWith(2);
-  const llm = fakeLlm({ scorer: [{ items: [{ id: 1, surprise: 8, tr_relevance: 8, is_definition: false, category: 'Bilim' }] }] });
+test('runScore: modelin döndürmediği aday aynı run içinde küçük batch ile bir kez daha puanlanır', async () => {
+  const repo = repoWith(3);
+  const ok = (id) => ({ id, surprise: 8, tr_relevance: 8, is_definition: false, category: 'Bilim' });
+  const llm = fakeLlm({ scorer: [{ items: [ok(1)] }, { items: [ok(1), ok(2)] }] });
   const stats = await runScore(deps({ llm, repo }));
+  assert.equal(llm.count('scorer'), 2, 'tek ek çağrı');
+  assert.equal(llm.calls[1].messages[1].content.split('\n').length, 3, 'ikinci çağrıda sadece 2 eksik aday');
+  assert.equal(repo.get('s1').status, 'scored');
+  assert.notEqual(repo.get('s2').status, 'new');
+  assert.notEqual(repo.get('s3').status, 'new');
+  assert.equal(stats.failed, 0);
+});
+
+test('runScore: eksik aday ikinci denemede de dönmezse attempts++ ile new kalır', async () => {
+  const repo = repoWith(2);
+  const llm = fakeLlm({ scorer: [{ items: [{ id: 1, surprise: 8, tr_relevance: 8, is_definition: false, category: 'Bilim' }] }, { items: [] }] });
+  const stats = await runScore(deps({ llm, repo }));
+  assert.equal(llm.count('scorer'), 2);
   assert.equal(repo.get('s1').status, 'scored');
   assert.equal(repo.get('s2').status, 'new');
   assert.equal(repo.get('s2').attempts, 1);
