@@ -277,3 +277,82 @@ Testler (gerçek API çağrısı yapmaz):
 ```
 node --test "packages/pipeline/src/llm/**/*.test.js"
 ```
+
+## Otomatik çalışma (GitHub Actions)
+
+Hat GitHub'da kendiliğinden çalışır; bilgisayarınızın açık olması gerekmez. Üç workflow var:
+
+| Workflow | Ne zaman (İstanbul saati) | Ne yapar |
+|---|---|---|
+| `content-v2` | Her gün 06:17, 14:17, 22:17 | Yeni kancaları toplar, puanlar, kartları yazar, doğrular ve yayın stoğuna ekler. 22:17 run'ı ayrıca günün kartlarını yayınlar. Bir sorun görürse GitHub Issue açar. |
+| `content-v2-weekly-sample` | Her pazartesi 10:00 | Geçen hafta yayınlanan kartlardan rastgele 10 tanesini değerlendirmeniz için Issue olarak açar. |
+| `keepalive` | Her ayın 1'i | GitHub uzun süre hareketsiz kalan depolarda zamanlanmış workflow'ları kapatabilir. Bu workflow onları yeniden "etkin" yapar. Başka hiçbir şey yapmaz. |
+
+Eski hat (`facts-ingest`) artık kendiliğinden çalışmaz; sadece elle çalıştırılabilir.
+
+### Hattı açmak (bir kerelik)
+
+Workflow dosyaları `main` dalına geldikten sonra hat **kapalı** başlar. Zamanlanmış run'lar listede "Skipped" (atlandı) görünür. Açmak için:
+
+1. **Anahtarları kontrol edin.** GitHub'da depoyu açın → üstte **Settings** → sol menüde **Secrets and variables** → **Actions** → **Secrets** sekmesi. Şu altı secret listede olmalı (yoksa **New repository secret** ile ekleyin; adı birebir aynı yazılmalı):
+   `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `GEMINI_API_KEY`
+2. Aynı sayfada **Variables** sekmesine geçin → **New repository variable**.
+3. **Name** kutusuna `CONTENT_V2_ENABLED`, **Value** kutusuna `true` yazın (küçük harf) → **Add variable**.
+
+Bu kadar. Bir sonraki planlı saatte hat çalışmaya başlar.
+
+**Kapatmak için:** aynı yerde `CONTENT_V2_ENABLED` değişkenini düzenleyip değerini `false` yapın (ya da silin). Elle çalıştırma kapalıyken de çalışır.
+
+Not: Hat çalışmadan önce v2 veritabanı tabloları (`fact_candidates`, `pipeline_state`, `pipeline_runs`) Supabase'te kurulmuş olmalı.
+
+### Elle çalıştırma
+
+1. GitHub'da depo → üstte **Actions**.
+2. Sol listede **content-v2**.
+3. Sağda **Run workflow** düğmesi → açılan kutuda:
+   - **mode**: `dry-run` = deneme; veritabanına hiçbir şey yazmaz (yapay zeka çağrıları yine gerçektir ve günlük ücretsiz kotadan yer). `apply` = gerçek çalışma.
+   - **publish**: işaretlerseniz günün kartları da yayınlanır (sadece `apply` ile anlamlı).
+4. Yeşil **Run workflow** düğmesine basın. Birkaç saniye sonra listede yeni run görünür; tıklayınca log'u ve sonunda kısa bir özet görürsünüz.
+
+Haftalık örneği de aynı yoldan elle açabilirsiniz: **content-v2-weekly-sample** → **Run workflow**.
+
+### Alarm Issue'ları ne anlama gelir?
+
+Hat bir sorun görünce `pipeline-alarm` etiketli bir Issue açar; GitHub size e-posta gönderir. Açık bir alarm Issue'su varken yeni alarmlar **yeni Issue açmak yerine ona yorum olarak** eklenir. Sorun çözülünce Issue'yu kapatın; sonraki sorun yeni bir Issue açar.
+
+Her Issue'da "Ne oldu?" ve "Ne yapmalısınız?" yazar. Olası başlıklar:
+
+| Başlık | Anlamı | Ne yapmalı |
+|---|---|---|
+| Yeni kart çıkmadı | Bu run'da stoğa hiç kart eklenmedi. | Tek seferlik olabilir. Birkaç run üst üste geliyorsa aynı Issue'daki diğer maddelere bakın. |
+| Stok azaldı | Yayın stoğu 3 günlük kartın altına düştü. | Hat yayınladığından az üretiyor. Kısa vadede `publish.dailyCount` düşürülebilir (yukarıda "Örnek: günlük kart sayısı nasıl değiştirilir"). |
+| Model kapanmış | Bir yapay zeka modeli "kapatıldı / bulunamadı" dedi. Hat kendiliğinden yedeğe geçti. | Config'te o modeli değiştirin (yukarıda "Örnek: model nasıl değiştirilir"). Yedek de kapanırsa üretim durur. |
+| Model zinciri tükendi | Bir işin (ör. yazar) bütün modelleri o run'da doldu ya da hata verdi; kalan iş sonraki run'a kaldı. | Genelde günlük ücretsiz limittir, ertesi gün düzelir. Her gün oluyorsa anahtarları ve sağlayıcı limitlerini kontrol edin. |
+| Run hata ile bitti | Bir adım hata verdi (ör. Wikipedia'ya ulaşılamadı, anahtar eksik). | Issue'daki "run kaydı" bağlantısından log'a bakın. Çoğu zaman bir sonraki run'da düzelir. |
+| Run özet üretemeden durdu | Kurulum adımı hata verdi ya da run 2 saati aştı. | Run kaydında kırmızı adımın log'una bakın. |
+
+Deneme (`dry-run`) çalıştırmalarında Issue açılmaz; alarmlar sadece run sayfasındaki özette görünür.
+
+Her gerçek run'ın sayıları (kaç aday, kaç kart, red nedenleri, model kullanımı, süre) Supabase'te `pipeline_runs` tablosuna da yazılır. Günlük yapay zeka kullanımı `pipeline_state` tablosunda `llm-usage:YYYY-AA-GG` satırında tutulur; böylece günün üç run'ı aynı ücretsiz kotayı paylaşır ve sınırın %90'ında durur.
+
+### Haftalık örnek nasıl değerlendirilir?
+
+Her pazartesi `weekly-sample` etiketli bir Issue gelir: 10 kart, her birinin başında bir kutu, başlığı, metni ve kaynak linki.
+
+1. Kartları okuyun. Şüphelendiğiniz bilgiyi kaynak linkinden kontrol edebilirsiniz.
+2. **Kötü** bulduğunuz kartın kutusunu işaretleyin. Kötü kart: yanlış bilgi, sıkıcı ya da "X nedir" tarzı, bozuk Türkçe, başlığı metinle uyuşmuyor.
+3. Nedenini kısaca Issue'ya yorum olarak yazın (ör. "3: tarih yanlış", "7: sıkıcı").
+4. Bitince Issue'yu kapatın.
+
+Hedef: 10 karttan en az 8'i iyi ve **hiç yanlış bilgi yok**. İşaretlenen kartlar yazar istemini ve puan eşiklerini ayarlamak için kullanılır.
+
+### Komut satırından (geliştiriciler)
+
+```
+node src/runners/v2-daily.js                                  # dry-run: DB'ye yazmaz (LLM ve Wikipedia çağrıları gerçek)
+node src/runners/v2-daily.js --mode apply --publish           # gerçek run + yayın
+node src/runners/v2-daily.js --collect-limit 300 --process-limit 300 --backfill-from 2024-02 --backfill-months 1
+node src/runners/v2-weekly-sample.js                          # haftalık örnek metnini ekrana basar (Issue açmaz)
+```
+
+`v2-daily.js` stdout'a sadece tek satır JSON özet yazar (`ok`, adım sayıları, `alarms`, `issue`); log stderr'e gider. Çıkış kodu: 0 = hatasız (alarm olsa bile), 1 = bir adım hata verdi.
