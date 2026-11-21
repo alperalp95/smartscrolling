@@ -1,10 +1,11 @@
 // src/llm/usage.js
 // Günlük bütçe sayacı: sağlayıcı/model başına istek + token (Cloudflare için Neuron tahmini).
 // stopAtPercent'e gelen sağlayıcı/model o gün için atlanır.
-// Saklama enjekte edilir (usageStore): bellek içi ya da JSON dosya. DB'ye yazma V2-08'de.
+// Saklama enjekte edilir (usageStore): bellek içi, JSON dosya ya da `pipeline_state` (DB; GitHub Actions).
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { getState, setState } from '../v2/db/state-repo.js';
 
 export const DEFAULT_USAGE_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -59,6 +60,54 @@ export function createFileUsageStore({ dir = DEFAULT_USAGE_DIR } = {}) {
       await rename(tmp, target);
     },
   };
+}
+
+/** `pipeline_state` anahtar öneki: `llm-usage:YYYY-MM-DD` (UTC gün). */
+export const USAGE_STATE_PREFIX = 'llm-usage:';
+
+/**
+ * DB saklama: günlük sayaç `pipeline_state` tablosunda `llm-usage:<YYYY-MM-DD>` anahtarıyla tutulur.
+ * GitHub Actions her run'da sıfırdan başladığı için (yerel `.cache` kaybolur) `--apply` modunda bu kullanılır;
+ * aynı gündeki run'lar bütçeyi paylaşır.
+ *
+ * Yazma hatası hattı durdurmaz: `onError` çağrılır, `errors` sayacı artar, sayaç bellekte devam eder
+ * (tracker kayıtları zincirlediği için bir fırlatma sonraki tüm yazımları da bozardı).
+ * Okuma hatası fırlatılır (DB'ye ulaşılamıyorsa `--apply` zaten çalışamaz).
+ *
+ * @param {object} o
+ * @param {{ from: Function }} o.client  Supabase client
+ * @param {(client, key) => Promise<any>} [o.getState]
+ * @param {(client, key, value) => Promise<void>} [o.setState]
+ * @param {string} [o.prefix]
+ * @param {(err: Error, day: string) => void} [o.onError]
+ */
+export function createStateUsageStore({
+  client,
+  getState: getStateFn = getState,
+  setState: setStateFn = setState,
+  prefix = USAGE_STATE_PREFIX,
+  onError,
+} = {}) {
+  if (!client || typeof client.from !== 'function') throw new TypeError('createStateUsageStore: Supabase client gerekli');
+  const keyFor = (day) => `${prefix}${day}`;
+  const store = {
+    kind: 'db',
+    key: keyFor,
+    errors: 0,
+    async load(day) {
+      const value = await getStateFn(client, keyFor(day));
+      return value && typeof value === 'object' ? value : null;
+    },
+    async save(day, data) {
+      try {
+        await setStateFn(client, keyFor(day), data);
+      } catch (err) {
+        store.errors += 1;
+        onError?.(err, day);
+      }
+    },
+  };
+  return store;
 }
 
 /**
