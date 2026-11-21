@@ -27,6 +27,7 @@ Kanıt iki parçadır: KANCA (editörlerce kaynaklı, doğru kabul et) ve DESTEK
 Kart Türkçe, kanıt İngilizce olabilir; dile değil anlama bak. Karar vermeden önce kancanın ve paragrafın tamamına bak.
 Örnekler:
 Kanıt: "Adolf "Adi" Dassler registered Adidas, from Adi Dassler" · İddia: "Adidas adı Adi ve Dassler'den türetildi" → supported
+Değerlendirme/önem iddiaları ("dönemin tartışmalarında önemli yer edindi", "büyük ilgi gördü") kanıtta açıkça yoksa unsupported'dır (why: "önem iddiası, kanıtta yok").
 Kanıt: "Libya declared three days of mourning" · İddia: "Bu yas nadir bir örnekti" → unsupported, why: "yorum, kanıtta yok"
 Başlık örneği: kanıt "the final rehearsal lasted four days", başlık "Rehberlik tatbikatı dört gün sürdü" → title_match:false, title_why: "rehearsal = prova, rehberlik değil"
 Kısa yaz. "why" sadece supported olmayan iddialarda, en fazla 8 kelime.

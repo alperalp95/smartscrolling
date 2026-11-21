@@ -30,7 +30,7 @@ function repoWith() {
   });
 }
 
-const FIXED = { ...GOOD_CARD, title: 'Ahtapotun üç ayrı kalbi vardır', content: 'Ahtapotun üç kalbi vardır. Kanı mavidir. Bunun nedeni bakırlı bir proteindir.' };
+const FIXED = { ...GOOD_CARD, title: 'Ahtapotun üç ayrı kalbi vardır', content: 'Bu hayvanda üç kalp bulunur. Kanı mavidir. Bunun nedeni bakırlı bir proteindir.' };
 
 test('parseVerification: kararlar normalize edilir, tanınmayan → unclear, boş liste hata', () => {
   const r = parseVerification({ claims: [S('a'), { claim: 'b', verdict: 'Destekleniyor' }, { claim: 'c', verdict: '???' }] });

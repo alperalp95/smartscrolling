@@ -308,3 +308,9 @@ test('madde 10 · dedup-hook match_similar\'ı p_kinds=[fact,candidate] ve p_exc
   assert.deepEqual(repo.lastMatchArgs().kinds, ['fact', 'candidate']);
   assert.equal(repo.lastMatchArgs().excludeCandidate, 'h1');
 });
+
+
+test('V2-05g: doğrulayıcı istemi önem/değerlendirme iddiası örneğini içerir', () => {
+  assert.match(VERIFY_SYSTEM_PROMPT, /önemli yer edindi/);
+  assert.match(VERIFY_SYSTEM_PROMPT, /önem iddiası/);
+});

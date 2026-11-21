@@ -129,6 +129,46 @@ export function firstSentenceIssue(card) {
   return 'ilk cümle başlık okunmadan anlaşılmıyor: konuyu açıkça adlandır (özne zorunlu), başlıktaki ana adı ya da ismi ilk cümlede kullan';
 }
 
+function normalizeForEcho(text) {
+  return String(text ?? '')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Bigram Dice benzerliği (0-1), normalize edilmiş iki metin için. */
+function similarity(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const grams = (t) => {
+    const m = new Map();
+    for (let i = 0; i < t.length - 1; i += 1) m.set(t.slice(i, i + 2), (m.get(t.slice(i, i + 2)) ?? 0) + 1);
+    return m;
+  };
+  const ga = grams(a);
+  const gb = grams(b);
+  let inter = 0;
+  for (const [g, n] of ga) inter += Math.min(n, gb.get(g) ?? 0);
+  const total = Math.max(0, a.length - 1) + Math.max(0, b.length - 1);
+  return total === 0 ? 0 : (2 * inter) / total;
+}
+
+/**
+ * İlk cümle başlığı tekrar ediyor mu (V2-05g)? Normalize edilmiş (küçük harf, noktalama yok)
+ * ilk cümle başlıkla %80+ benzer ya da başlığı birebir içeriyorsa ihlal döner.
+ * @returns {string|null}
+ */
+export function titleEchoIssue(card) {
+  const title = normalizeForEcho(card?.title);
+  const sentence = normalizeForEcho(firstSentence(card?.content ?? ''));
+  if (!title || !sentence) return null;
+  if (sentence.includes(title) || similarity(title, sentence) >= 0.8) {
+    return 'ilk cümle başlığı tekrar etmesin, yeni bilgi versin';
+  }
+  return null;
+}
+
 /**
  * Kart taslağını kod kurallarına göre denetler.
  * @param {object} card
@@ -148,6 +188,8 @@ export function checkWriteRules(card, { minSentences = SENTENCES_MIN, maxSentenc
   if (!hasTurkishChars(`${title} ${content}`)) v.push('Türkçe karakter (ı, ğ, ş, ç, ö, ü) kullanılmalı');
   const first = firstSentenceIssue({ title, content });
   if (first) v.push(first);
+  const echo = titleEchoIssue({ title, content });
+  if (echo) v.push(echo);
   return v;
 }
 

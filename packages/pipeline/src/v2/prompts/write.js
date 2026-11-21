@@ -51,6 +51,7 @@ Biçim:
 - title: yukarıdaki başlık kuralları.
 - content: ${range} cümle, Türkçe karakterlerle (ı, ğ, ş, ç, ö, ü). İlk cümle şaşırtıcı olgunun kendisi; tanımla başlama.
 - İlk cümle başlık okunmadan tek başına anlaşılır: konuyu açıkça adlandırır, öznesi vardır. Kötü: "1932 yılında resmi olarak başlatıldı." (ne başlatıldı?) · İyi: "Türkiye'de ezan 1932'den 1950'ye kadar Türkçe okundu."
+- İlk cümle başlığı tekrar etmesin (aynen ya da içine alarak): başlıkta söylenmeyen yeni bir bilgi versin. Kötü: başlık "Kiryū'nün dergisi 27 sayı yasaklandı", içerik "Kiryū'nün dergisi 27 sayı yasaklandı." ile başlar.
 - tags: 3-5 küçük harfli Türkçe etiket. read_time_sq: tahmini okuma süresi (saniye).
 Kaynak paragraf kancayla çelişiyorsa ya da kart ilginç olmayacaksa yazma, şunu dön: {"skip":true,"reason":"..."}
 Sadece JSON dön: {"title":"...","content":"...","tags":["..."],"read_time_sq":20}`;

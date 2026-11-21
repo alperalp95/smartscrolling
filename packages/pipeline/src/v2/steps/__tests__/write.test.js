@@ -121,3 +121,22 @@ test('runWrite: LlmExhaustedError → deferred, aday scored kalır, attempts de�
   assert.equal(repo.get('b').attempts, 0);
   assert.equal(repo.get('c').status, 'scored');
 });
+
+test('checkWriteRules: ilk cümle başlığı tekrar ederse ihlal (V2-05g)', () => {
+  const title = 'Kiryū Yūyū dergisi 27 sayı yasaklandı';
+  const echo = checkWriteRules({ title, content: 'Kiryū Yūyū dergisi 27 sayı yasaklandı. Yasak 1933 yılında başladı ve yıllarca sürdü.' });
+  assert.ok(echo.some((x) => x.includes('başlığı tekrar')));
+  const contained = checkWriteRules({ title, content: "Japonya'da Kiryū Yūyū dergisi 27 sayı yasaklandı, ışık görmedi. Yasak yıllarca sürdü." });
+  assert.ok(contained.some((x) => x.includes('başlığı tekrar')));
+  const fine = checkWriteRules({ title, content: 'Kiryū Yūyū dergisini Japon yetkililer sansürledi. Yasak 1933 yılında başladı ve yıllarca sürdü.' });
+  assert.ok(!fine.some((x) => x.includes('başlığı tekrar')));
+});
+
+test('runWrite: ilk cümle = başlık → tek yeniden yazım', async () => {
+  const repo = repoWith();
+  const echo = { ...GOOD_CARD, content: 'Ahtapotun tam üç kalbi var. İkisi kanı solungaçlara pompalar.' };
+  const llm = fakeLlm({ writer: [echo, GOOD_CARD] });
+  await runWrite(deps({ llm, repo }));
+  assert.equal(llm.count('writer'), 2);
+  assert.equal(repo.get('w1').status, 'written');
+});
