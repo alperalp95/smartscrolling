@@ -32,8 +32,8 @@ Her kanca (TR ya da EN) için kısa anahtarlarla:
 - d (is_definition): kanca sadece "X nedir / kimdir / nerededir / ne işe yarar" bilgisiyse 1, değilse 0.
 - c (kategori): ${CATEGORY_NAMES.join(', ')}
 - w (gerekçe): SADECE s 6 ve üstüyse, en fazla 6 kelime; s 6'nın altındaysa w yazma.
-- x (hassas): odak ölüm/şiddet/trajedi ya da güncel siyasetse (siyasi figür/parti/seçim, terör, savaş, cinayet, intihar, felaket ölümleri, yakın tarihli ölüm) "x":1 yaz; değilse x yazma. Tarihsel olay tek başına hassas değil.
-  Örnek: "Charlie Kirk'ün yüzü suikastinin ardından memelere yerleştirildi" → x:1 · "Bookland, barkodlara göre kitapların geldiği hayali ülke" → x yok
+- x (hassas): odak ölüm/şiddet/trajedi ya da güncel siyasetse (siyasi figür/parti/seçim, terör, savaş, cinayet, idam/infaz, intihar, felaket ölümleri, yakın tarihli ölüm) "x":1 yaz; değilse x yazma. Tarihsel olay tek başına hassas değil.
+  Örnek: "Charlie Kirk'ün yüzü suikastinin ardından memelere yerleştirildi" → x:1 · "Saddam Hüseyin idam edildi, Libya yas ilan etti" → x:1 · "Bookland, barkodlara göre kitapların geldiği hayali ülke" → x yok
 Kalibrasyon (s/r):
 ÇOK İLGİNÇ
 - "Ahtapotun üç kalbi ve mavi kanı vardır." 9/8
