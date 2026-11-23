@@ -1,4 +1,6 @@
 appId: com.smartscrolling.mobile
+tags:
+  - account
 ---
 # Giris yapmis akis: e-posta ile giris yapar, hesap silme girisini gorur (silmeye BASMAZ).
 # Kimlik bilgisi dosyaya yazilmaz; calistirma:
