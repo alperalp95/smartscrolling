@@ -6,7 +6,31 @@
 > 📁 **Proje Dizini:** `c:\Users\Administrator\smartscrolling\`
 
 ---
+### [v1.37] - 2026-05-14
+
+#### P6-09b App Store Compliance Smoke Closure
+- P6-09b emulator/dev-build smoke kullanici tarafindan basarili kabul edildi.
+- Profilde hesap/veri silme akisi ve Reader AI Chat icindeki `Yanlis Icerigi Raporla` akisi release blocker kapsaminda kapatildi.
+- Remote `ai_content_reports` migration'i ve `delete-account` Edge Function deploy'u daha once tamamlandigi icin bu adim yalnizca docs closure olarak islendi.
+
+#### P6-01a Unit Test Foundation
+- Expo SDK 54 uyumlu `jest-expo` foundation ve root/mobile `test:unit` script'leri eklendi.
+- Ilk minimum unit test kapsami saf helper davranislarina odaklandi: `factVisuals` visual key/media guard ve `books` access policy.
+- React Native Testing Library dependency'si sonraki component testleri icin hazir tutuldu; Maestro/E2E ve genis coverage sonraki P6 dilimlerine birakildi.
+
+#### P6-02a Maestro Smoke Foundation
+- Feed, Library, Profile, Reader ve compliance yuzeyleri icin minimum `testID` noktalari eklendi.
+- `.maestro` altinda tab navigation, library->reader ve profile compliance surface smoke flow'lari hazirlandi.
+- Root `test:e2e:maestro` script'i eklendi; gercek kosu lokal Maestro CLI + Android emulator/dev build gerektirdigi icin sonraki onayli smoke adimina birakildi.
+
+---
 ### [v1.36] - 2026-05-12
+
+#### P3-24b-f Android Demo Banner Render Foundation
+- Android feed static ad slotlari icin guarded Google demo `BannerAd` render foundation eklendi; `inline_video` slotlari MVP smoke'ta placeholder kalmaya devam ediyor.
+- Native AdMob module eski development binary icinde yoksa crash yerine placeholder fallback korunur; production ad unit runtime'a alinmadi.
+- `p3_24b_f_android_demo_banner_render_smoke.md` runbook'u ve iOS'u ayri takip edecek `p3_24b_j_ios_admob_release_setup.md` task'i eklendi.
+- Verification: `npm run lint`, `npm run typecheck`, `npm run check:edge-functions`, `npx expo config --type public` ve hedefli Biome check gecti; fiziksel Android development build smoke bekliyor.
 
 #### P35-02 Streak Break Warning Local MVP
 - `docs/tasks/p35_02_streak_break_warning.md` task'i acildi; P35-02'nin P35-12 ile ayni single local reminder stack'i icinde kalacagi netlestirildi.
