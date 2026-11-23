@@ -116,7 +116,7 @@ test('config doğrulama: writing.minSentences / maxSentences', () => {
     c.writing = [2, 4];
   }, /'writing' bir nesne olmalı/);
   const noWriting = raw();
-  delete noWriting.writing;
+  Reflect.deleteProperty(noWriting, 'writing');
   assert.equal(
     validateConfig(noWriting).writing,
     undefined,

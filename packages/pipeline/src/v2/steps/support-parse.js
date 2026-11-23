@@ -54,8 +54,9 @@ export function extractParagraphs(html) {
     .replace(/<sup\b[^>]*class="[^"]*\breference\b[^"]*"[^>]*>[\s\S]*?<\/sup>/gi, '');
   const out = [];
   const re = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
-  let m;
-  while ((m = re.exec(cleaned))) {
+  for (;;) {
+    const m = re.exec(cleaned);
+    if (!m) break;
     const text = decodeEntities(m[1].replace(/<[^>]+>/g, ''))
       .replace(/\[(?:\d+|[a-z]|citation needed|kaynak belirtilmeli|note \d+)\]/gi, '')
       .replace(/\s+/g, ' ')

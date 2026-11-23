@@ -196,10 +196,11 @@ export async function runCollect({
   const mixLabel = config.mix.map((e) => `${e.id}:${e.quota}`).join(',');
 
   log(
-    `[v2-collect] mode=${config.apply ? 'APPLY' : 'dry-run'} source=${config.source} limit=${config.limit} (toplam) mix=${mixLabel}` +
-      (config.backfillFrom
+    `[v2-collect] mode=${config.apply ? 'APPLY' : 'dry-run'} source=${config.source} limit=${config.limit} (toplam) mix=${mixLabel}${
+      config.backfillFrom
         ? ` backfill-from=${config.backfillFrom} backfill-months=${config.backfillMonths}`
-        : ''),
+        : ''
+    }`,
   );
 
   const client = config.apply ? await getClient() : null;
@@ -265,8 +266,9 @@ export async function runCollect({
       remaining -= candidates.length;
 
       log(
-        `\n[${id}] ${collector.name}: ${record.count} aday (pay ${share})` +
-          (record.db ? ` → inserted=${record.db.inserted} skipped=${record.db.skipped}` : ''),
+        `\n[${id}] ${collector.name}: ${record.count} aday (pay ${share})${
+          record.db ? ` → inserted=${record.db.inserted} skipped=${record.db.skipped}` : ''
+        }`,
       );
       if (result.backfill) {
         const bf = result.backfill;

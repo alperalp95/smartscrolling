@@ -180,7 +180,9 @@ export async function runScore(deps, { limit = 50 } = {}) {
       if (isTooLarge(err) && batch.length > 1) {
         const mid = Math.ceil(batch.length / 2);
         const halves = [batch.slice(0, mid), batch.slice(mid)];
-        if (retryBatches.has(batch)) halves.forEach((h) => retryBatches.add(h));
+        if (retryBatches.has(batch)) {
+          for (const h of halves) retryBatches.add(h);
+        }
         queue.unshift(...halves);
         stats.splits += 1;
         deps.log?.(

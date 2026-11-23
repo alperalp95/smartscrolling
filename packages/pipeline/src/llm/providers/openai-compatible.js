@@ -138,7 +138,8 @@ function extractFailedGeneration(bodyText) {
  * - invalid_json: JSON modu geçerli JSON üretemedi -> tamir denemesi
  * - fatal: diğer 4xx (401/403/400...) -> sonraki sağlayıcı, tekrar yok
  */
-export function classifyHttpFailure(status, bodyText = '', headers) {
+export function classifyHttpFailure(status, rawBody, headers) {
+  const bodyText = rawBody ?? '';
   const snippet = String(bodyText).slice(0, 300);
   const msg = `HTTP ${status}: ${snippet}`;
   if (status === 404 || status === 410 || UNAVAILABLE_RE.test(bodyText)) {

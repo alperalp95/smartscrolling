@@ -88,8 +88,9 @@ export function parseMisconceptionsHtml(html, pageTitle) {
   let itemStart = -1;
   let itemDepth = -1;
   let itemSkip = false;
-  let m;
-  while ((m = tagRe.exec(body))) {
+  for (;;) {
+    const m = tagRe.exec(body);
+    if (!m) break;
     const [full, closing, rawTag, attrs] = m;
     const tag = rawTag.toLowerCase();
     if (tag.startsWith('h') && !closing) {

@@ -101,15 +101,11 @@ export function parseScoreRequest(req) {
 
 /** Wikipedia action=parse yanıtı gibi HTML. */
 export function articleHtml(paragraphs) {
-  return (
-    '<div class="mw-parser-output"><table class="infobox"><tr><td><p>Infobox text that should be ignored entirely here.</p></td></tr></table>' +
-    paragraphs
-      .map((p, i) =>
-        i === 1 ? `<h2>Section</h2><p>${p}<sup class="reference">[1]</sup></p>` : `<p>${p}</p>`,
-      )
-      .join('\n') +
-    '</div>'
-  );
+  return `<div class="mw-parser-output"><table class="infobox"><tr><td><p>Infobox text that should be ignored entirely here.</p></td></tr></table>${paragraphs
+    .map((p, i) =>
+      i === 1 ? `<h2>Section</h2><p>${p}<sup class="reference">[1]</sup></p>` : `<p>${p}</p>`,
+    )
+    .join('\n')}</div>`;
 }
 
 /**

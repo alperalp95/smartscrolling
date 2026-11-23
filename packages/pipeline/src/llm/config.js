@@ -286,7 +286,7 @@ export function validateConfig(rawConfig) {
   for (const [role, def] of pending) {
     if (def.sameAs !== undefined) continue;
     roles[role] = { ...def, steps: normalizeChain(def.chain, providers, `roles.${role}.chain`) };
-    delete roles[role].chain;
+    Reflect.deleteProperty(roles[role], 'chain');
   }
   for (const [role, def] of pending) {
     if (def.sameAs === undefined) continue;
@@ -340,5 +340,5 @@ const NORMALIZED = Symbol.for('smartscrolling.pipeline.llmConfig.normalized');
 
 /** Zaten validateConfig/loadConfig'ten geçmişse tekrar doğrulama. */
 export function ensureConfig(config) {
-  return config && config[NORMALIZED] ? config : validateConfig(config);
+  return config?.[NORMALIZED] ? config : validateConfig(config);
 }

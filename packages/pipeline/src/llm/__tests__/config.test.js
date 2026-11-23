@@ -118,13 +118,16 @@ test('gerçek config dosyası geçerli ve beklenen değerleri içeriyor', () => 
 });
 
 test('config doğrulama: eksik rol anlaşılır hata verir', () => {
-  expectConfigError((c) => delete c.roles.writer, /roles\.writer.*'writer' rolü eksik/);
-  expectConfigError((c) => delete c.roles.embedding, /embedding/);
+  expectConfigError(
+    (c) => Reflect.deleteProperty(c.roles, 'writer'),
+    /roles\.writer.*'writer' rolü eksik/,
+  );
+  expectConfigError((c) => Reflect.deleteProperty(c.roles, 'embedding'), /embedding/);
 });
 
 test('config doğrulama: tanımsız sağlayıcı anlaşılır hata verir', () => {
   expectConfigError(
-    (c) => delete c.providers.gemini,
+    (c) => Reflect.deleteProperty(c.providers, 'gemini'),
     /roles\.verifier\.chain\[2\]\.provider.*'gemini' providers bölümünde tanımlı değil/,
   );
   expectConfigError((c) => {
@@ -136,11 +139,17 @@ test('config doğrulama: tanımsız sağlayıcı anlaşılır hata verir', () =>
 });
 
 test('config doğrulama: sağlayıcı alanları', () => {
-  expectConfigError((c) => delete c.providers.groq.apiKeyEnv, /providers\.groq\.apiKeyEnv/);
+  expectConfigError(
+    (c) => Reflect.deleteProperty(c.providers.groq, 'apiKeyEnv'),
+    /providers\.groq\.apiKeyEnv/,
+  );
   expectConfigError((c) => {
     c.providers.groq.baseUrl = 'http://insecure';
   }, /baseUrl/);
-  expectConfigError((c) => delete c.providers.cloudflare.accountIdEnv, /accountIdEnv/);
+  expectConfigError(
+    (c) => Reflect.deleteProperty(c.providers.cloudflare, 'accountIdEnv'),
+    /accountIdEnv/,
+  );
   expectConfigError((c) => {
     c.providers.groq.stopAtPercent = 150;
   }, /stopAtPercent/);
@@ -151,7 +160,7 @@ test('config doğrulama: zincir, strategy, sameAs, retry, embedding', () => {
     c.roles.scorer.chain = [];
   }, /roles\.scorer\.chain/);
   expectConfigError((c) => {
-    delete c.roles.scorer.chain[0].model;
+    Reflect.deleteProperty(c.roles.scorer.chain[0], 'model');
   }, /'model' eksik/);
   expectConfigError((c) => {
     c.roles.writer.chain[0] = { strategy: 'random', pool: [c.roles.writer.chain[0]] };
@@ -159,12 +168,15 @@ test('config doğrulama: zincir, strategy, sameAs, retry, embedding', () => {
   expectConfigError((c) => {
     c.roles.judge.sameAs = 'yok';
   }, /sameAs 'yok'/);
-  expectConfigError((c) => delete c.retry, /'retry' bölümü eksik/);
+  expectConfigError((c) => Reflect.deleteProperty(c, 'retry'), /'retry' bölümü eksik/);
   expectConfigError((c) => {
     c.retry.maxAttempts = 0;
   }, /retry\.maxAttempts/);
-  expectConfigError((c) => delete c.roles.embedding.dimensions, /roles\.embedding\.dimensions/);
-  expectConfigError((c) => delete c.providers, /'providers' bölümü/);
+  expectConfigError(
+    (c) => Reflect.deleteProperty(c.roles.embedding, 'dimensions'),
+    /roles\.embedding\.dimensions/,
+  );
+  expectConfigError((c) => Reflect.deleteProperty(c, 'providers'), /'providers' bölümü/);
 });
 
 test('createLlm ham config ile de çalışır, bilinmeyen rol anlaşılır hata verir', async () => {

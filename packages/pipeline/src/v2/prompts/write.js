@@ -121,13 +121,7 @@ export function buildRepairMessages(previousText, problems, limits = DEFAULT_LIM
     { role: 'assistant', content: previousText || '(boş)' },
     {
       role: 'user',
-      content:
-        `Doğrulama şu iddiaları kancada ya da kaynak paragrafta bulamadı:\n${list}\n` +
-        `${REPAIR_MARKER}: bu iddiaları çıkar ya da kancaya/kaynağa birebir uyacak şekilde düzelt. ` +
-        'Yeni bilgi, yorum ya da genelleme ekleme. Sorunlu ifade başlıktaysa başlığı da düzelt: başlık gövdedeki olguyu ' +
-        'söyleyen, yüklemli, doğal bir Türkçe cümle olsun; terimleri doğru çevir. Diğer cümlelere dokunma. ' +
-        `Gövde ${sentenceRange(limits)} cümle kalmalı; aynı kurallar ve aynı JSON biçimi. ` +
-        'Düzeltince ilginç bir kart kalmıyorsa {"skip":true,"reason":"..."} dön.',
+      content: `Doğrulama şu iddiaları kancada ya da kaynak paragrafta bulamadı:\n${list}\n${REPAIR_MARKER}: bu iddiaları çıkar ya da kancaya/kaynağa birebir uyacak şekilde düzelt. Yeni bilgi, yorum ya da genelleme ekleme. Sorunlu ifade başlıktaysa başlığı da düzelt: başlık gövdedeki olguyu söyleyen, yüklemli, doğal bir Türkçe cümle olsun; terimleri doğru çevir. Diğer cümlelere dokunma. Gövde ${sentenceRange(limits)} cümle kalmalı; aynı kurallar ve aynı JSON biçimi. Düzeltince ilginç bir kart kalmıyorsa {"skip":true,"reason":"..."} dön.`,
     },
   ];
 }

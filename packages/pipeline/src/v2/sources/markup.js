@@ -346,8 +346,9 @@ export function firstSentences(text, max = 2) {
   const sentences = [];
   let start = 0;
   const re = /[.!?]["”’)]?\s+(?=["“(]?[A-Z0-9ÇĞİÖŞÜ])/g;
-  let m;
-  while ((m = re.exec(src)) && sentences.length < max) {
+  for (;;) {
+    const m = re.exec(src);
+    if (!m || sentences.length >= max) break;
     const before = src.slice(start, m.index + 1);
     if (
       /(?:\b[A-Z]\.|\b(?:e\.g|i\.e|etc|vs|Dr|Mr|Mrs|Ms|St|Jr|Sr|No|ca|c|approx|Gen|Col|Lt|Mt|U\.S)\.)$/.test(

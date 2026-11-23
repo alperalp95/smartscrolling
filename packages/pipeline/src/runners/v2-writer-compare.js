@@ -99,9 +99,9 @@ export function splitWriter(spec) {
 export function configWithWriter(config, spec) {
   const { provider, model } = splitWriter(spec);
   const base = { ...config.roles.writer };
-  delete base.sameAs;
+  Reflect.deleteProperty(base, 'sameAs');
   if (base.steps) {
-    delete base.chain;
+    Reflect.deleteProperty(base, 'chain');
     base.steps = [{ strategy: 'single', members: [{ provider, model, params: {} }] }];
   } else {
     base.chain = [{ provider, model }];
