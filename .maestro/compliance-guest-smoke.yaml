@@ -1,0 +1,16 @@
+appId: com.smartscrolling.mobile
+---
+# Misafir akisi: giris yapilmamisken profil ekraninda giris cagrisi gorunur,
+# hesap silme girisi gorunmez.
+- launchApp
+- tapOn: Profil
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 10000
+- assertVisible: Hesabini Bagla
+- assertVisible: Google ile Devam Et
+- assertVisible:
+    id: auth-email-toggle
+- assertNotVisible:
+    id: account-delete-entry
