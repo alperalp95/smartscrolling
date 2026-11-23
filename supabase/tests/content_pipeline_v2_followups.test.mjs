@@ -1,4 +1,4 @@
-// Verifies supabase/migrations/20261120130000_content_pipeline_v2_followups.sql on PGlite:
+// Verifies supabase/migrations/20261123085302_content_pipeline_v2_followups.sql on PGlite:
 // match_similar (p_kinds, rejected excluded, p_exclude_candidate), pipeline_state,
 // and how a JS number[] reaches a vector column through PostgREST-style JSON bodies.
 // Same Supabase stubs as content_pipeline_v2.test.mjs; earlier migrations run first,
@@ -23,8 +23,8 @@ const PRIOR_MIGRATIONS = [
   '20260409000000_schema_and_rls.sql',
   '20260419140942_p2_03g_fact_visual_key.sql',
 ];
-const V2_MIGRATION = '20261120120000_content_pipeline_v2.sql';
-const FOLLOWUPS_MIGRATION = '20261120130000_content_pipeline_v2_followups.sql';
+const V2_MIGRATION = '20261123085248_content_pipeline_v2.sql';
+const FOLLOWUPS_MIGRATION = '20261123085302_content_pipeline_v2_followups.sql';
 
 const SUPABASE_STUBS = `
   set timezone = 'UTC';

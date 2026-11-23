@@ -1,5 +1,5 @@
 // İçerik hattı v2 — run ölçümü: her günlük run sonunda `public.pipeline_runs` tablosuna bir satır.
-// Tablo (migration 20261120120000): id, started_at, finished_at, trigger, counts jsonb,
+// Tablo (migration 20261123085248): id, started_at, finished_at, trigger, counts jsonb,
 // provider_usage jsonb, errors jsonb, ok. RLS herkese kapalı; sadece service role yazar.
 
 export const RUNS_TABLE = 'pipeline_runs';

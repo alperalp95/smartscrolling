@@ -1,4 +1,4 @@
-// Verifies supabase/migrations/20261120120000_content_pipeline_v2.sql on PGlite.
+// Verifies supabase/migrations/20261123085248_content_pipeline_v2.sql on PGlite.
 // Supabase platform pieces (roles, auth schema, extensions schema, default grants)
 // are stubbed minimally; the real earlier migrations that define public.facts run
 // first, then the new migration is applied twice.
@@ -22,7 +22,7 @@ const PRIOR_MIGRATIONS = [
   '20260409000000_schema_and_rls.sql', // users, facts (+ "Anyone can read facts"), ...
   '20260419140942_p2_03g_fact_visual_key.sql', // facts.visual_key
 ];
-const V2_MIGRATION = '20261120120000_content_pipeline_v2.sql';
+const V2_MIGRATION = '20261123085248_content_pipeline_v2.sql';
 
 const SUPABASE_STUBS = `
   set timezone = 'UTC';
