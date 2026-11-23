@@ -1,0 +1,30 @@
+appId: com.smartscrolling.mobile
+tags:
+  - account
+---
+# Giris yapmis akis: e-posta ile giris yapar, hesap silme girisini gorur (silmeye BASMAZ).
+# Kimlik bilgisi dosyaya yazilmaz; calistirma:
+#   maestro test -e MAESTRO_TEST_EMAIL=... -e MAESTRO_TEST_PASSWORD=... .maestro/compliance-account-smoke.yaml
+- launchApp
+- tapOn: Profil
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 10000
+- tapOn:
+    id: auth-email-toggle
+- tapOn:
+    id: auth-email-input
+- inputText: ${MAESTRO_TEST_EMAIL}
+- tapOn:
+    id: auth-password-input
+- inputText: ${MAESTRO_TEST_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: auth-submit-button
+- scrollUntilVisible:
+    element:
+      id: account-delete-entry
+    timeout: 30000
+- assertVisible:
+    id: account-delete-entry

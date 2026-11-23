@@ -31,3 +31,7 @@ apps/*/.git/
 # Supabase local machine state
 supabase/.temp/
 supabase/.branches/
+
+# Claude agent worktrees
+.claude/worktrees/
+board/

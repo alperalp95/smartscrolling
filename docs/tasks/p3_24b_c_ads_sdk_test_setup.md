@@ -44,6 +44,7 @@ Mobil uygulamaya reklam SDK'sini test reklamlarla ve minimum riskle baglamak.
 - Native crash'in asil nedeni `expo-auth-session@55.0.15` ile Expo SDK 55 modullerinin SDK 54 projesine gelmesiydi.
 - `npx expo install expo-auth-session` ile paket `expo-auth-session@~7.0.11` surumune indirildi; transitive `expo-crypto` artik SDK 54 uyumlu `15.0.9`.
 - `apps/mobile/package-lock.json` stale kaldigi icin `expo-auth-session` ve `react-native-google-mobile-ads` entry'leri senkronlandi; EAS native build'in AdMob dependency'sini kacirmamasi icin bu lockfile artik package.json ile uyumlu.
+- `p3_24b_f` ile static feed slotlarinda Android guarded Google demo banner render foundation eklendi; production ad unit runtime'a alinmadi.
 
 ## Verification
 
@@ -53,7 +54,7 @@ Mobil uygulamaya reklam SDK'sini test reklamlarla ve minimum riskle baglamak.
 - [x] `npx biome check apps/mobile/package-lock.json apps/mobile/package.json apps/mobile/app.json apps/mobile/src/lib/ads.ts 'apps/mobile/app/(tabs)/index.tsx' --formatter-enabled=false --organize-imports-enabled=false --max-diagnostics=30`
 - [ ] Development build ile test reklam smoke test
   - Ilk build native Expo module duplicate crash verdi: `NoSuchMethodError ... ClassComponentBuilder`.
-  - Duzeltme olarak `autolinkingModuleResolution`, mobile `.easignore`, SDK 54 uyumlu `expo-auth-session` surumu ve senkron `apps/mobile/package-lock.json` eklendi; gercek native AdMob render'i acilmadan once yeni development build alinacak.
+  - Duzeltme olarak `autolinkingModuleResolution`, mobile `.easignore`, SDK 54 uyumlu `expo-auth-session` surumu ve senkron `apps/mobile/package-lock.json` eklendi; guarded static demo banner render'i dogrulamak icin yeni Android development build alinacak.
 
 ## Kaynaklar
 

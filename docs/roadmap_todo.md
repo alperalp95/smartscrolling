@@ -184,7 +184,7 @@ Not:
 ### 3.5 Monetizasyon ve Paywall (Gelir Modeli)
 - [x] **P3-23** RevenueCat entegrasyonu tamamlandi: `purchases.ts` icinde `ensurePurchasesConfigured`, `getPremiumEntitlementStatus`, `purchasePackageSafe`, `restorePurchasesSafe`, `presentSmartScrollPaywall`, `presentCustomerCenterSafe` fonksiyonlari aktif; `premiumEntitlements.ts` ile `authStore`'a baglandı
 - [x] **P3-24** Paywall ekrani `premium.tsx` olarak tamamlandi: RevenueCat offering'lerinden dinamik paket listeleme, satin alma ve restore akisi, benefit listesi ve loading state mevcut; `promptForPremium` ile uygulama icinden tetikleniyor
-- [ ] **P3-24b** Reklam operasyon checklist'i: AdMob test/production ad unit'leri, Play Console `contains ads` beyanı ve consent/backoffice adimlarini release oncesi tamamla (`p3_24b_a` tamamlandi; Android AdMob app/ad unit hazir; Google Play odemesi ve iOS backoffice release oncesine ertelendi; guest/free/premium feed cadence placeholder smoke dogrulandi; gercek Android AdMob render ve consent/release smoke bekliyor)
+- [ ] **P3-24b** Reklam operasyon checklist'i: AdMob test/production ad unit'leri, Play Console `contains ads` beyanı ve consent/backoffice adimlarini release oncesi tamamla (`p3_24b_a` tamamlandi; Android AdMob app/ad unit hazir; Google Play odemesi ve iOS backoffice release oncesine ertelendi; guest/free/premium feed cadence placeholder smoke dogrulandi; Android static demo banner render foundation eklendi; fiziksel Android development build smoke ve consent/release smoke bekliyor)
 
 ### 3.6 Icerik Stratejisi Kararlari (Yeni Oncelik)
 - [x] **P3-25** Kutuphaneyi `AI-assisted learning library` olarak yeniden konumlandir; aktif katalog 10 kitaplik non-fiction shortlist ile tarih/bilim/felsefe/toplum odagina cekildi
@@ -248,8 +248,8 @@ Not:
 
 ## PHASE 6 - Test, Optimizasyon ve Yayin
 
-- [ ] **P6-01** Unit testler (Jest + React Native Testing Library)
-- [ ] **P6-02** E2E testler (Maestro)
+- [ ] **P6-01** Unit testler (Jest + React Native Testing Library) - `P6-01a` minimum Jest foundation ve ilk saf helper testleri eklendi; genis auth/bookmark/reader coverage sonraki dilimlere ayrildi
+- [ ] **P6-02** E2E testler (Maestro) - `P6-02a` smoke foundation eklendi; tab navigation, library->reader ve compliance surface flow'lari hazir, Android emulator/dev build uzerinde gercek Maestro kosusu bekliyor
 - [ ] **P6-03** Performans optimizasyonu (FlashList, RAM bellek sismelerini (Memory Leak) onlemek icin Native `expo-image` ile resim onbellekleme (Offline cache))
 - [ ] **P6-04** Erisilebilirlik (a11y) kontrolleri
 - [ ] **P6-05** App Store / Google Play gerekliliklerini karsila
@@ -257,7 +257,7 @@ Not:
 - [ ] **P6-07** Beta kullanici grubu olustur ve geri bildirim topla
 - [ ] **P6-08** App Store Optimization (ASO)
 - [ ] **P6-09** KVKK / GDPR uyumluluk kontrolu (Gizlilik Sozlesmesi Onaylama Adimlari)
-- [ ] **P6-09b** Apple App Store Yasal Zorunluluklari: Profilde aninda isleyen "Hesabi ve Verilerimi Sil" butonu ve AI Chat ekraninda "Yanlis Icerigi Raporla" butonlarinin zorunlu entegrasyonu (`docs/tasks/p6_09b_app_store_compliance.md`) - implementation + remote apply/deploy tamam, emulator smoke bekliyor
+- [x] **P6-09b** Apple App Store Yasal Zorunluluklari: Profilde aninda isleyen "Hesabi ve Verilerimi Sil" butonu ve AI Chat ekraninda "Yanlis Icerigi Raporla" butonlarinin zorunlu entegrasyonu (`docs/tasks/p6_09b_app_store_compliance.md`) - implementation + remote apply/deploy + emulator/dev-build smoke tamam
 - [x] **P6-09c** Kitap katalog/highlight recovery: `Homo Deus` free anchor yapildi, `Kendime Dusunceler` kaldirildi, reader section basliklari kaldirildi ve highlight seed remote'a uygulandi (`docs/tasks/p6_book_catalog_highlight_recovery.md`)
 - [ ] **P6-10** Crash reporting kurulumu (Sentry)
 - [ ] **P6-11** Backend CI/CD: Supabase prod auto-deploy GitHub Action betiginin yazilmasi
@@ -338,9 +338,9 @@ Not:
 
 ### Devam icin onerilen sira
 1. `P35-04` grace/freeze davranisini ayri urun karari olarak tut; MVP oncesi gereklilik netlestirilecek.
-2. `P6-09b`: hesap/veri silme ve AI icerik raporlama akisini release blocker olarak ele al.
-3. `P6-01`/`P6-02`: auth, bookmark, reader progress ve paywall icin minimum unit/e2e smoke seti kur.
+2. `P6-01`/`P6-02`: auth, bookmark, reader progress ve paywall icin minimum unit/e2e smoke seti kur.
+3. `P6-10`/`P6-11`: Sentry foundation ve Supabase prod deploy workflow'unu release hazirligi icin ayri onayli tasklara bol.
 4. `P1-15o`/`P1-15p`/`P1-15q`: LLM provider abstraction, shadow benchmark ve budget guard ile Groq limit riskini operasyonel hale getir.
 5. `P35-13` interest-based token hedeflemeyi MVP sonrasi ayri task olarak ele al.
 
-*Son guncellenme: 2026-05-12 - v0.8*
+*Son guncellenme: 2026-05-14 - v0.8*

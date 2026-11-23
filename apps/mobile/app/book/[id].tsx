@@ -410,7 +410,7 @@ export default function BookReaderScreen() {
   };
 
   return (
-    <View style={s.root}>
+    <View style={s.root} testID="reader-screen">
       <SafeAreaView edges={['top']} style={[s.navWrap, { paddingTop: Math.max(insets.top, 10) }]}>
         <View style={s.nav}>
           <TouchableOpacity onPress={handleBackPress} style={s.backBtn}>
@@ -620,7 +620,11 @@ export default function BookReaderScreen() {
                   <Text style={s.aiLabel}>Yapay Zeka Aciklamasi</Text>
                   <Text style={s.aiText}>{aiText}</Text>
                 </View>
-                <TouchableOpacity style={s.askBtn} onPress={openChat}>
+                <TouchableOpacity
+                  style={s.askBtn}
+                  onPress={openChat}
+                  testID="reader-ai-chat-open-button"
+                >
                   <Text style={s.askBtnText}>Yapay Zekaya Sor</Text>
                 </TouchableOpacity>
               </View>
@@ -632,7 +636,10 @@ export default function BookReaderScreen() {
       {isChatOpen && (
         <View style={s.overlay} pointerEvents="box-none">
           <Pressable style={s.overlayBackdrop} onPress={closeChat} />
-          <Animated.View style={[s.sheet, s.chatSheet, { transform: [{ translateY: 0 }] }]}>
+          <Animated.View
+            style={[s.sheet, s.chatSheet, { transform: [{ translateY: 0 }] }]}
+            testID="reader-ai-chat-sheet"
+          >
             <View>
               <View style={s.handle} />
               <View style={s.sheetHeader}>
@@ -671,6 +678,7 @@ export default function BookReaderScreen() {
                               onPress={() => openReportPanel(index)}
                               activeOpacity={0.85}
                               disabled={isSubmittingReport}
+                              testID="ai-report-open-button"
                             >
                               <Text style={s.reportButtonText}>Yanlis Icerigi Raporla</Text>
                             </TouchableOpacity>
@@ -719,6 +727,7 @@ export default function BookReaderScreen() {
                                     onPress={() => void submitReport(message)}
                                     activeOpacity={0.85}
                                     disabled={isSubmittingReport}
+                                    testID="ai-report-submit-button"
                                   >
                                     <Text style={s.reportSubmitText}>
                                       {isSubmittingReport ? 'Gonderiliyor...' : 'Gonder'}

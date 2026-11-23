@@ -36,11 +36,11 @@ Feed icinde guest/free segmentlerine gore reklam slotlarini kontrollu sekilde ye
 
 - `insertFeedAdSlots()` helper'i `apps/mobile/src/lib/ads.ts` icine eklendi.
 - Feed listesi artik `FactType | FeedAdSlot` union'i ile render ediliyor.
-- Static slotlarda simdilik native AdMob render kapali tutulur ve crash-safe placeholder gosterilir.
-- Inline native/video slotlar simdilik slot karti olarak ayriliyor; gercek native ad render'i consent/release smoke oncesi ayri dogrulanacak.
+- Static slotlarda Android icin guarded Google demo `BannerAd` render foundation eklendi; native module yoksa crash-safe placeholder gosterilir.
+- Inline native/video slotlar simdilik slot karti olarak ayriliyor; gercek native/video ad render'i consent/release smoke oncesi ayri dogrulanacak.
 - Premium kullanicida ad slot uretilmez.
-- Native AdMob module binary icinde olmadiginda `react-native-google-mobile-ads` import'u crash ettigi icin runtime import kapatildi.
-- Cadence smoke icin gercek AdMob render'i bilerek kapali tutulur; bu asamada beklenen goruntu placeholder slotlaridir.
+- Native AdMob module binary icinde olmadiginda `react-native-google-mobile-ads` import'u crash edebildigi icin runtime import guarded loader uzerinden yapilir.
+- Cadence smoke icin `inline_video` slotlari placeholder kalir; static slotlarda gercek demo banner smoke yeni Android development build ile dogrulanacak.
 
 ## Verification
 
@@ -49,6 +49,6 @@ Feed icinde guest/free segmentlerine gore reklam slotlarini kontrollu sekilde ye
 - [x] Development build ile guest/free/premium placeholder cadence smoke test
   - Kullanici dogrulamasi: guest, free ve premium segmentlerinde reklam slot davranisi dogru calisiyor.
   - Cadence hesap kontrolu: guest `5, 11, 17, 23...`; free `9, 19, 29, 39...`; premium slot uretmez.
-- [ ] Development build ile Android gercek AdMob test reklam smoke test
+- [ ] Development build ile Android gercek AdMob demo banner smoke test
   - Mevcut build'de `RNGoogleMobileAdsModule could not be found` goruldu; fallback eklendi. Gercek banner icin AdMob SDK'yi iceren yeni native development build gerekir.
-  - Runtime import gecici olarak kapatildi; gercek AdMob banner render'i ayri adimda tekrar acilacak.
+  - Static slotlarda guarded demo banner render foundation eklendi; fiziksel Android development build smoke bekliyor.
