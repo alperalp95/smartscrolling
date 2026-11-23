@@ -9,8 +9,17 @@
       "maxTokens": 600,
       "expectedOutputTokens": 400,
       "chain": [
-        { "provider": "groq", "model": "qwen/qwen3.8-27b", "params": { "reasoning_effort": "none" } },
-        { "provider": "groq", "model": "openai/gpt-oss-20b", "params": { "reasoning_effort": "low" }, "maxTokens": 1000 },
+        {
+          "provider": "groq",
+          "model": "qwen/qwen3.8-27b",
+          "params": { "reasoning_effort": "none" }
+        },
+        {
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "params": { "reasoning_effort": "low" },
+          "maxTokens": 1000
+        },
         { "provider": "cloudflare", "model": "@cf/mistralai/mistral-small-3.1-24b-instruct" },
         { "provider": "cloudflare", "model": "@cf/meta/llama-4-scout-17b-16e-instruct" }
       ]
@@ -20,8 +29,16 @@
       "maxTokens": 1000,
       "expectedOutputTokens": 350,
       "chain": [
-        { "provider": "groq", "model": "openai/gpt-oss-120b", "params": { "reasoning_effort": "low" } },
-        { "provider": "groq", "model": "openai/gpt-oss-20b", "params": { "reasoning_effort": "low" } },
+        {
+          "provider": "groq",
+          "model": "openai/gpt-oss-120b",
+          "params": { "reasoning_effort": "low" }
+        },
+        {
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "params": { "reasoning_effort": "low" }
+        },
         { "provider": "cloudflare", "model": "@cf/openai/gpt-oss-20b" }
       ]
     },
@@ -31,7 +48,11 @@
       "expectedOutputTokens": 250,
       "chain": [
         { "provider": "cloudflare", "model": "@cf/mistralai/mistral-small-3.1-24b-instruct" },
-        { "provider": "cloudflare", "model": "@cf/google/gemma-4-26b-a4b-it", "params": { "chat_template_kwargs": { "enable_thinking": false } } },
+        {
+          "provider": "cloudflare",
+          "model": "@cf/google/gemma-4-26b-a4b-it",
+          "params": { "chat_template_kwargs": { "enable_thinking": false } }
+        },
         { "provider": "gemini", "model": "gemini-3.1-flash-lite" }
       ]
     },
@@ -44,9 +65,7 @@
       "_aciklama": "Tekrar kontrolü için metni sayı dizisine (vektör) çevirir. Bu modeli değiştirirseniz tüm eski vektörler yeniden hesaplanmalı; boyut (dimensions) veritabanıyla aynı kalmalı.",
       "dimensions": 1024,
       "batchSize": 50,
-      "chain": [
-        { "provider": "cloudflare", "model": "@cf/baai/bge-m3" }
-      ]
+      "chain": [{ "provider": "cloudflare", "model": "@cf/baai/bge-m3" }]
     }
   },
 

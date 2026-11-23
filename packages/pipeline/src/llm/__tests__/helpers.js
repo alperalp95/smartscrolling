@@ -28,7 +28,10 @@ export function chatOk(content, { prompt = 100, completion = 50 } = {}) {
   });
 }
 
-export function rateLimited(headers = {}, message = 'Rate limit reached for requests per minute (RPM)') {
+export function rateLimited(
+  headers = {},
+  message = 'Rate limit reached for requests per minute (RPM)',
+) {
   return json(429, { error: { message, type: 'requests', code: 'rate_limit_exceeded' } }, headers);
 }
 

@@ -1,6 +1,6 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLlm, createMemoryUsageStore, LlmExhaustedError } from '../index.js';
+import { test } from 'node:test';
+import { LlmExhaustedError, createLlm, createMemoryUsageStore } from '../index.js';
 import {
   FIXED_NOW,
   TEST_ENV,
@@ -31,7 +31,9 @@ function setup(handler, { env = TEST_ENV, usageStore } = {}) {
 }
 
 test('birincil başarılı -> doğru provider/model/usage döner', async () => {
-  const { llm, fetch, sleep } = setup(() => chatOk('{"score": 7}', { prompt: 120, completion: 30 }));
+  const { llm, fetch, sleep } = setup(() =>
+    chatOk('{"score": 7}', { prompt: 120, completion: 30 }),
+  );
 
   const res = await llm.chat('scorer', { messages: MESSAGES, json: true, maxTokens: 500 });
 
@@ -52,7 +54,10 @@ test('birincil başarılı -> doğru provider/model/usage döner', async () => {
   const snap = await llm.usage.snapshot();
   assert.equal(snap.date, '2026-11-20');
   assert.deepEqual(
-    { r: snap.providers.groq.models['qwen/qwen3.8-27b'].requests, t: snap.providers.groq.models['qwen/qwen3.8-27b'].tokens },
+    {
+      r: snap.providers.groq.models['qwen/qwen3.8-27b'].requests,
+      t: snap.providers.groq.models['qwen/qwen3.8-27b'].tokens,
+    },
     { r: 1, t: 150 },
   );
 });
@@ -119,7 +124,9 @@ test('istek zaman aşımı (requestTimeoutMs) iptal eder ve tekrar dener', async
 });
 
 test('429 maxAttempts kadar -> yedeğe geçer (iki Groq puanlayıcı da dolu → Cloudflare Mistral)', async () => {
-  const { llm, fetch, sleep } = setup((call) => (isGroq(call) ? rateLimited() : chatOk('yedekten', { prompt: 1000, completion: 1000 })));
+  const { llm, fetch, sleep } = setup((call) =>
+    isGroq(call) ? rateLimited() : chatOk('yedekten', { prompt: 1000, completion: 1000 }),
+  );
 
   const res = await llm.chat('scorer', { messages: MESSAGES });
 
@@ -127,7 +134,10 @@ test('429 maxAttempts kadar -> yedeğe geçer (iki Groq puanlayıcı da dolu →
   assert.equal(res.model, '@cf/mistralai/mistral-small-3.1-24b-instruct');
   assert.equal(fetch.calls.filter(isGroq).length, 6, 'qwen 3 + gpt-oss-20b 3 deneme');
   assert.equal(fetch.calls.filter(isCloudflare).length, 1);
-  assert.equal(fetch.calls[6].url, 'https://api.cloudflare.com/client/v4/accounts/acc123/ai/v1/chat/completions');
+  assert.equal(
+    fetch.calls[6].url,
+    'https://api.cloudflare.com/client/v4/accounts/acc123/ai/v1/chat/completions',
+  );
   assert.equal(fetch.calls[6].headers.authorization, `Bearer ${TEST_ENV.CLOUDFLARE_API_TOKEN}`);
   assert.deepEqual(sleep.waits, [2000, 4000, 2000, 4000]);
   // Neuron tahmini: 1000*31876/1e6 + 1000*50488/1e6 = 82.364
@@ -139,7 +149,12 @@ test('404 decommissioned -> anında yedeğe geçer + model_unavailable olayı; a
   const isQwen = (call) => isGroq(call) && call.body.model === 'qwen/qwen3.8-27b';
   const { llm, fetch, sleep } = setup((call) =>
     isQwen(call)
-      ? json(404, { error: { message: 'The model `qwen/qwen3.8-27b` has been decommissioned', code: 'model_decommissioned' } })
+      ? json(404, {
+          error: {
+            message: 'The model `qwen/qwen3.8-27b` has been decommissioned',
+            code: 'model_decommissioned',
+          },
+        })
       : chatOk('yedek'),
   );
 
@@ -163,7 +178,13 @@ test('404 decommissioned -> anında yedeğe geçer + model_unavailable olayı; a
 test('400 + model_decommissioned kodu da model_unavailable sayılır', async () => {
   const { llm, fetch } = setup((call) =>
     isGroq(call)
-      ? json(400, { error: { message: 'model decommissioned', type: 'invalid_request_error', code: 'model_decommissioned' } })
+      ? json(400, {
+          error: {
+            message: 'model decommissioned',
+            type: 'invalid_request_error',
+            code: 'model_decommissioned',
+          },
+        })
       : chatOk('yedek'),
   );
   const res = await llm.chat('scorer', { messages: MESSAGES });
@@ -178,8 +199,20 @@ test('bütçe %90 -> sağlayıcı atlanır (model başına istek sınırı)', as
       date: '2026-11-20',
       providers: {
         groq: {
-          requests: 900, tokens: 0, neurons: 0, exhausted: false,
-          models: { 'qwen/qwen3.8-27b': { requests: 900, inputTokens: 0, outputTokens: 0, tokens: 0, neurons: 0, exhausted: false } },
+          requests: 900,
+          tokens: 0,
+          neurons: 0,
+          exhausted: false,
+          models: {
+            'qwen/qwen3.8-27b': {
+              requests: 900,
+              inputTokens: 0,
+              outputTokens: 0,
+              tokens: 0,
+              neurons: 0,
+              exhausted: false,
+            },
+          },
         },
       },
     },
@@ -202,7 +235,9 @@ test('bütçe %90 -> Cloudflare Neuron (sağlayıcı geneli) dolunca doğrulayı
   const usageStore = createMemoryUsageStore({
     '2026-11-20': {
       date: '2026-11-20',
-      providers: { cloudflare: { requests: 50, tokens: 0, neurons: 9000.5, exhausted: false, models: {} } },
+      providers: {
+        cloudflare: { requests: 50, tokens: 0, neurons: 9000.5, exhausted: false, models: {} },
+      },
     },
   });
   const { llm, fetch } = setup(() => chatOk('gemini cevabı'), { usageStore });
@@ -212,7 +247,10 @@ test('bütçe %90 -> Cloudflare Neuron (sağlayıcı geneli) dolunca doğrulayı
   assert.equal(res.provider, 'gemini');
   assert.equal(res.model, 'gemini-3.1-flash-lite');
   assert.equal(fetch.calls.length, 1);
-  assert.equal(fetch.calls[0].url, 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+  assert.equal(
+    fetch.calls[0].url,
+    'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+  );
   assert.ok(isGemini(fetch.calls[0]));
   assert.equal(res.usage.neurons, undefined);
 });
@@ -225,7 +263,8 @@ test('bütçe sayacı kullanım biriktikçe sağlayıcıyı kapatır', async () 
   const llm = createLlm(config, { env: TEST_ENV, fetch, sleep: fakeSleep(), now: () => FIXED_NOW });
 
   const models = [];
-  for (let i = 0; i < 5; i += 1) models.push((await llm.chat('scorer', { messages: MESSAGES })).model);
+  for (let i = 0; i < 5; i += 1)
+    models.push((await llm.chat('scorer', { messages: MESSAGES })).model);
   assert.deepEqual(models, [
     'qwen/qwen3.8-27b',
     'qwen/qwen3.8-27b',
@@ -276,7 +315,9 @@ test('tüm zincir dolu -> LlmExhaustedError', async () => {
 
 test('günlük kota (TPD) 429 -> tekrar denenmez, model bugün için kapanır', async () => {
   const { llm, fetch, sleep } = setup((call) =>
-    isGroq(call) ? rateLimited({}, 'Rate limit reached ... on tokens per day (TPD): Limit 200000') : chatOk('cf'),
+    isGroq(call)
+      ? rateLimited({}, 'Rate limit reached ... on tokens per day (TPD): Limit 200000')
+      : chatOk('cf'),
   );
   assert.equal((await llm.chat('scorer', { messages: MESSAGES })).provider, 'cloudflare');
   assert.equal(fetch.calls.filter(isGroq).length, 2, 'iki Groq üyesi birer kez');
@@ -298,7 +339,11 @@ test('anahtar env’de yoksa sağlayıcı atlanır; anahtar değeri hiçbir yere
   const missing = llm.events.find((e) => e.type === 'missing_credentials');
   assert.deepEqual(missing.env, ['GROQ_API_KEY']);
 
-  const dump = JSON.stringify(llm.events) + err.message + JSON.stringify(err.attempts) + JSON.stringify(await llm.usage.snapshot());
+  const dump =
+    JSON.stringify(llm.events) +
+    err.message +
+    JSON.stringify(err.attempts) +
+    JSON.stringify(await llm.usage.snapshot());
   for (const v of Object.values(TEST_ENV)) {
     if (v.includes('SECRET')) assert.ok(!dump.includes(v), 'anahtar değeri sızdı');
   }
@@ -308,7 +353,8 @@ test('writer her zaman önce gpt-oss-120b kullanır (dağıtım yok)', async () 
   const { llm, fetch } = setup(() => chatOk('kart'));
 
   const models = [];
-  for (let i = 0; i < 4; i += 1) models.push((await llm.chat('writer', { messages: MESSAGES })).model);
+  for (let i = 0; i < 4; i += 1)
+    models.push((await llm.chat('writer', { messages: MESSAGES })).model);
 
   assert.deepEqual(models, Array(4).fill('openai/gpt-oss-120b'));
   assert.ok(fetch.calls.every((c) => c.body.reasoning_effort === 'low'));
@@ -326,7 +372,9 @@ test('writer 120b doluysa 20b’ye, ikisi de doluysa Cloudflare’e geçer', asy
   const second = await llm.chat('writer', { messages: MESSAGES });
   assert.equal(second.model, 'openai/gpt-oss-20b');
 
-  const { llm: llm2 } = setup((call) => (isGroq(call) ? rateLimited({}, 'tokens per day (TPD)') : chatOk('kart')));
+  const { llm: llm2 } = setup((call) =>
+    isGroq(call) ? rateLimited({}, 'tokens per day (TPD)') : chatOk('kart'),
+  );
   const res = await llm2.chat('writer', { messages: MESSAGES });
   assert.equal(res.provider, 'cloudflare');
   assert.equal(res.model, '@cf/openai/gpt-oss-20b');

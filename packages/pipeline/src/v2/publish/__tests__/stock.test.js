@@ -1,5 +1,5 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { stockStatus } from '../index.js';
 
 test('tam 3.0 gün → alarm yok', () => {
@@ -25,12 +25,21 @@ test('1 ondalık; kayan nokta artığı aşağı düşürmez (29/10 → 2.9)', (
 });
 
 test('minStockDays altı → belowTarget; tam hedef → değil', () => {
-  assert.equal(stockStatus({ queuedCount: 690, dailyCount: 100, minStockDays: 7 }).belowTarget, true);
-  assert.equal(stockStatus({ queuedCount: 700, dailyCount: 100, minStockDays: 7 }).belowTarget, false);
+  assert.equal(
+    stockStatus({ queuedCount: 690, dailyCount: 100, minStockDays: 7 }).belowTarget,
+    true,
+  );
+  assert.equal(
+    stockStatus({ queuedCount: 700, dailyCount: 100, minStockDays: 7 }).belowTarget,
+    false,
+  );
 });
 
 test('alarmStockDays özelleştirilebilir', () => {
-  assert.equal(stockStatus({ queuedCount: 450, dailyCount: 100, minStockDays: 7, alarmStockDays: 5 }).alarm, true);
+  assert.equal(
+    stockStatus({ queuedCount: 450, dailyCount: 100, minStockDays: 7, alarmStockDays: 5 }).alarm,
+    true,
+  );
 });
 
 test('stok 0 → 0 gün, alarm', () => {
@@ -42,10 +51,19 @@ test('stok 0 → 0 gün, alarm', () => {
 });
 
 test('dailyCount 0 → hata', () => {
-  assert.throws(() => stockStatus({ queuedCount: 10, dailyCount: 0, minStockDays: 7 }), /dailyCount 0/);
+  assert.throws(
+    () => stockStatus({ queuedCount: 10, dailyCount: 0, minStockDays: 7 }),
+    /dailyCount 0/,
+  );
 });
 
 test('geçersiz girdi → hata', () => {
-  assert.throws(() => stockStatus({ queuedCount: -1, dailyCount: 10, minStockDays: 7 }), RangeError);
-  assert.throws(() => stockStatus({ queuedCount: 1, dailyCount: -10, minStockDays: 7 }), RangeError);
+  assert.throws(
+    () => stockStatus({ queuedCount: -1, dailyCount: 10, minStockDays: 7 }),
+    RangeError,
+  );
+  assert.throws(
+    () => stockStatus({ queuedCount: 1, dailyCount: -10, minStockDays: 7 }),
+    RangeError,
+  );
 });

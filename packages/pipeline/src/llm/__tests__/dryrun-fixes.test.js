@@ -1,18 +1,46 @@
+import assert from 'node:assert/strict';
 // V2-05c: ilk gerçek dry-run bulguları — zincir yedeğe geçişi, hata nedeni, <think> ayıklama,
 // kesik yanıt (finish_reason=length), rol başına maxTokens. Sahte fetch; gerçek ağ yok.
 import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { createLlm, createMemoryUsageStore, LlmExhaustedError, LlmOutputError, stripThinking } from '../index.js';
+import {
+  LlmExhaustedError,
+  LlmOutputError,
+  createLlm,
+  createMemoryUsageStore,
+  stripThinking,
+} from '../index.js';
 import { parseRetryHintMs } from '../providers/openai-compatible.js';
-import { FIXED_NOW, TEST_ENV, chatOk, fakeFetch, fakeSleep, isCloudflare, isGemini, isGroq, json, realConfig } from './helpers.js';
+import {
+  FIXED_NOW,
+  TEST_ENV,
+  chatOk,
+  fakeFetch,
+  fakeSleep,
+  isCloudflare,
+  isGemini,
+  isGroq,
+  json,
+  realConfig,
+} from './helpers.js';
 
 const MESSAGES = [{ role: 'user', content: 'puanla' }];
-const SECRETS = [TEST_ENV.GROQ_API_KEY, TEST_ENV.CLOUDFLARE_API_TOKEN, TEST_ENV.GEMINI_API_KEY, TEST_ENV.CLOUDFLARE_ACCOUNT_ID];
+const SECRETS = [
+  TEST_ENV.GROQ_API_KEY,
+  TEST_ENV.CLOUDFLARE_API_TOKEN,
+  TEST_ENV.GEMINI_API_KEY,
+  TEST_ENV.CLOUDFLARE_ACCOUNT_ID,
+];
 
 function setup(handler, { usageStore = createMemoryUsageStore() } = {}) {
   const fetch = fakeFetch(handler);
   const sleep = fakeSleep();
-  const llm = createLlm(realConfig(), { env: TEST_ENV, fetch, sleep, now: () => FIXED_NOW, usageStore });
+  const llm = createLlm(realConfig(), {
+    env: TEST_ENV,
+    fetch,
+    sleep,
+    now: () => FIXED_NOW,
+    usageStore,
+  });
   return { llm, fetch, sleep, usageStore };
 }
 
@@ -52,7 +80,10 @@ test('puanlayıcı: Groq geçersiz JSON (tamir de bozuk) → Cloudflare yedeği 
   const groq = snap.providers.groq.models['qwen/qwen3.8-27b'];
   assert.equal(groq.failures, 1);
   assert.equal(groq.lastError.kind, 'invalid_json');
-  assert.equal(snap.providers.cloudflare.models['@cf/mistralai/mistral-small-3.1-24b-instruct'].requests, 1);
+  assert.equal(
+    snap.providers.cloudflare.models['@cf/mistralai/mistral-small-3.1-24b-instruct'].requests,
+    1,
+  );
 });
 
 test('tüm zincir sadece JSON hatası verirse LlmOutputError (tükenme DEĞİL); nedenler mesajda', async () => {
@@ -64,11 +95,16 @@ test('tüm zincir sadece JSON hatası verirse LlmOutputError (tükenme DEĞİL);
   assert.equal(err.attempts.length, 4);
   assert.ok(err.attempts.every((a) => a.kind === 'invalid_json'));
   assert.match(err.message, /groq\/qwen\/qwen3\.8-27b: invalid_json/);
-  assert.match(err.message, /cloudflare\/@cf\/mistralai\/mistral-small-3\.1-24b-instruct: invalid_json/);
+  assert.match(
+    err.message,
+    /cloudflare\/@cf\/mistralai\/mistral-small-3\.1-24b-instruct: invalid_json/,
+  );
 });
 
 test('kapasite hatası + JSON hatası karışık → yine LlmOutputError; sadece kapasite → LlmExhaustedError', async () => {
-  const mixed = setup((call) => (isGroq(call) ? json(400, { error: { message: 'bad request' } }) : chatOk('bozuk {')));
+  const mixed = setup((call) =>
+    isGroq(call) ? json(400, { error: { message: 'bad request' } }) : chatOk('bozuk {'),
+  );
   const e1 = await mixed.llm.chat('scorer', { messages: MESSAGES, json: true }).catch((e) => e);
   assert.equal(e1.name, 'LlmOutputError');
 
@@ -81,27 +117,44 @@ test('kapasite hatası + JSON hatası karışık → yine LlmOutputError; sadece
 test('hata nedeni log/olay/hata mesajına anahtar değeri olmadan yazılır', async () => {
   // Sağlayıcı gövdede anahtarı geri yansıtsa bile temizlenir.
   const { llm } = setup((call) =>
-    json(401, { error: { message: `Invalid API Key ${call.headers.authorization} for account ${TEST_ENV.CLOUDFLARE_ACCOUNT_ID}` } }),
+    json(401, {
+      error: {
+        message: `Invalid API Key ${call.headers.authorization} for account ${TEST_ENV.CLOUDFLARE_ACCOUNT_ID}`,
+      },
+    }),
   );
   const err = await llm.chat('scorer', { messages: MESSAGES, json: true }).catch((e) => e);
   assert.equal(err.name, 'LlmExhaustedError');
   assert.match(err.message, /fatal \(401\)/);
-  const everything = JSON.stringify({ message: err.message, attempts: err.attempts, events: llm.events, usage: await llm.usage.snapshot() });
+  const everything = JSON.stringify({
+    message: err.message,
+    attempts: err.attempts,
+    events: llm.events,
+    usage: await llm.usage.snapshot(),
+  });
   for (const secret of SECRETS) assert.ok(!everything.includes(secret), `sızan değer: ${secret}`);
   assert.match(everything, /\*\*\*/);
 });
 
 test('finish_reason=length → kesik yanıt hata sayılır, tamir denenmez, yedeğe geçilir (doğrulayıcı Mistral → Gemma → Gemini)', async () => {
   const { llm, fetch } = setup((call) => {
-    if (isCloudflare(call)) return chatWith('{"claims":[{"claim":"uzun uzun', 'length', { completion: 1500 });
+    if (isCloudflare(call))
+      return chatWith('{"claims":[{"claim":"uzun uzun', 'length', { completion: 1500 });
     return chatWith('{"claims":[{"claim":"a","verdict":"supported"}]}', 'stop');
   });
   const res = await llm.chat('verifier', { messages: MESSAGES, json: true });
   assert.equal(res.provider, 'gemini');
-  assert.equal(fetch.calls.filter(isCloudflare).length, 2, 'iki Cloudflare üyesi, kesik yanıt için tamir isteği yok');
+  assert.equal(
+    fetch.calls.filter(isCloudflare).length,
+    2,
+    'iki Cloudflare üyesi, kesik yanıt için tamir isteği yok',
+  );
   assert.equal(fetch.calls.filter(isGemini).length, 1);
   const truncated = llm.events.filter((e) => e.type === 'truncated');
-  assert.deepEqual(truncated.map((e) => e.model), ['@cf/mistralai/mistral-small-3.1-24b-instruct', '@cf/google/gemma-4-26b-a4b-it']);
+  assert.deepEqual(
+    truncated.map((e) => e.model),
+    ['@cf/mistralai/mistral-small-3.1-24b-instruct', '@cf/google/gemma-4-26b-a4b-it'],
+  );
   assert.equal(truncated[0].maxTokens, 800, 'config roles.verifier.maxTokens');
   const failed = llm.events.find((e) => e.type === 'provider_failed');
   assert.equal(failed.kind, 'truncated');
@@ -115,7 +168,9 @@ test('finish_reason=length JSON olmayan çağrıda da hata; geçerli JSON gibi g
 });
 
 test('Qwen3 düşünme kapalı (Groq reasoning_effort=none); userSuffix config’te verilirse son kullanıcı mesajına eklenir', async () => {
-  const { llm, fetch } = setup((call) => (isGroq(call) ? json(404, { error: { message: 'model_not_found' } }) : chatOk('{"ok":true}')));
+  const { llm, fetch } = setup((call) =>
+    isGroq(call) ? json(404, { error: { message: 'model_not_found' } }) : chatOk('{"ok":true}'),
+  );
   const msgs = [
     { role: 'system', content: 'sistem' },
     { role: 'user', content: 'kancalar' },
@@ -126,14 +181,25 @@ test('Qwen3 düşünme kapalı (Groq reasoning_effort=none); userSuffix config�
   assert.equal(groqCall.body.reasoning_effort, 'none');
   assert.equal(groqCall.body.messages.at(-1).content, 'kancalar', 'Groq mesajı değişmez');
   assert.equal(cfCall.body.model, '@cf/mistralai/mistral-small-3.1-24b-instruct');
-  assert.equal(cfCall.body.messages.at(-1).content, 'kancalar', 'Mistral düşünmez; /no_think eklenmez');
+  assert.equal(
+    cfCall.body.messages.at(-1).content,
+    'kancalar',
+    'Mistral düşünmez; /no_think eklenmez',
+  );
   assert.equal(msgs[1].content, 'kancalar', 'çağıranın mesaj dizisi değişmez');
 
   // userSuffix mekanizması (ör. ileride bir Qwen3 yedeği için " /no_think") hâlâ çalışır.
   const config = realConfig();
   config.roles.scorer.steps[2].members[0].userSuffix = ' /no_think';
-  const fetch2 = fakeFetch((call) => (isGroq(call) ? json(404, { error: { message: 'model_not_found' } }) : chatOk('{"ok":true}')));
-  const llm2 = createLlm(config, { env: TEST_ENV, fetch: fetch2, sleep: fakeSleep(), now: () => FIXED_NOW });
+  const fetch2 = fakeFetch((call) =>
+    isGroq(call) ? json(404, { error: { message: 'model_not_found' } }) : chatOk('{"ok":true}'),
+  );
+  const llm2 = createLlm(config, {
+    env: TEST_ENV,
+    fetch: fetch2,
+    sleep: fakeSleep(),
+    now: () => FIXED_NOW,
+  });
   await llm2.chat('scorer', { messages: msgs, json: true });
   const [cf2] = fetch2.calls.filter(isCloudflare);
   assert.equal(cf2.body.messages.at(-1).content, 'kancalar /no_think');
@@ -145,7 +211,9 @@ test('JSON olmayan yanıtta da <think> ayıklanır; sadece düşünce dönerse h
   const res = await ok.llm.chat('writer', { messages: MESSAGES });
   assert.equal(res.text, 'Merhaba dünya');
 
-  const onlyThink = setup((call) => (isGroq(call) ? chatOk('<think>bitmeyen düşünce') : chatOk('cevap')));
+  const onlyThink = setup((call) =>
+    isGroq(call) ? chatOk('<think>bitmeyen düşünce') : chatOk('cevap'),
+  );
   const r2 = await onlyThink.llm.chat('scorer', { messages: MESSAGES });
   assert.equal(r2.provider, 'cloudflare');
   assert.equal(onlyThink.llm.events.find((e) => e.type === 'provider_failed').kind, 'empty');
@@ -169,7 +237,12 @@ test('Groq 429 gövdesindeki "try again in 7.5s" ipucuna uyulur (retry-after ba�
   assert.equal(parseRetryHintMs('başka metin'), undefined);
   const { llm, sleep } = setup((call, i) =>
     i === 0
-      ? json(429, { error: { message: 'Rate limit reached on tokens per minute (TPM): Limit 6000. Please try again in 7.5s.' } })
+      ? json(429, {
+          error: {
+            message:
+              'Rate limit reached on tokens per minute (TPM): Limit 6000. Please try again in 7.5s.',
+          },
+        })
       : chatOk('{"a":1}'),
   );
   await llm.chat('scorer', { messages: MESSAGES, json: true });

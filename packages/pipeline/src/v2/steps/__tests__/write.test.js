@@ -1,26 +1,47 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { createMemoryStepsRepo } from '../../db/steps-repo.js';
-import { checkWriteRules, countSentences, hasTurkishChars, normalizeDraft, runWrite } from '../write.js';
+import {
+  checkWriteRules,
+  countSentences,
+  hasTurkishChars,
+  normalizeDraft,
+  runWrite,
+} from '../write.js';
 import { GOOD_CARD, baseCandidate, deps, exhausted, fakeLlm, userContent } from './helpers.js';
 
 const SUPPORT = 'An octopus has three hearts. Its blood is blue because of a copper-rich protein.';
 
 function repoWith(over = {}) {
   return createMemoryStepsRepo({
-    candidates: [baseCandidate({ id: 'w1', status: 'scored', support_paragraph: SUPPORT, scores: { category: '🔬 BİLİM', wow: 8 }, ...over })],
+    candidates: [
+      baseCandidate({
+        id: 'w1',
+        status: 'scored',
+        support_paragraph: SUPPORT,
+        scores: { category: '🔬 BİLİM', wow: 8 },
+        ...over,
+      }),
+    ],
   });
 }
 
 test('countSentences: kısaltma ve baş harf cümle bitirmez', () => {
   assert.equal(countSentences('Bir. İki! Üç?'), 3);
-  assert.equal(countSentences('Kent M.Ö. 500 yılında kuruldu. J. Smith burayı gezdi. Son cümle'), 3);
+  assert.equal(
+    countSentences('Kent M.Ö. 500 yılında kuruldu. J. Smith burayı gezdi. Son cümle'),
+    3,
+  );
   assert.equal(countSentences('Sayı 3.5 kat büyüktü. Bitti.'), 2);
 });
 
 test('checkWriteRules: başlık uzunluğu, nedir/kimdir, 2-4 cümle, Türkçe karakter', () => {
   assert.deepEqual(checkWriteRules(GOOD_CARD), []);
-  const v = checkWriteRules({ title: 'Ahtapot nedir?', content: 'Octopus is an animal. It lives in the sea. It has eight arms. Its blood is blue. It is smart.' });
+  const v = checkWriteRules({
+    title: 'Ahtapot nedir?',
+    content:
+      'Octopus is an animal. It lives in the sea. It has eight arms. Its blood is blue. It is smart.',
+  });
   assert.equal(v.length, 3);
   assert.ok(v.some((x) => x.includes('nedir')));
   assert.ok(v.some((x) => x.includes('cümle')));
@@ -33,7 +54,12 @@ test('checkWriteRules: başlık uzunluğu, nedir/kimdir, 2-4 cümle, Türkçe ka
 });
 
 test('normalizeDraft: etiketler küçük harf/tekrarsız/en fazla 5, okuma süresi tahmini', () => {
-  const d = normalizeDraft({ title: ' T ', content: 'a b c', tags: ['Uzay', 'uzay', '#Bilim', 'a', 'b', 'c', 'd'], read_time_sq: 'x' });
+  const d = normalizeDraft({
+    title: ' T ',
+    content: 'a b c',
+    tags: ['Uzay', 'uzay', '#Bilim', 'a', 'b', 'c', 'd'],
+    read_time_sq: 'x',
+  });
   assert.deepEqual(d.tags, ['uzay', 'bilim', 'a', 'b', 'c']);
   assert.equal(d.read_time_sq, 10);
 });
@@ -52,7 +78,7 @@ test('runWrite: geçerli kart → written, taslak scores.draft içinde', async (
   assert.ok(u.includes('Kategori: 🔬 BİLİM') && u.includes(SUPPORT) && u.includes('three hearts'));
 });
 
-test('runWrite: kural ihlali → tek yeniden yazım (ihlal prompt\'ta) → written', async () => {
+test("runWrite: kural ihlali → tek yeniden yazım (ihlal prompt'ta) → written", async () => {
   const repo = repoWith();
   const llm = fakeLlm({ writer: [{ ...GOOD_CARD, title: 'Ahtapot kimdir' }, GOOD_CARD] });
   await runWrite(deps({ llm, repo }));
@@ -110,7 +136,13 @@ test('attempts ≥ 3 → rejected:max_attempts', async () => {
 test('runWrite: LlmExhaustedError → deferred, aday scored kalır, attempts değişmez', async () => {
   const repo = createMemoryStepsRepo({
     candidates: ['a', 'b', 'c'].map((id) =>
-      baseCandidate({ id, source_key: id, status: 'scored', support_paragraph: SUPPORT, scores: { category: '🔬 BİLİM' } }),
+      baseCandidate({
+        id,
+        source_key: id,
+        status: 'scored',
+        support_paragraph: SUPPORT,
+        scores: { category: '🔬 BİLİM' },
+      }),
     ),
   });
   const llm = fakeLlm({ writer: (req, n) => (n === 1 ? GOOD_CARD : exhausted('writer')) });
@@ -125,17 +157,31 @@ test('runWrite: LlmExhaustedError → deferred, aday scored kalır, attempts de�
 
 test('checkWriteRules: ilk cümle başlığı tekrar ederse ihlal (V2-05g)', () => {
   const title = 'Kiryū Yūyū dergisi 27 sayı yasaklandı';
-  const echo = checkWriteRules({ title, content: 'Kiryū Yūyū dergisi 27 sayı yasaklandı. Yasak 1933 yılında başladı ve yıllarca sürdü.' });
+  const echo = checkWriteRules({
+    title,
+    content: 'Kiryū Yūyū dergisi 27 sayı yasaklandı. Yasak 1933 yılında başladı ve yıllarca sürdü.',
+  });
   assert.ok(echo.some((x) => x.includes('başlığı tekrar')));
-  const contained = checkWriteRules({ title, content: "Japonya'da Kiryū Yūyū dergisi 27 sayı yasaklandı, ışık görmedi. Yasak yıllarca sürdü." });
+  const contained = checkWriteRules({
+    title,
+    content:
+      "Japonya'da Kiryū Yūyū dergisi 27 sayı yasaklandı, ışık görmedi. Yasak yıllarca sürdü.",
+  });
   assert.ok(contained.some((x) => x.includes('başlığı tekrar')));
-  const fine = checkWriteRules({ title, content: 'Kiryū Yūyū dergisini Japon yetkililer sansürledi. Yasak 1933 yılında başladı ve yıllarca sürdü.' });
+  const fine = checkWriteRules({
+    title,
+    content:
+      'Kiryū Yūyū dergisini Japon yetkililer sansürledi. Yasak 1933 yılında başladı ve yıllarca sürdü.',
+  });
   assert.ok(!fine.some((x) => x.includes('başlığı tekrar')));
 });
 
 test('runWrite: ilk cümle = başlık → tek yeniden yazım', async () => {
   const repo = repoWith();
-  const echo = { ...GOOD_CARD, content: 'Ahtapotun tam üç kalbi var. İkisi kanı solungaçlara pompalar.' };
+  const echo = {
+    ...GOOD_CARD,
+    content: 'Ahtapotun tam üç kalbi var. İkisi kanı solungaçlara pompalar.',
+  };
   const llm = fakeLlm({ writer: [echo, GOOD_CARD] });
   await runWrite(deps({ llm, repo }));
   assert.equal(llm.count('writer'), 2);

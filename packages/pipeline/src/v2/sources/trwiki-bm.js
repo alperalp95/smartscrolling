@@ -7,7 +7,14 @@
 //   - `.../Arşiv/2022+` günlük sayfalarla örtüştüğü için okunmaz (bkz. rapor).
 // Günlük sayfalar `generator=allpages` + `prop=revisions` ile 50'şer okunur (wikitext).
 import { mediawikiApi } from './http.js';
-import { boldLinkFromWikitext, linksFromWikitext, slugify, stripFileLinks, wikiUrl, wikitextToText } from './markup.js';
+import {
+  boldLinkFromWikitext,
+  linksFromWikitext,
+  slugify,
+  stripFileLinks,
+  wikiUrl,
+  wikitextToText,
+} from './markup.js';
 import { cleanHookText, isUsableHook, makeCandidate } from './types.js';
 
 export const TR_WIKI_HOST = 'tr.wikipedia.org';
@@ -64,7 +71,12 @@ export function parseBmDailyPage(title, wikitext) {
   let skipped = 0;
   let index = 0;
   for (const line of stripNoinclude(wikitext).split(/\n+/)) {
-    if (!line.trim() || /^\s*-{4,}\s*$/.test(line) || /^\s*\[\[\s*(?:kategori|category)\s*:/i.test(line)) continue;
+    if (
+      !line.trim() ||
+      /^\s*-{4,}\s*$/.test(line) ||
+      /^\s*\[\[\s*(?:kategori|category)\s*:/i.test(line)
+    )
+      continue;
     const candidate = buildBmCandidate({
       key: `trwiki-bm:${date}:${index}`,
       line,
@@ -87,7 +99,11 @@ export function parseBmDailyPage(title, wikitext) {
  * @param {string} wikitext
  */
 export function parseBmArchivePage(title, wikitext) {
-  const slug = slugify(String(title ?? '').split('/').pop());
+  const slug = slugify(
+    String(title ?? '')
+      .split('/')
+      .pop(),
+  );
   const candidates = [];
   let skipped = 0;
   let index = 0;
@@ -158,7 +174,8 @@ export async function collectTrBm({ http, limit = 200, cursor = null, now = new 
         break;
       }
       if (candidates.length >= limit) break;
-      const content = page.revisions?.[0]?.slots?.main?.content ?? page.revisions?.[0]?.content ?? '';
+      const content =
+        page.revisions?.[0]?.slots?.main?.content ?? page.revisions?.[0]?.content ?? '';
       const parsed = parseBmDailyPage(page.title, content);
       candidates.push(...parsed.candidates);
       skipped += parsed.skipped;

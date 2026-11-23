@@ -1,8 +1,12 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { decideDuplicate } from '../index.js';
 
-const candidate = { sourceKey: 'enwiki-dyk:2019-03-14:3', text: 'Ahtapotun üç kalbi vardır.', embedding: [] };
+const candidate = {
+  sourceKey: 'enwiki-dyk:2019-03-14:3',
+  text: 'Ahtapotun üç kalbi vardır.',
+  embedding: [],
+};
 
 function fakeJudge(answers) {
   const calls = [];
@@ -43,7 +47,12 @@ test('0.95 → duplicate/semantic ve judge çağrılmadı', async () => {
     ],
     judge,
   });
-  assert.deepEqual(res, { verdict: 'duplicate', reason: 'semantic', matchId: 'a', similarity: 0.95 });
+  assert.deepEqual(res, {
+    verdict: 'duplicate',
+    reason: 'semantic',
+    matchId: 'a',
+    similarity: 0.95,
+  });
   assert.equal(judge.calls.length, 0);
 });
 
@@ -67,7 +76,12 @@ test('gray + judge sameFact=true → duplicate/judge_same_fact', async () => {
     matches: [{ kind: 'fact', id: 3, text: 'Octopuses have three hearts.', similarity: 0.9 }],
     judge,
   });
-  assert.deepEqual(res, { verdict: 'duplicate', reason: 'judge_same_fact', matchId: 3, similarity: 0.9 });
+  assert.deepEqual(res, {
+    verdict: 'duplicate',
+    reason: 'judge_same_fact',
+    matchId: 3,
+    similarity: 0.9,
+  });
   assert.equal(judge.calls.length, 1);
   assert.deepEqual(judge.calls[0], { a: candidate.text, b: 'Octopuses have three hearts.' });
 });
@@ -93,7 +107,12 @@ test('judge hata → duplicate/judge_error', async () => {
     matches: [{ kind: 'fact', id: 5, text: 'Ahtapotun kalpleri.', similarity: 0.88 }],
     judge,
   });
-  assert.deepEqual(res, { verdict: 'duplicate', reason: 'judge_error', matchId: 5, similarity: 0.88 });
+  assert.deepEqual(res, {
+    verdict: 'duplicate',
+    reason: 'judge_error',
+    matchId: 5,
+    similarity: 0.88,
+  });
 });
 
 test("gray'de en fazla 3 judge çağrısı, benzerliği yüksekten düşüğe", async () => {
@@ -123,7 +142,12 @@ test('gray: ikinci eşleşmede sameFact → durur ve duplicate', async () => {
   ];
   const res = await decideDuplicate({ candidate, matches, judge });
   assert.equal(judge.calls.length, 2);
-  assert.deepEqual(res, { verdict: 'duplicate', reason: 'judge_same_fact', matchId: 'y', similarity: 0.9 });
+  assert.deepEqual(res, {
+    verdict: 'duplicate',
+    reason: 'judge_same_fact',
+    matchId: 'y',
+    similarity: 0.9,
+  });
 });
 
 test('Ahtapot senaryosu: aynı konu, farklı olgu geçer', async () => {

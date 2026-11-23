@@ -1,12 +1,13 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { createMemoryStepsRepo } from '../../db/steps-repo.js';
 import { cardText, runDedupCard } from '../dedup-card.js';
 import { runDedupHook } from '../dedup-hook.js';
 import { runScore } from '../score.js';
 import { GOOD_CARD, baseCandidate, bowEmbed, deps, exhausted, fakeLlm } from './helpers.js';
 
-const hookCand = (id, hook, over = {}) => baseCandidate({ id, source_key: `k-${id}`, hook_text: hook, ...over });
+const hookCand = (id, hook, over = {}) =>
+  baseCandidate({ id, source_key: `k-${id}`, hook_text: hook, ...over });
 
 /** Verilen benzerlikte (cos) birim vektör: [cos, sin, 0...] */
 function vecAt(cos) {
@@ -15,7 +16,10 @@ function vecAt(cos) {
 
 test('dedup-hook: anlamca aynı kanca → rejected:duplicate_semantic; embedding kaydedilir', async () => {
   const repo = createMemoryStepsRepo({
-    candidates: [hookCand('a', 'the octopus has three hearts and blue blood'), hookCand('b', 'octopus has blue blood and three hearts')],
+    candidates: [
+      hookCand('a', 'the octopus has three hearts and blue blood'),
+      hookCand('b', 'octopus has blue blood and three hearts'),
+    ],
   });
   const llm = fakeLlm({ judge: { sameFact: true } });
   const stats = await runDedupHook(deps({ llm, repo }));
@@ -34,7 +38,11 @@ test('dedup-hook: kendisi ve rejected adaylar eşleşmeden çıkarılır', async
   const hook = 'the octopus has three hearts and blue blood';
   const repo = createMemoryStepsRepo({
     candidates: [
-      hookCand('old', hook.replace('the ', ''), { status: 'rejected', reject_reason: 'low_surprise', embedding: bowEmbed(hook) }),
+      hookCand('old', hook.replace('the ', ''), {
+        status: 'rejected',
+        reject_reason: 'low_surprise',
+        embedding: bowEmbed(hook),
+      }),
       hookCand('self', hook, { embedding: bowEmbed(hook), attempts: 1 }),
     ],
   });
@@ -46,9 +54,20 @@ test('dedup-hook: kendisi ve rejected adaylar eşleşmeden çıkarılır', async
 test('dedup-hook: mevcut yayınlanmış karta karşı gri bölge → hakem "aynı olgu" → duplicate_judge_same_fact', async () => {
   const repo = createMemoryStepsRepo({
     candidates: [hookCand('a', 'kanca a')],
-    facts: [{ id: 'f1', title: 'Ahtapot', content: 'Üç kalp.', embedding: vecAt(0.88), status: 'published' }],
+    facts: [
+      {
+        id: 'f1',
+        title: 'Ahtapot',
+        content: 'Üç kalp.',
+        embedding: vecAt(0.88),
+        status: 'published',
+      },
+    ],
   });
-  const llm = fakeLlm({ embed: (texts) => texts.map(() => vecAt(1)), judge: { same_fact: true, reason: 'aynı' } });
+  const llm = fakeLlm({
+    embed: (texts) => texts.map(() => vecAt(1)),
+    judge: { same_fact: true, reason: 'aynı' },
+  });
   await runDedupHook(deps({ llm, repo }));
   assert.equal(repo.get('a').reject_reason, 'duplicate_judge_same_fact');
   assert.equal(llm.count('judge'), 1);
@@ -59,7 +78,10 @@ test('dedup-hook: gri bölgede hakem zinciri tükenirse tekrar sayılmaz → def
     candidates: [hookCand('a', 'kanca a'), hookCand('b', 'kanca b')],
     facts: [{ id: 'f1', title: 'T', content: 'C', embedding: vecAt(0.88), status: 'published' }],
   });
-  const llm = fakeLlm({ embed: (texts) => texts.map(() => vecAt(1)), judge: () => exhausted('judge') });
+  const llm = fakeLlm({
+    embed: (texts) => texts.map(() => vecAt(1)),
+    judge: () => exhausted('judge'),
+  });
   const stats = await runDedupHook(deps({ llm, repo }));
   assert.equal(stats.deferred, 2);
   assert.equal(stats.exhaustedRole, 'judge');
@@ -85,14 +107,25 @@ test('dedup-hook: embedding servisi hatası → aday new kalır (attempts++), pu
 });
 
 test('dedup-hook: embedding zinciri tükenirse → deferred, attempts değişmez', async () => {
-  const repo = createMemoryStepsRepo({ candidates: [hookCand('a', 'kanca a'), hookCand('b', 'kanca b')] });
-  const stats = await runDedupHook(deps({ llm: fakeLlm({ embed: () => exhausted('embedding') }), repo }));
+  const repo = createMemoryStepsRepo({
+    candidates: [hookCand('a', 'kanca a'), hookCand('b', 'kanca b')],
+  });
+  const stats = await runDedupHook(
+    deps({ llm: fakeLlm({ embed: () => exhausted('embedding') }), repo }),
+  );
   assert.equal(stats.deferred, 2);
   assert.equal(repo.get('a').attempts, 0);
 });
 
 function writtenCand(id, draft, over = {}) {
-  return baseCandidate({ id, source_key: `k-${id}`, status: 'written', support_paragraph: 'p', scores: { category: '🔬 BİLİM', draft }, ...over });
+  return baseCandidate({
+    id,
+    source_key: `k-${id}`,
+    status: 'written',
+    support_paragraph: 'p',
+    scores: { category: '🔬 BİLİM', draft },
+    ...over,
+  });
 }
 
 test('dedup-card: yayınlanmış karta anlamca aynı → rejected:duplicate_card_semantic; adaylar yok sayılır', async () => {
@@ -101,9 +134,23 @@ test('dedup-card: yayınlanmış karta anlamca aynı → rejected:duplicate_card
     candidates: [
       writtenCand('w', GOOD_CARD),
       // kendi kancası aynı vektörde olsa bile aday eşleşmesi kart tekrarı sayılmaz
-      baseCandidate({ id: 'other', source_key: 'o', status: 'scored', hook_text: text, embedding: bowEmbed(text) }),
+      baseCandidate({
+        id: 'other',
+        source_key: 'o',
+        status: 'scored',
+        hook_text: text,
+        embedding: bowEmbed(text),
+      }),
     ],
-    facts: [{ id: 'f1', title: GOOD_CARD.title, content: GOOD_CARD.content.replace('Üçüncüsü', 'Sonuncusu'), embedding: bowEmbed(text), status: 'queued' }],
+    facts: [
+      {
+        id: 'f1',
+        title: GOOD_CARD.title,
+        content: GOOD_CARD.content.replace('Üçüncüsü', 'Sonuncusu'),
+        embedding: bowEmbed(text),
+        status: 'queued',
+      },
+    ],
   });
   await runDedupCard(deps({ llm: fakeLlm({}), repo }));
   const c = repo.get('w');
@@ -115,7 +162,15 @@ test('dedup-card: birebir aynı metin → duplicate_card_exact_hash', async () =
   const text = cardText(GOOD_CARD);
   const repo = createMemoryStepsRepo({
     candidates: [writtenCand('w', GOOD_CARD)],
-    facts: [{ id: 'f1', title: GOOD_CARD.title, content: GOOD_CARD.content, embedding: bowEmbed(text), status: 'published' }],
+    facts: [
+      {
+        id: 'f1',
+        title: GOOD_CARD.title,
+        content: GOOD_CARD.content,
+        embedding: bowEmbed(text),
+        status: 'published',
+      },
+    ],
   });
   await runDedupCard(deps({ llm: fakeLlm({}), repo }));
   assert.equal(repo.get('w').reject_reason, 'duplicate_card_exact_hash');
@@ -124,7 +179,15 @@ test('dedup-card: birebir aynı metin → duplicate_card_exact_hash', async () =
 test('dedup-card: benzersiz → written kalır, hash + embedding saklanır, archived kart sayılmaz', async () => {
   const repo = createMemoryStepsRepo({
     candidates: [writtenCand('w', GOOD_CARD)],
-    facts: [{ id: 'f1', title: GOOD_CARD.title, content: GOOD_CARD.content, embedding: bowEmbed(cardText(GOOD_CARD)), status: 'archived' }],
+    facts: [
+      {
+        id: 'f1',
+        title: GOOD_CARD.title,
+        content: GOOD_CARD.content,
+        embedding: bowEmbed(cardText(GOOD_CARD)),
+        status: 'archived',
+      },
+    ],
   });
   const stats = await runDedupCard(deps({ llm: fakeLlm({}), repo }));
   const c = repo.get('w');

@@ -119,7 +119,17 @@ export function isFatal(err) {
 }
 
 export function newStats(step) {
-  return { step, seen: 0, advanced: 0, rejected: {}, failed: 0, deferred: 0, exhaustedRole: null, exhaustedReason: null, errors: [] };
+  return {
+    step,
+    seen: 0,
+    advanced: 0,
+    rejected: {},
+    failed: 0,
+    deferred: 0,
+    exhaustedRole: null,
+    exhaustedReason: null,
+    errors: [],
+  };
 }
 
 export function nowIso(now) {
@@ -131,7 +141,11 @@ export function noopLog() {}
 
 /** Adayı reddeder: status=rejected, reject_reason=reason. */
 export async function reject(ctx, cand, reason, stats, extra = {}) {
-  await ctx.repo.updateCandidate(cand.id, { ...extra, status: STATUS.REJECTED, reject_reason: reason });
+  await ctx.repo.updateCandidate(cand.id, {
+    ...extra,
+    status: STATUS.REJECTED,
+    reject_reason: reason,
+  });
   stats.rejected[reason] = (stats.rejected[reason] ?? 0) + 1;
   ctx.log?.(`[${stats.step}] ${cand.id} rejected:${reason}`);
 }
@@ -178,11 +192,14 @@ export function markDeferred(ctx, stats, err, count) {
   stats.deferred += count;
   stats.exhaustedRole = err?.role ?? stats.exhaustedRole ?? 'unknown';
   // Neden (her model için hata türü + kısa mesaj) log'a ve stats'a yazılır; anahtar içermez (LLM katmanı temizler).
-  const why = Array.isArray(err?.attempts) && err.attempts.length
-    ? err.attempts.map((a) => `${a.provider}/${a.model}: ${a.reason}`).join(' | ')
-    : String(err?.message ?? err ?? 'bilinmiyor');
+  const why =
+    Array.isArray(err?.attempts) && err.attempts.length
+      ? err.attempts.map((a) => `${a.provider}/${a.model}: ${a.reason}`).join(' | ')
+      : String(err?.message ?? err ?? 'bilinmiyor');
   stats.exhaustedReason = why.slice(0, 600);
-  ctx.log?.(`[${stats.step}] LLM zinciri tükendi (role=${stats.exhaustedRole}); ${count} aday ertesi run'a kaldı. Neden: ${stats.exhaustedReason}`);
+  ctx.log?.(
+    `[${stats.step}] LLM zinciri tükendi (role=${stats.exhaustedRole}); ${count} aday ertesi run'a kaldı. Neden: ${stats.exhaustedReason}`,
+  );
 }
 
 /**
@@ -201,7 +218,10 @@ export function createJudge(llm, buildJudgePrompt, { maxTokens = 200 } = {}) {
       const res = await llm.chat('judge', { messages, json: true, maxTokens });
       const v = res?.json ?? {};
       const same = v.same_fact ?? v.sameFact;
-      return { sameFact: same === true || same === 'true', reason: typeof v.reason === 'string' ? v.reason : undefined };
+      return {
+        sameFact: same === true || same === 'true',
+        reason: typeof v.reason === 'string' ? v.reason : undefined,
+      };
     } catch (err) {
       if (isExhausted(err) || isFatal(err)) state.exhausted = err;
       else if (isOutputError(err)) state.error = err;

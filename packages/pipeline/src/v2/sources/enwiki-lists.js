@@ -31,7 +31,8 @@ export const UNUSUAL_PAGE = 'Wikipedia:Unusual articles';
 const UNUSUAL_SKIP_SUBPAGES = new Set(['Categories', 'Other pages']);
 const MAX_HOOK_CHARS = 600;
 
-const END_SECTIONS = /<h2\b[^>]*\bid="(?:See_also|References|Notes|Citations|Sources|Further_reading|External_links|Bibliography)(?:_\d+)?"/i;
+const END_SECTIONS =
+  /<h2\b[^>]*\bid="(?:See_also|References|Notes|Citations|Sources|Further_reading|External_links|Bibliography)(?:_\d+)?"/i;
 
 /* ----------------------------- misconceptions ----------------------------- */
 
@@ -50,7 +51,8 @@ export function pickMisconceptionSubpages(links) {
 function hookFromItemText(text) {
   let hook = firstSentences(text, 2);
   if (hook.length > MAX_HOOK_CHARS) hook = firstSentences(text, 1);
-  if (hook.length > MAX_HOOK_CHARS) hook = `${hook.slice(0, MAX_HOOK_CHARS - 1).replace(/\s+\S*$/, '')}…`;
+  if (hook.length > MAX_HOOK_CHARS)
+    hook = `${hook.slice(0, MAX_HOOK_CHARS - 1).replace(/\s+\S*$/, '')}…`;
   return hook;
 }
 
@@ -70,7 +72,11 @@ export function parseMisconceptionsHtml(html, pageTitle) {
   body = body.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<figure\b[\s\S]*?<\/figure>/gi, '');
   body = replaceBalanced(body, '<table', '</table>');
 
-  const pageSlug = slugify(pageTitle.startsWith(MISCONCEPTIONS_PREFIX) ? pageTitle.slice(MISCONCEPTIONS_PREFIX.length) : pageTitle);
+  const pageSlug = slugify(
+    pageTitle.startsWith(MISCONCEPTIONS_PREFIX)
+      ? pageTitle.slice(MISCONCEPTIONS_PREFIX.length)
+      : pageTitle,
+  );
   const candidates = [];
   const seenKeys = new Set();
   let skipped = 0;
@@ -127,7 +133,12 @@ export function parseMisconceptionsHtml(html, pageTitle) {
           lang: 'en',
           hook_text: hook,
           source_url: wikiUrl('en', article) ?? wikiUrl('en', pageTitle),
-          source_meta: { origin: 'enwiki:misconceptions', page: pageTitle, section, list_url: wikiUrl('en', pageTitle) },
+          source_meta: {
+            origin: 'enwiki:misconceptions',
+            page: pageTitle,
+            section,
+            list_url: wikiUrl('en', pageTitle),
+          },
         }),
       );
     }
@@ -143,8 +154,12 @@ export function parseMisconceptionsHtml(html, pageTitle) {
  * @returns {string[]} tam sayfa adları
  */
 export function pickUnusualSubpages(wikitext) {
-  const names = [...String(wikitext ?? '').matchAll(/\{\{\s*\/([^{}|]+?)\s*\}\}/g)].map((x) => x[1].trim());
-  return [...new Set(names)].filter((n) => !UNUSUAL_SKIP_SUBPAGES.has(n)).map((n) => `${UNUSUAL_PAGE}/${n}`);
+  const names = [...String(wikitext ?? '').matchAll(/\{\{\s*\/([^{}|]+?)\s*\}\}/g)].map((x) =>
+    x[1].trim(),
+  );
+  return [...new Set(names)]
+    .filter((n) => !UNUSUAL_SKIP_SUBPAGES.has(n))
+    .map((n) => `${UNUSUAL_PAGE}/${n}`);
 }
 
 /** Tablo hücresinin başındaki `width="30%" |` gibi öznitelik kısmını atar. */
@@ -231,7 +246,12 @@ export function parseUnusualWikitext(wikitext, pageTitle) {
         lang: 'en',
         hook_text: hook,
         source_url: url,
-        source_meta: { origin: 'enwiki:unusual_articles', page: pageTitle, section, title: title.replace(/_/g, ' ') },
+        source_meta: {
+          origin: 'enwiki:unusual_articles',
+          page: pageTitle,
+          section,
+          title: title.replace(/_/g, ' '),
+        },
       }),
     );
   };

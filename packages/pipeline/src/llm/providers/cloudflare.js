@@ -19,7 +19,10 @@ export const cloudflareAdapter = {
     if (!apiKey) missing.push(providerCfg.apiKeyEnv);
     if (!accountId) missing.push(providerCfg.accountIdEnv);
     if (missing.length) return { ok: false, missing };
-    const baseUrl = trimSlash(providerCfg.baseUrl).replace('{accountId}', encodeURIComponent(accountId));
+    const baseUrl = trimSlash(providerCfg.baseUrl).replace(
+      '{accountId}',
+      encodeURIComponent(accountId),
+    );
     return { ok: true, apiKey, baseUrl };
   },
 

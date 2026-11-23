@@ -11,7 +11,11 @@ export const STATE_TABLE = 'pipeline_state';
  * @returns {Promise<any>}  kayıtlı `value` ya da yoksa null
  */
 export async function getState(client, key) {
-  const { data, error } = await client.from(STATE_TABLE).select('value').eq('key', key).maybeSingle();
+  const { data, error } = await client
+    .from(STATE_TABLE)
+    .select('value')
+    .eq('key', key)
+    .maybeSingle();
   if (error) throw new Error(`${STATE_TABLE} okunamadı (${key}): ${error.message}`);
   return data?.value ?? null;
 }

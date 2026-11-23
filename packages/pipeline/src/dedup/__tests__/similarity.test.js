@@ -1,6 +1,6 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cosineSimilarity, classifySimilarity } from '../index.js';
+import { test } from 'node:test';
+import { classifySimilarity, cosineSimilarity } from '../index.js';
 
 test('cosine: özdeş vektör 1', () => {
   assert.ok(Math.abs(cosineSimilarity([1, 2, 3], [1, 2, 3]) - 1) < 1e-12);

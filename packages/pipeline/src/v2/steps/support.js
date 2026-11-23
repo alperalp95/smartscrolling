@@ -1,3 +1,4 @@
+import { createHttpClient } from '../sources/http.js';
 // src/v2/steps/support.js
 // Destek paragrafı: `scored` adayın source_url makalesini MediaWiki API'den
 // (action=parse&prop=text) çeker, kancayla en çok örtüşen 1–2 paragrafı
@@ -7,7 +8,6 @@
 // Bağımlılık: deps.http (createHttpClient: ≥200 ms aralık, 429/5xx'te üstel bekleme, en fazla 3 deneme)
 // ya da deps.fetch (testte; aynı istemciyle sarılır). LLM kullanmaz.
 import { STATUS, forEachCandidate, newStats, nowIso, reject } from './common.js';
-import { createHttpClient } from '../sources/http.js';
 import { extractParagraphs, parseWikiUrl, selectSupport } from './support-parse.js';
 
 export { USER_AGENT } from '../sources/http.js';
@@ -54,7 +54,8 @@ export async function fetchArticleHtml(http, ref) {
     throw err;
   }
   if (body?.error) {
-    if (body.error.code === 'missingtitle' || body.error.code === 'invalidtitle') return { ok: false, missing: true };
+    if (body.error.code === 'missingtitle' || body.error.code === 'invalidtitle')
+      return { ok: false, missing: true };
     throw new Error(`Wikipedia API hatası: ${body.error.code}`);
   }
   const html = typeof body?.parse?.text === 'string' ? body.parse.text : body?.parse?.text?.['*'];
@@ -75,17 +76,25 @@ export async function runSupport(deps, { limit = 50 } = {}) {
     const ref = parseWikiUrl(cand.source_url);
     if (!ref) {
       await reject(deps, cand, 'no_support', stats, {
-        scores: { ...(cand.scores ?? {}), support: { error: 'source_url Wikipedia makalesi değil' } },
+        scores: {
+          ...(cand.scores ?? {}),
+          support: { error: 'source_url Wikipedia makalesi değil' },
+        },
       });
       return;
     }
     const article = await fetchArticleHtml(http, ref);
     const picked = article.ok
-      ? selectSupport(extractParagraphs(article.html), cand.hook_text, { lang: cand.lang || ref.lang })
+      ? selectSupport(extractParagraphs(article.html), cand.hook_text, {
+          lang: cand.lang || ref.lang,
+        })
       : null;
     if (!picked) {
       await reject(deps, cand, 'no_support', stats, {
-        scores: { ...(cand.scores ?? {}), support: { error: article.ok ? 'örtüşen paragraf yok' : 'makale bulunamadı' } },
+        scores: {
+          ...(cand.scores ?? {}),
+          support: { error: article.ok ? 'örtüşen paragraf yok' : 'makale bulunamadı' },
+        },
       });
       return;
     }
@@ -93,7 +102,12 @@ export async function runSupport(deps, { limit = 50 } = {}) {
       support_paragraph: picked.text,
       scores: {
         ...(cand.scores ?? {}),
-        support: { paragraphs: picked.indexes, coverage: picked.coverage, main_fact: picked.mainFact, at: nowIso(deps.now) },
+        support: {
+          paragraphs: picked.indexes,
+          coverage: picked.coverage,
+          main_fact: picked.mainFact,
+          at: nowIso(deps.now),
+        },
       },
     });
     stats.advanced += 1;

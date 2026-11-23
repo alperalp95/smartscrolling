@@ -29,7 +29,8 @@ export const LABELS = Object.freeze(['A', 'B', 'C', 'D', 'E', 'F']);
 
 function positiveInt(raw, label) {
   const text = String(raw ?? '').trim();
-  if (!/^\d+$/.test(text) || Number(text) <= 0) throw new Error(`${label} pozitif tam sayı olmalı: ${raw}`);
+  if (!/^\d+$/.test(text) || Number(text) <= 0)
+    throw new Error(`${label} pozitif tam sayı olmalı: ${raw}`);
   return Number(text);
 }
 
@@ -75,7 +76,9 @@ export function pickCandidates(data, count) {
   const list = Array.isArray(data) ? data : data?.candidates;
   if (!Array.isArray(list)) throw new Error('--input dosyasında aday listesi bulunamadı');
   return list
-    .filter((c) => c && (c.scores?.draft || c.support_paragraph) && c.hook_text && c.support_paragraph)
+    .filter(
+      (c) => c && (c.scores?.draft || c.support_paragraph) && c.hook_text && c.support_paragraph,
+    )
     .slice(0, count)
     .map((c) => ({
       hook: c.hook_text,
@@ -110,7 +113,9 @@ export function configWithWriter(config, spec) {
 }
 
 function oneLine(text) {
-  return String(text ?? '').replace(/\s+/g, ' ').trim();
+  return String(text ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export function formatMarkdown({ cards, date }) {
@@ -121,7 +126,12 @@ export function formatMarkdown({ cards, date }) {
     '',
   ];
   cards.forEach((entry, i) => {
-    lines.push(`## Bilgi ${i + 1}`, '', `Kanca (${entry.lang || 'en'}): ${oneLine(entry.hook)}`, '');
+    lines.push(
+      `## Bilgi ${i + 1}`,
+      '',
+      `Kanca (${entry.lang || 'en'}): ${oneLine(entry.hook)}`,
+      '',
+    );
     for (const card of entry.cards) {
       lines.push(`### ${card.label}`, '');
       if (card.error) lines.push('(hata)');
@@ -153,7 +163,8 @@ export async function runWriterCompare(argv, deps = {}) {
   const limits = writingLimits(config);
   const maxTokens = config.roles?.writer?.maxTokens ?? WRITE_MAX_TOKENS;
   const candidates = pickCandidates(JSON.parse(await read(opts.input)), opts.count);
-  if (candidates.length === 0) throw new Error('girdide yazıma uygun aday yok (support_paragraph/scores.draft dolu olmalı)');
+  if (candidates.length === 0)
+    throw new Error('girdide yazıma uygun aday yok (support_paragraph/scores.draft dolu olmalı)');
 
   const llms = writers.map((spec) => ({
     spec,
@@ -176,10 +187,13 @@ export async function runWriterCompare(argv, deps = {}) {
       try {
         const res = await llm.chat('writer', { messages, json: true, maxTokens });
         const card = res.json;
-        if (!card || typeof card.title !== 'string' || typeof card.content !== 'string') throw new Error('title/content yok');
+        if (!card || typeof card.title !== 'string' || typeof card.content !== 'string')
+          throw new Error('title/content yok');
         results.push({ spec, title: card.title, content: card.content });
       } catch (err) {
-        log(`[writer-compare] Bilgi ${n + 1} ${spec}: hata ${String(err?.message ?? err).slice(0, 120)}`);
+        log(
+          `[writer-compare] Bilgi ${n + 1} ${spec}: hata ${String(err?.message ?? err).slice(0, 120)}`,
+        );
         results.push({ spec, error: true });
       }
     }
@@ -199,7 +213,8 @@ export async function runWriterCompare(argv, deps = {}) {
   return { mdPath, keyPath, key, cards };
 }
 
-const isMain = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
+const isMain =
+  process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (isMain) {
   try {
     await import('dotenv/config');

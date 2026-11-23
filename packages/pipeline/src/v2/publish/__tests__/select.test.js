@@ -1,6 +1,6 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectForPublish, categoryQuota } from '../index.js';
+import { test } from 'node:test';
+import { categoryQuota, selectForPublish } from '../index.js';
 
 function card(id, category, wow, created = '2026-11-01T00:00:00Z') {
   return { id, category, wow_score: wow, created_at: created };
@@ -22,7 +22,9 @@ test('sıralama: wow azalan, eşitlikte eski önce, sonra id', () => {
 
 test('sıralama: puanı olmayan (null) kart en sona kalır', () => {
   const queued = [card('x', 'bilim', null), card('y', 'tarih', 1)];
-  assert.deepEqual(selectForPublish(queued, { dailyCount: 1, maxCategoryShare: 1 }).selected, ['y']);
+  assert.deepEqual(selectForPublish(queued, { dailyCount: 1, maxCategoryShare: 1 }).selected, [
+    'y',
+  ]);
 });
 
 test('kota: 10 * 0.3 kayan nokta artığına rağmen 3', () => {
@@ -65,8 +67,13 @@ test('kota: aday azsa kalan yer kotayı aşanla aynı sırayla doldurulur, fille
   assert.equal(res.filledBeyondQuota, 3);
 });
 
-test('kota: doldurma dailyCount\'ta durur', () => {
-  const queued = [card('b1', 'bilim', 9), card('b2', 'bilim', 8), card('b3', 'bilim', 7), card('t1', 'tarih', 1)];
+test("kota: doldurma dailyCount'ta durur", () => {
+  const queued = [
+    card('b1', 'bilim', 9),
+    card('b2', 'bilim', 8),
+    card('b3', 'bilim', 7),
+    card('t1', 'tarih', 1),
+  ];
   // dailyCount 3 → kota ceil(0.9) = 1: b1, t1, sonra kota dışı b2 ile dolar; b3 dışarıda.
   const res = selectForPublish(queued, { dailyCount: 3 });
   assert.deepEqual(res.selected, ['b1', 't1', 'b2']);
@@ -74,7 +81,11 @@ test('kota: doldurma dailyCount\'ta durur', () => {
 });
 
 test('queued boş → selected: []', () => {
-  assert.deepEqual(selectForPublish([], { dailyCount: 10 }), { selected: [], byCategory: {}, filledBeyondQuota: 0 });
+  assert.deepEqual(selectForPublish([], { dailyCount: 10 }), {
+    selected: [],
+    byCategory: {},
+    filledBeyondQuota: 0,
+  });
 });
 
 test('dailyCount > aday sayısı → hepsi seçilir', () => {

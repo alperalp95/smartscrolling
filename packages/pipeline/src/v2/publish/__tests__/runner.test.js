@@ -1,6 +1,6 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runPublish, parseArgs, loadPublishConfig } from '../../../runners/v2-publish.js';
+import { test } from 'node:test';
+import { loadPublishConfig, parseArgs, runPublish } from '../../../runners/v2-publish.js';
 import { fakeRepo } from './helpers.js';
 
 const NOW = new Date('2026-11-20T06:00:00.000Z');
@@ -25,7 +25,13 @@ function capture() {
 test('runner: --apply olmadan markPublished çağrılmaz (varsayılan dry-run)', async () => {
   const repo = fakeRepo({ queued: makeQueued(10) });
   const io = capture();
-  const { exitCode, result } = await runPublish({ argv: [], repo, publishConfig: CONFIG, now: NOW, ...io });
+  const { exitCode, result } = await runPublish({
+    argv: [],
+    repo,
+    publishConfig: CONFIG,
+    now: NOW,
+    ...io,
+  });
   assert.equal(exitCode, 0);
   assert.equal(repo.calls.markPublished.length, 0);
   assert.equal(result.mode, 'dry-run');
@@ -36,14 +42,26 @@ test('runner: --apply olmadan markPublished çağrılmaz (varsayılan dry-run)',
 
 test('runner: --dry-run açıkça verilince de yazmaz', async () => {
   const repo = fakeRepo({ queued: makeQueued(10) });
-  const { exitCode } = await runPublish({ argv: ['--dry-run'], repo, publishConfig: CONFIG, now: NOW, ...capture() });
+  const { exitCode } = await runPublish({
+    argv: ['--dry-run'],
+    repo,
+    publishConfig: CONFIG,
+    now: NOW,
+    ...capture(),
+  });
   assert.equal(exitCode, 0);
   assert.equal(repo.calls.markPublished.length, 0);
 });
 
 test('runner: --apply → markPublished seçilenlerle ve enjekte now ile çağrılır', async () => {
   const repo = fakeRepo({ queued: makeQueued(10) });
-  const { exitCode, result } = await runPublish({ argv: ['--apply'], repo, publishConfig: CONFIG, now: NOW, ...capture() });
+  const { exitCode, result } = await runPublish({
+    argv: ['--apply'],
+    repo,
+    publishConfig: CONFIG,
+    now: NOW,
+    ...capture(),
+  });
   assert.equal(exitCode, 0);
   assert.equal(repo.calls.markPublished.length, 1);
   assert.deepEqual(repo.calls.markPublished[0].ids, result.selected);
@@ -51,10 +69,16 @@ test('runner: --apply → markPublished seçilenlerle ve enjekte now ile çağr�
   assert.equal(result.publishedCount, 4);
 });
 
-test('runner: --json stdout\'a geçerli tek JSON basar, insan çıktısı stderr\'e', async () => {
+test("runner: --json stdout'a geçerli tek JSON basar, insan çıktısı stderr'e", async () => {
   const repo = fakeRepo({ queued: makeQueued(10), count: 10 });
   const io = capture();
-  const { exitCode } = await runPublish({ argv: ['--json', '--count', '2'], repo, publishConfig: CONFIG, now: NOW, ...io });
+  const { exitCode } = await runPublish({
+    argv: ['--json', '--count', '2'],
+    repo,
+    publishConfig: CONFIG,
+    now: NOW,
+    ...io,
+  });
   assert.equal(exitCode, 0);
   assert.equal(io.out.length, 1);
   const parsed = JSON.parse(io.out[0]);
@@ -74,7 +98,13 @@ test('runner: --json stdout\'a geçerli tek JSON basar, insan çıktısı stderr
 test('runner: stok alarmı varsa çıkış kodu yine 0', async () => {
   const repo = fakeRepo({ queued: makeQueued(5) });
   const io = capture();
-  const { exitCode, result } = await runPublish({ argv: ['--json'], repo, publishConfig: CONFIG, now: NOW, ...io });
+  const { exitCode, result } = await runPublish({
+    argv: ['--json'],
+    repo,
+    publishConfig: CONFIG,
+    now: NOW,
+    ...io,
+  });
   assert.equal(exitCode, 0);
   assert.equal(result.alarm, true);
   assert.equal(JSON.parse(io.out[0]).alarm, true);
@@ -82,7 +112,13 @@ test('runner: stok alarmı varsa çıkış kodu yine 0', async () => {
 
 test('runner: --count yoksa config publish.dailyCount kullanılır; aday havuzu 5 katı', async () => {
   const repo = fakeRepo({ queued: makeQueued(50) });
-  const { result } = await runPublish({ argv: [], repo, publishConfig: CONFIG, now: NOW, ...capture() });
+  const { result } = await runPublish({
+    argv: [],
+    repo,
+    publishConfig: CONFIG,
+    now: NOW,
+    ...capture(),
+  });
   assert.equal(result.dailyCount, 4);
   assert.deepEqual(repo.calls.listQueued, [20]);
 });
@@ -93,21 +129,38 @@ test('runner: hata → çıkış kodu 1, --json ile ok:false', async () => {
     throw new Error('db yok');
   };
   const io = capture();
-  const { exitCode } = await runPublish({ argv: ['--json'], repo, publishConfig: CONFIG, now: NOW, ...io });
+  const { exitCode } = await runPublish({
+    argv: ['--json'],
+    repo,
+    publishConfig: CONFIG,
+    now: NOW,
+    ...io,
+  });
   assert.equal(exitCode, 1);
   assert.deepEqual(JSON.parse(io.out[0]), { ok: false, error: 'db yok' });
 });
 
 test('runner: geçersiz argüman → çıkış kodu 1, yazma yok', async () => {
   const repo = fakeRepo({ queued: makeQueued(3) });
-  const { exitCode } = await runPublish({ argv: ['--count', '0'], repo, publishConfig: CONFIG, now: NOW, ...capture() });
+  const { exitCode } = await runPublish({
+    argv: ['--count', '0'],
+    repo,
+    publishConfig: CONFIG,
+    now: NOW,
+    ...capture(),
+  });
   assert.equal(exitCode, 1);
   assert.equal(repo.calls.markPublished.length, 0);
 });
 
 test('parseArgs: varsayılan dry-run; --apply ile --dry-run birlikte hata', () => {
   assert.deepEqual(parseArgs([]), { count: null, apply: false, dryRun: true, json: false });
-  assert.deepEqual(parseArgs(['--count=7', '--apply', '--json']), { count: 7, apply: true, dryRun: false, json: true });
+  assert.deepEqual(parseArgs(['--count=7', '--apply', '--json']), {
+    count: 7,
+    apply: true,
+    dryRun: false,
+    json: true,
+  });
   assert.throws(() => parseArgs(['--apply', '--dry-run']), /birlikte/);
   assert.throws(() => parseArgs(['--bogus']), /bilinmeyen/);
 });

@@ -20,11 +20,32 @@ export const SENTENCES_MAX = 4;
 const TR_CHARS = new Set(['ı', 'ğ', 'ş', 'ç', 'ö', 'ü', 'İ', 'Ğ', 'Ş', 'Ç', 'Ö', 'Ü']);
 const BANNED_TITLE_WORDS = new Set(['nedir', 'kimdir']);
 // Nokta ile biten ama cümle bitirmeyen kısaltmalar (küçük harfe çevrilmiş).
-const ABBREVIATIONS = new Set(['m.ö.', 'm.s.', 'mö.', 'ms.', 'vb.', 'vs.', 'dr.', 'prof.', 'st.', 'örn.', 'yy.', 'bkz.', 'no.', 'mr.', 'mrs.', 'jr.', 'sr.']);
+const ABBREVIATIONS = new Set([
+  'm.ö.',
+  'm.s.',
+  'mö.',
+  'ms.',
+  'vb.',
+  'vs.',
+  'dr.',
+  'prof.',
+  'st.',
+  'örn.',
+  'yy.',
+  'bkz.',
+  'no.',
+  'mr.',
+  'mrs.',
+  'jr.',
+  'sr.',
+]);
 
 /** Cümle sayısı: . ! ? … ile biten kelimeler (kısaltma ve baş harf hariç). */
 export function countSentences(text) {
-  const words = String(text ?? '').trim().split(/\s+/).filter(Boolean);
+  const words = String(text ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
   let count = 0;
   let open = false;
   for (const w of words) {
@@ -83,16 +104,83 @@ function titleWords(title) {
 
 // Bağımsız ilk cümle kuralında konu sayılmayan sıradan kelimeler (katlanmış).
 const ANCHOR_STOPWORDS = new Set(
-  ['arasında', 'boyunca', 'sonra', 'önce', 'olarak', 'kadar', 'için', 'gibi', 'ile', 'daha', 'çok', 'en', 'bir', 'olan', 'oldu', 'olduğu', 'aslında',
-    'tarafından', 'beri', 'itibaren', 'yaklaşık', 'sadece', 'yalnızca', 'ilk', 'son', 'kez', 'kere', 'resmi', 'resmî', 'var', 'yok', 'değil', 'aynı', 'tam',
-    'yüzyıl', 'yüzyılda', 'yüzyıldan', 'yüzyılın', 'dönem', 'döneminde', 'zaman', 'sırasında', 'gün', 'günü', 'ay', 'hafta'].map(fold),
+  [
+    'arasında',
+    'boyunca',
+    'sonra',
+    'önce',
+    'olarak',
+    'kadar',
+    'için',
+    'gibi',
+    'ile',
+    'daha',
+    'çok',
+    'en',
+    'bir',
+    'olan',
+    'oldu',
+    'olduğu',
+    'aslında',
+    'tarafından',
+    'beri',
+    'itibaren',
+    'yaklaşık',
+    'sadece',
+    'yalnızca',
+    'ilk',
+    'son',
+    'kez',
+    'kere',
+    'resmi',
+    'resmî',
+    'var',
+    'yok',
+    'değil',
+    'aynı',
+    'tam',
+    'yüzyıl',
+    'yüzyılda',
+    'yüzyıldan',
+    'yüzyılın',
+    'dönem',
+    'döneminde',
+    'zaman',
+    'sırasında',
+    'gün',
+    'günü',
+    'ay',
+    'hafta',
+  ].map(fold),
 );
 // Öznesiz başlangıç: zaman/sayı ifadesi ya da geri gönderme ("Bu uygulama...", "Ayrıca ...").
 const SUBJECTLESS_STARTERS = new Set(
-  ['bu', 'bunun', 'buna', 'bunu', 'şu', 'o', 'onun', 'ona', 'onu', 'bunlar', 'onlar', 'ayrıca', 'ancak', 'sonra', 'daha', 'ardından', 'böylece', 'üstelik', 'aynı', 'söz'].map(fold),
+  [
+    'bu',
+    'bunun',
+    'buna',
+    'bunu',
+    'şu',
+    'o',
+    'onun',
+    'ona',
+    'onu',
+    'bunlar',
+    'onlar',
+    'ayrıca',
+    'ancak',
+    'sonra',
+    'daha',
+    'ardından',
+    'böylece',
+    'üstelik',
+    'aynı',
+    'söz',
+  ].map(fold),
 );
 // Edilgen yüklem (katlanmış): başlatıldı, okundu, kurulmuştur, edilmiş, yapılacak...
-const PASSIVE_END = /(?:[iu]l|[aeiou]n)(?:d[iu]|m[iu]s|[iu]r|[ae]c[ae]k|[iu]yor)(?:l[ae]r)?(?:d[iu]r|t[iu]r)?$/u;
+const PASSIVE_END =
+  /(?:[iu]l|[aeiou]n)(?:d[iu]|m[iu]s|[iu]r|[ae]c[ae]k|[iu]yor)(?:l[ae]r)?(?:d[iu]r|t[iu]r)?$/u;
 const YEAR_WORD = /^yil/u;
 
 function anchorWords(text) {
@@ -120,11 +208,13 @@ export function firstSentenceIssue(card) {
   const anchors = anchorWords(card?.title).filter((w) => w.length >= 3 || /^\p{L}{2}$/u.test(w));
   if (anchors.length === 0) return null;
   const words = anchorWords(sentence);
-  if (words.some((w) => anchors.some((a) => (a.length < 3 ? w === a : sharesStem(a, w))))) return null;
+  if (words.some((w) => anchors.some((a) => (a.length < 3 ? w === a : sharesStem(a, w)))))
+    return null;
   const firstRaw = sentence.split(/\s+/)[0] ?? '';
   const first = fold(firstRaw.split(/['’]/u)[0]).replace(/[^\p{L}\p{N}]+/gu, '');
   const last = fold(sentence.split(/\s+/).at(-1) ?? '').replace(/[^\p{L}]+/gu, '');
-  const subjectless = /^\d/u.test(firstRaw) || SUBJECTLESS_STARTERS.has(first) || PASSIVE_END.test(last);
+  const subjectless =
+    /^\d/u.test(firstRaw) || SUBJECTLESS_STARTERS.has(first) || PASSIVE_END.test(last);
   if (!subjectless) return null;
   return 'ilk cümle başlık okunmadan anlaşılmıyor: konuyu açıkça adlandır (özne zorunlu), başlıktaki ana adı ya da ismi ilk cümlede kullan';
 }
@@ -143,7 +233,8 @@ function similarity(a, b) {
   if (a === b) return 1;
   const grams = (t) => {
     const m = new Map();
-    for (let i = 0; i < t.length - 1; i += 1) m.set(t.slice(i, i + 2), (m.get(t.slice(i, i + 2)) ?? 0) + 1);
+    for (let i = 0; i < t.length - 1; i += 1)
+      m.set(t.slice(i, i + 2), (m.get(t.slice(i, i + 2)) ?? 0) + 1);
     return m;
   };
   const ga = grams(a);
@@ -175,17 +266,25 @@ export function titleEchoIssue(card) {
  * @param {{ minSentences?: number, maxSentences?: number }} [limits]  writingLimits(config)
  * @returns {string[]} ihlaller (Türkçe; prompt'a eklenir). Boşsa geçer.
  */
-export function checkWriteRules(card, { minSentences = SENTENCES_MIN, maxSentences = SENTENCES_MAX } = {}) {
+export function checkWriteRules(
+  card,
+  { minSentences = SENTENCES_MIN, maxSentences = SENTENCES_MAX } = {},
+) {
   const v = [];
   const title = typeof card?.title === 'string' ? card.title.trim() : '';
   const content = typeof card?.content === 'string' ? card.content.trim() : '';
   const len = [...title].length;
-  if (len < TITLE_MIN || len > TITLE_MAX) v.push(`başlık ${TITLE_MIN}-${TITLE_MAX} karakter olmalı (şu an ${len})`);
-  if (titleWords(title).some((w) => BANNED_TITLE_WORDS.has(w))) v.push('başlıkta "nedir"/"kimdir" olmamalı');
-  if (isTitleCase(title)) v.push('başlık Türkçe cümle düzeninde olmalı: sadece ilk harf ve özel adlar büyük');
+  if (len < TITLE_MIN || len > TITLE_MAX)
+    v.push(`başlık ${TITLE_MIN}-${TITLE_MAX} karakter olmalı (şu an ${len})`);
+  if (titleWords(title).some((w) => BANNED_TITLE_WORDS.has(w)))
+    v.push('başlıkta "nedir"/"kimdir" olmamalı');
+  if (isTitleCase(title))
+    v.push('başlık Türkçe cümle düzeninde olmalı: sadece ilk harf ve özel adlar büyük');
   const n = countSentences(content);
-  if (n < minSentences || n > maxSentences) v.push(`gövde ${minSentences}-${maxSentences} cümle olmalı (şu an ${n})`);
-  if (!hasTurkishChars(`${title} ${content}`)) v.push('Türkçe karakter (ı, ğ, ş, ç, ö, ü) kullanılmalı');
+  if (n < minSentences || n > maxSentences)
+    v.push(`gövde ${minSentences}-${maxSentences} cümle olmalı (şu an ${n})`);
+  if (!hasTurkishChars(`${title} ${content}`))
+    v.push('Türkçe karakter (ı, ğ, ş, ç, ö, ü) kullanılmalı');
   const first = firstSentenceIssue({ title, content });
   if (first) v.push(first);
   const echo = titleEchoIssue({ title, content });
@@ -204,7 +303,13 @@ function lowercaseTermInHook(word, hook) {
   const special = (w) => /[.\d]/u.test(w) || /^\p{Ll}.*\p{Lu}/u.test(w);
   const terms = String(hook)
     .split(/\s+/)
-    .map((w) => w.replace(/^["'“‘«(\[]+/u, '').replace(/[,;:!?)\]"”»]+$|\.$/gu, '').split(/['’]/u)[0])
+    .map(
+      (w) =>
+        w
+          .replace(/^["'“‘«(\[]+/u, '')
+          .replace(/[,;:!?)\]"”»]+$|\.$/gu, '')
+          .split(/['’]/u)[0],
+    )
     .filter((w) => w && /^[^\p{Lu}]/u.test(w) && special(w));
   return terms.includes(word);
 }
@@ -218,12 +323,17 @@ function lowercaseTermInHook(word, hook) {
  *   - ilk kelime kancada küçük harfle geçen özel biçimli bir terimse ("x.com", "web3"; { hook } ile)
  */
 export function normalizeTitle(raw, { hook } = {}) {
-  let title = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  let title = String(raw ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
   title = title.replace(/\s*\.+$/u, '').trim();
   const m = title.match(/^(["'“‘«(\[]*)(\p{L})/u);
   if (!m || !/\p{Ll}/u.test(m[2])) return title;
   const at = m[1].length;
-  const firstWord = title.slice(at).split(/[\s,;:!?)"”»]/u)[0].split(/['’]/u)[0];
+  const firstWord = title
+    .slice(at)
+    .split(/[\s,;:!?)"”»]/u)[0]
+    .split(/['’]/u)[0];
   if (/\p{Lu}/u.test(firstWord.slice(1))) return title; // iPhone, eBay, macOS
   if (lowercaseTermInHook(firstWord, hook)) return title;
   return title.slice(0, at) + m[2].toLocaleUpperCase('tr-TR') + title.slice(at + m[2].length);
@@ -236,7 +346,9 @@ export function normalizeTitle(raw, { hook } = {}) {
  */
 export function normalizeDraft(json, { hook } = {}) {
   const title = normalizeTitle(json?.title, { hook });
-  const content = String(json?.content ?? '').replace(/\s+/g, ' ').trim();
+  const content = String(json?.content ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
   const tags = [
     ...new Set(
       (Array.isArray(json?.tags) ? json.tags : [])
@@ -246,7 +358,8 @@ export function normalizeDraft(json, { hook } = {}) {
     ),
   ].slice(0, 5);
   const rt = Number(json?.read_time_sq);
-  const read_time_sq = Number.isInteger(rt) && rt >= 5 && rt <= 120 ? rt : estimateReadTime(content);
+  const read_time_sq =
+    Number.isInteger(rt) && rt >= 5 && rt <= 120 ? rt : estimateReadTime(content);
   return { title, content, tags, read_time_sq };
 }
 
@@ -260,9 +373,14 @@ function isSkip(json) {
  * @param {Array} messages  ilk istem mesajları
  * @returns {Promise<{ outcome: 'ok', draft, text, model, rewrites } | { outcome: 'skip', reason } | { outcome: 'rules', violations }>}
  */
-export async function writeWithRules(llm, messages, { maxTokens = WRITE_MAX_TOKENS, limits, hook } = {}) {
+export async function writeWithRules(
+  llm,
+  messages,
+  { maxTokens = WRITE_MAX_TOKENS, limits, hook } = {},
+) {
   let res = await llm.chat('writer', { messages, json: true, maxTokens });
-  if (isSkip(res?.json)) return { outcome: 'skip', reason: String(res.json.reason ?? '').slice(0, 200) };
+  if (isSkip(res?.json))
+    return { outcome: 'skip', reason: String(res.json.reason ?? '').slice(0, 200) };
   let draft = normalizeDraft(res?.json, { hook });
   let violations = checkWriteRules(draft, limits);
   let rewrites = 0;
@@ -273,12 +391,19 @@ export async function writeWithRules(llm, messages, { maxTokens = WRITE_MAX_TOKE
       json: true,
       maxTokens,
     });
-    if (isSkip(res?.json)) return { outcome: 'skip', reason: String(res.json.reason ?? '').slice(0, 200) };
+    if (isSkip(res?.json))
+      return { outcome: 'skip', reason: String(res.json.reason ?? '').slice(0, 200) };
     draft = normalizeDraft(res?.json, { hook });
     violations = checkWriteRules(draft, limits);
     if (violations.length > 0) return { outcome: 'rules', violations };
   }
-  return { outcome: 'ok', draft, text: res?.text ?? JSON.stringify(res?.json ?? {}), model: res?.model ?? null, rewrites };
+  return {
+    outcome: 'ok',
+    draft,
+    text: res?.text ?? JSON.stringify(res?.json ?? {}),
+    model: res?.model ?? null,
+    rewrites,
+  };
 }
 
 export function writeInput(cand, limits = writingLimits(null)) {
@@ -305,17 +430,28 @@ export async function runWrite(deps, { limit = 50 } = {}) {
     const { messages } = buildWritePrompt(writeInput(cand, limits));
     const r = await writeWithRules(deps.llm, messages, { maxTokens, limits, hook: cand.hook_text });
     if (r.outcome === 'skip') {
-      await reject(deps, cand, 'writer_skip', stats, { scores: { ...(cand.scores ?? {}), writer_skip: r.reason } });
+      await reject(deps, cand, 'writer_skip', stats, {
+        scores: { ...(cand.scores ?? {}), writer_skip: r.reason },
+      });
       return;
     }
     if (r.outcome === 'rules') {
       deps.log?.(`[write] ${cand.id} write_rules nedeni: ${r.violations.join(' | ')}`);
       await reject(deps, cand, 'write_rules', stats, {
-        scores: { ...(cand.scores ?? {}), write_violations: r.violations, write_issues: r.violations },
+        scores: {
+          ...(cand.scores ?? {}),
+          write_violations: r.violations,
+          write_issues: r.violations,
+        },
       });
       return;
     }
-    const draft = { ...r.draft, writer_model: r.model, rewrites: r.rewrites, written_at: nowIso(deps.now) };
+    const draft = {
+      ...r.draft,
+      writer_model: r.model,
+      rewrites: r.rewrites,
+      written_at: nowIso(deps.now),
+    };
     await deps.repo.updateCandidate(cand.id, {
       status: STATUS.WRITTEN,
       scores: { ...(cand.scores ?? {}), draft },

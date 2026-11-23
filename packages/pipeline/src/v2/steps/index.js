@@ -25,7 +25,14 @@ export const STEPS = Object.freeze({
 });
 
 export const STEP_ORDER = Object.freeze(Object.keys(STEPS));
-export const DEFAULT_STEP_NAMES = Object.freeze(['dedup', 'score', 'support', 'write', 'verify', 'enqueue']);
+export const DEFAULT_STEP_NAMES = Object.freeze([
+  'dedup',
+  'score',
+  'support',
+  'write',
+  'verify',
+  'enqueue',
+]);
 
 const ALIASES = { dedup: ['dedup-hook', 'dedup-card'] };
 

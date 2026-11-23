@@ -1,18 +1,34 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 // V2-05d: doğrulayıcı zinciri (Mistral → Gemma düşünme kapalı → Gemini) ve 'writing' config doğrulaması.
 // Sahte fetch; gerçek ağ yok.
 import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { DEFAULT_CONFIG_PATH } from '../config.js';
-import { createLlm, createMemoryUsageStore, LlmConfigError, validateConfig } from '../index.js';
-import { FIXED_NOW, TEST_ENV, chatOk, fakeFetch, fakeSleep, isCloudflare, isGemini, json, realConfig } from './helpers.js';
+import { LlmConfigError, createLlm, createMemoryUsageStore, validateConfig } from '../index.js';
+import {
+  FIXED_NOW,
+  TEST_ENV,
+  chatOk,
+  fakeFetch,
+  fakeSleep,
+  isCloudflare,
+  isGemini,
+  json,
+  realConfig,
+} from './helpers.js';
 
 const MESSAGES = [{ role: 'user', content: 'doğrula' }];
 const OK = '{"claims":[{"claim":"a","verdict":"supported"}]}';
 
 function setup(handler) {
   const fetch = fakeFetch(handler);
-  const llm = createLlm(realConfig(), { env: TEST_ENV, fetch, sleep: fakeSleep(), now: () => FIXED_NOW, usageStore: createMemoryUsageStore() });
+  const llm = createLlm(realConfig(), {
+    env: TEST_ENV,
+    fetch,
+    sleep: fakeSleep(),
+    now: () => FIXED_NOW,
+    usageStore: createMemoryUsageStore(),
+  });
   return { llm, fetch };
 }
 
@@ -34,8 +50,10 @@ test('doğrulayıcı zinciri: Mistral düşerse Gemma (chat_template_kwargs.enab
   const order = [];
   const { llm, fetch } = setup((call) => {
     order.push(isGemini(call) ? 'gemini' : call.body.model);
-    if (isCloudflare(call) && call.body.model === MISTRAL) return json(404, { errors: [{ message: 'No such model' }] });
-    if (isCloudflare(call) && call.body.model === GEMMA) return json(500, { errors: [{ message: 'internal' }] });
+    if (isCloudflare(call) && call.body.model === MISTRAL)
+      return json(404, { errors: [{ message: 'No such model' }] });
+    if (isCloudflare(call) && call.body.model === GEMMA)
+      return json(500, { errors: [{ message: 'internal' }] });
     return chatOk(OK);
   });
   const res = await llm.chat('verifier', { messages: MESSAGES, json: true });
@@ -49,7 +67,11 @@ test('doğrulayıcı zinciri: Mistral düşerse Gemma (chat_template_kwargs.enab
 });
 
 test('doğrulayıcı zinciri: Mistral düşer, Gemma yanıt verir → Gemini çağrılmaz', async () => {
-  const { llm, fetch } = setup((call) => (call.body?.model === MISTRAL ? json(404, { errors: [{ message: 'No such model' }] }) : chatOk(OK)));
+  const { llm, fetch } = setup((call) =>
+    call.body?.model === MISTRAL
+      ? json(404, { errors: [{ message: 'No such model' }] })
+      : chatOk(OK),
+  );
   const res = await llm.chat('verifier', { messages: MESSAGES, json: true });
   assert.equal(res.model, GEMMA);
   assert.equal(fetch.calls.filter(isGemini).length, 0);
@@ -57,7 +79,10 @@ test('doğrulayıcı zinciri: Mistral düşer, Gemma yanıt verir → Gemini ça
 
 test('config: Mistral Small için Neuron fiyatı tanımlı (girdi 31876 / çıktı 50488 per M)', () => {
   const cfg = realConfig();
-  assert.deepEqual(cfg.providers.cloudflare.neuronsPerMillionTokens[MISTRAL], { input: 31876, output: 50488 });
+  assert.deepEqual(cfg.providers.cloudflare.neuronsPerMillionTokens[MISTRAL], {
+    input: 31876,
+    output: 50488,
+  });
 });
 
 function raw() {
@@ -67,17 +92,34 @@ function raw() {
 function expectError(mutate, pattern) {
   const r = raw();
   mutate(r);
-  assert.throws(() => validateConfig(r), (err) => err instanceof LlmConfigError && pattern.test(err.message));
+  assert.throws(
+    () => validateConfig(r),
+    (err) => err instanceof LlmConfigError && pattern.test(err.message),
+  );
 }
 
 test('config doğrulama: writing.minSentences / maxSentences', () => {
   assert.deepEqual(validateConfig(raw()).writing, { minSentences: 3, maxSentences: 5 });
-  expectError((c) => { c.writing.minSentences = 0; }, /writing\.minSentences.*1-10 arası bir tam sayı/);
-  expectError((c) => { c.writing.maxSentences = 2.5; }, /writing\.maxSentences/);
-  expectError((c) => { c.writing.maxSentences = 'dört'; }, /writing\.maxSentences/);
-  expectError((c) => { c.writing = { minSentences: 5, maxSentences: 3 }; }, /writing\.minSentences.*büyük olamaz/);
-  expectError((c) => { c.writing = [2, 4]; }, /'writing' bir nesne olmalı/);
+  expectError((c) => {
+    c.writing.minSentences = 0;
+  }, /writing\.minSentences.*1-10 arası bir tam sayı/);
+  expectError((c) => {
+    c.writing.maxSentences = 2.5;
+  }, /writing\.maxSentences/);
+  expectError((c) => {
+    c.writing.maxSentences = 'dört';
+  }, /writing\.maxSentences/);
+  expectError((c) => {
+    c.writing = { minSentences: 5, maxSentences: 3 };
+  }, /writing\.minSentences.*büyük olamaz/);
+  expectError((c) => {
+    c.writing = [2, 4];
+  }, /'writing' bir nesne olmalı/);
   const noWriting = raw();
   delete noWriting.writing;
-  assert.equal(validateConfig(noWriting).writing, undefined, 'bölüm isteğe bağlı; adımlar varsayılanı kullanır');
+  assert.equal(
+    validateConfig(noWriting).writing,
+    undefined,
+    'bölüm isteğe bağlı; adımlar varsayılanı kullanır',
+  );
 });

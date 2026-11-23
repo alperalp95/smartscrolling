@@ -36,7 +36,8 @@ export const cursorKey = (id) => `cursor:${id}`;
 function positiveInt(raw, label) {
   const text = String(raw ?? '').trim();
   const n = Number.parseInt(text, 10);
-  if (!/^\d+$/.test(text) || !Number.isInteger(n) || n <= 0) throw new Error(`${label} pozitif tam sayı olmalı: ${raw}`);
+  if (!/^\d+$/.test(text) || !Number.isInteger(n) || n <= 0)
+    throw new Error(`${label} pozitif tam sayı olmalı: ${raw}`);
   return n;
 }
 
@@ -49,9 +50,13 @@ export function parseMix(spec) {
   const entries = [];
   const seen = new Set();
   let rest = 0;
-  for (const part of String(spec ?? '').split(',').map((p) => p.trim()).filter(Boolean)) {
+  for (const part of String(spec ?? '')
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)) {
     const [rawId, rawQuota = 'all', extra] = part.split(':').map((p) => p.trim().toLowerCase());
-    if (extra !== undefined || !SOURCE_IDS.includes(rawId)) throw new Error(`--mix geçersiz giriş: ${part}`);
+    if (extra !== undefined || !SOURCE_IDS.includes(rawId))
+      throw new Error(`--mix geçersiz giriş: ${part}`);
     if (seen.has(rawId)) throw new Error(`--mix kaynak iki kez geçiyor: ${rawId}`);
     seen.add(rawId);
     let quota;
@@ -73,7 +78,9 @@ export function parseMix(spec) {
  */
 export function shareFor(entry, remaining) {
   if (remaining <= 0) return 0;
-  return entry.quota === 'all' || entry.quota === 'rest' ? remaining : Math.min(entry.quota, remaining);
+  return entry.quota === 'all' || entry.quota === 'rest'
+    ? remaining
+    : Math.min(entry.quota, remaining);
 }
 
 /**
@@ -97,8 +104,10 @@ export function parseArgs(args) {
     else if (flag === '--mix') mixSpec = String(value() ?? '');
     else if (flag === '--backfill-from') {
       backfillFrom = String(value() ?? '');
-      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(backfillFrom)) throw new Error(`--backfill-from YYYY-MM olmalı: ${backfillFrom}`);
-    } else if (flag === '--backfill-months') backfillMonths = positiveInt(value(), '--backfill-months');
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(backfillFrom))
+        throw new Error(`--backfill-from YYYY-MM olmalı: ${backfillFrom}`);
+    } else if (flag === '--backfill-months')
+      backfillMonths = positiveInt(value(), '--backfill-months');
     else if (flag === '--apply') apply = true;
     else if (flag === '--dry-run') apply = false;
     else throw new Error(`Bilinmeyen argüman: ${arg}`);
@@ -111,7 +120,15 @@ export function parseArgs(args) {
     mix = mix.filter((entry) => entry.id === source);
     if (mix.length === 0) mix = [{ id: source, quota: 'rest' }];
   }
-  return { source, sources: mix.map((entry) => entry.id), limit, apply, mix, backfillFrom, backfillMonths };
+  return {
+    source,
+    sources: mix.map((entry) => entry.id),
+    limit,
+    apply,
+    mix,
+    backfillFrom,
+    backfillMonths,
+  };
 }
 
 async function readJson(file, fallback) {
@@ -180,11 +197,19 @@ export async function runCollect({
 
   log(
     `[v2-collect] mode=${config.apply ? 'APPLY' : 'dry-run'} source=${config.source} limit=${config.limit} (toplam) mix=${mixLabel}` +
-      (config.backfillFrom ? ` backfill-from=${config.backfillFrom} backfill-months=${config.backfillMonths}` : ''),
+      (config.backfillFrom
+        ? ` backfill-from=${config.backfillFrom} backfill-months=${config.backfillMonths}`
+        : ''),
   );
 
   const client = config.apply ? await getClient() : null;
-  const cursors = await createCursorStore({ apply: config.apply, client, stateFile, getStateFn, setStateFn });
+  const cursors = await createCursorStore({
+    apply: config.apply,
+    client,
+    stateFile,
+    getStateFn,
+    setStateFn,
+  });
   const summary = {};
   const allCandidates = [];
   let failed = 0;
@@ -204,9 +229,19 @@ export async function runCollect({
       const cursor = await cursors.get(cursorKey(id));
       const backfill =
         id === 's2' && config.backfillFrom
-          ? { from: config.backfillFrom, months: config.backfillMonths, cursor: await cursors.get(BACKFILL_CURSOR_KEY) }
+          ? {
+              from: config.backfillFrom,
+              months: config.backfillMonths,
+              cursor: await cursors.get(BACKFILL_CURSOR_KEY),
+            }
           : null;
-      const result = await collector.collect({ http, limit: share, cursor, now, ...(backfill ? { backfill } : {}) });
+      const result = await collector.collect({
+        http,
+        limit: share,
+        cursor,
+        now,
+        ...(backfill ? { backfill } : {}),
+      });
       const candidates = result.candidates.slice(0, share);
       const record = {
         name: collector.name,
@@ -222,7 +257,8 @@ export async function runCollect({
         record.db = await insert(client, candidates);
         // Başarısız yazımda (insert fırlatırsa) imleç ilerlemez; null imleç yazılmaz.
         if (result.nextCursor != null) await cursors.set(cursorKey(id), result.nextCursor);
-        if (result.backfill?.nextCursor != null) await cursors.set(BACKFILL_CURSOR_KEY, result.backfill.nextCursor);
+        if (result.backfill?.nextCursor != null)
+          await cursors.set(BACKFILL_CURSOR_KEY, result.backfill.nextCursor);
       }
       summary[id] = record;
       allCandidates.push(...candidates);
@@ -235,9 +271,14 @@ export async function runCollect({
       if (result.backfill) {
         const bf = result.backfill;
         const months = (bf.stats?.months ?? [])
-          .map((m) => `${m.month}${m.missing ? ' (sayfa yok)' : m.error ? ` (HATA ${m.error})` : ` (${m.candidates} kanca)`}`)
+          .map(
+            (m) =>
+              `${m.month}${m.missing ? ' (sayfa yok)' : m.error ? ` (HATA ${m.error})` : ` (${m.candidates} kanca)`}`,
+          )
           .join(', ');
-        log(`  backfill: ${bf.stats?.taken ?? 0} aday · okunan aylar: ${months || '-'} · sonraki imleç ${JSON.stringify(bf.nextCursor)}`);
+        log(
+          `  backfill: ${bf.stats?.taken ?? 0} aday · okunan aylar: ${months || '-'} · sonraki imleç ${JSON.stringify(bf.nextCursor)}`,
+        );
       }
       for (const c of candidates.slice(0, SAMPLE_COUNT)) {
         log(`  - ${c.hook_text.length > 180 ? `${c.hook_text.slice(0, 177)}...` : c.hook_text}`);
@@ -272,7 +313,9 @@ export async function runCollect({
     )}\n`,
   );
 
-  log(`\n[v2-collect] toplam ${allCandidates.length} aday · çıktı: ${outFile}${config.apply ? '' : ' · DB yazılmadı (dry-run)'}`);
+  log(
+    `\n[v2-collect] toplam ${allCandidates.length} aday · çıktı: ${outFile}${config.apply ? '' : ' · DB yazılmadı (dry-run)'}`,
+  );
   return { config, summary, candidates: allCandidates, outFile, failed };
 }
 

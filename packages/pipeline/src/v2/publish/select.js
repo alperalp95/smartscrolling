@@ -15,7 +15,8 @@ function wowOf(card) {
 }
 
 function timeOf(card) {
-  const t = card.created_at instanceof Date ? card.created_at.getTime() : Date.parse(card.created_at);
+  const t =
+    card.created_at instanceof Date ? card.created_at.getTime() : Date.parse(card.created_at);
   return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
 }
 
@@ -52,13 +53,20 @@ export function categoryQuota(dailyCount, maxCategoryShare = DEFAULT_MAX_CATEGOR
  * @param {{ dailyCount: number, maxCategoryShare?: number }} options
  * @returns {{ selected: (string|number)[], byCategory: Record<string, number>, filledBeyondQuota: number }}
  */
-export function selectForPublish(queued, { dailyCount, maxCategoryShare = DEFAULT_MAX_CATEGORY_SHARE } = {}) {
+export function selectForPublish(
+  queued,
+  { dailyCount, maxCategoryShare = DEFAULT_MAX_CATEGORY_SHARE } = {},
+) {
   if (!Array.isArray(queued)) throw new TypeError('queued bir dizi olmalı');
   if (!Number.isInteger(dailyCount) || dailyCount < 0) {
-    throw new RangeError(`dailyCount 0 ya da pozitif tam sayı olmalı (şu an: ${JSON.stringify(dailyCount)})`);
+    throw new RangeError(
+      `dailyCount 0 ya da pozitif tam sayı olmalı (şu an: ${JSON.stringify(dailyCount)})`,
+    );
   }
   if (typeof maxCategoryShare !== 'number' || !(maxCategoryShare > 0 && maxCategoryShare <= 1)) {
-    throw new RangeError(`maxCategoryShare 0'dan büyük, 1'den küçük ya da eşit olmalı (şu an: ${JSON.stringify(maxCategoryShare)})`);
+    throw new RangeError(
+      `maxCategoryShare 0'dan büyük, 1'den küçük ya da eşit olmalı (şu an: ${JSON.stringify(maxCategoryShare)})`,
+    );
   }
 
   const result = { selected: [], byCategory: {}, filledBeyondQuota: 0 };

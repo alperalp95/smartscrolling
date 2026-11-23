@@ -1,9 +1,15 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { DEFAULT_MIX, parseArgs, parseMix, runCollect, shareFor } from '../../../runners/v2-collect.js';
+import { test } from 'node:test';
+import {
+  DEFAULT_MIX,
+  parseArgs,
+  parseMix,
+  runCollect,
+  shareFor,
+} from '../../../runners/v2-collect.js';
 import { makeCandidate } from '../types.js';
 
 function fakeCollectors({ perSource = 7 } = {}) {
@@ -13,19 +19,41 @@ function fakeCollectors({ perSource = 7 } = {}) {
     async collect({ limit, cursor, backfill }) {
       seen.push({ id, limit, cursor, backfill });
       const candidates = Array.from({ length: Math.min(limit, perSource) }, (_, i) =>
-        makeCandidate({ source_key: `${id}:${i}`, source: 'enwiki_dyk', lang: 'en', hook_text: `hook number ${i} from source ${id}` }),
+        makeCandidate({
+          source_key: `${id}:${i}`,
+          source: 'enwiki_dyk',
+          lang: 'en',
+          hook_text: `hook number ${i} from source ${id}`,
+        }),
       );
-      const result = { candidates, nextCursor: { offset: (cursor?.offset ?? 0) + candidates.length }, stats: { fake: true } };
+      const result = {
+        candidates,
+        nextCursor: { offset: (cursor?.offset ?? 0) + candidates.length },
+        stats: { fake: true },
+      };
       if (backfill) {
         result.backfill = {
-          nextCursor: { next: backfill.cursor?.next === '2026-09' ? '2026-08' : '2026-09', offset: 0, from: backfill.from, done: false },
+          nextCursor: {
+            next: backfill.cursor?.next === '2026-09' ? '2026-08' : '2026-09',
+            offset: 0,
+            from: backfill.from,
+            done: false,
+          },
           stats: { taken: 0, months: [{ month: '2026-09', missing: true }] },
         };
       }
       return result;
     },
   });
-  return { seen, collectors: { s1: collector('s1'), s2: collector('s2'), s3: collector('s3'), s4: collector('s4') } };
+  return {
+    seen,
+    collectors: {
+      s1: collector('s1'),
+      s2: collector('s2'),
+      s3: collector('s3'),
+      s4: collector('s4'),
+    },
+  };
 }
 
 /** `pipeline_state` taklidi: getState/setState bellekte. */
@@ -60,7 +88,17 @@ test('parseArgs: varsayılanlar dry-run, all, 200 toplam, varsayılan mix; geçe
     backfillFrom: null,
     backfillMonths: 1,
   });
-  const s2 = parseArgs(['--source', 's2', '--limit', '20', '--dry-run', '--backfill-from', '2024-03', '--backfill-months', '2']);
+  const s2 = parseArgs([
+    '--source',
+    's2',
+    '--limit',
+    '20',
+    '--dry-run',
+    '--backfill-from',
+    '2024-03',
+    '--backfill-months',
+    '2',
+  ]);
   assert.deepEqual(s2.sources, ['s2']);
   assert.deepEqual(s2.mix, [{ id: 's2', quota: 15 }]); // --source karışımdaki payı korur
   assert.equal(s2.limit, 20);
@@ -68,7 +106,9 @@ test('parseArgs: varsayılanlar dry-run, all, 200 toplam, varsayılan mix; geçe
   assert.equal(s2.backfillMonths, 2);
   assert.equal(parseArgs(['--source=s4', '--apply']).apply, true);
   // mix dışındaki kaynak --source ile seçilirse kalanın tamamını alır
-  assert.deepEqual(parseArgs(['--source', 's1', '--mix', 's2:all']).mix, [{ id: 's1', quota: 'rest' }]);
+  assert.deepEqual(parseArgs(['--source', 's1', '--mix', 's2:all']).mix, [
+    { id: 's1', quota: 'rest' },
+  ]);
   assert.throws(() => parseArgs(['--source', 's9']));
   assert.throws(() => parseArgs(['--limit', '0']));
   assert.throws(() => parseArgs(['--limit', '5x']));
@@ -107,7 +147,13 @@ test('shareFor: all/rest kalanın tamamı, sayı min(sayı, kalan), kalan yoksa 
 test('runner --mix: varsayılan dağılım s3 → s4 (≤10) → s2 (≤15) → s1 (kalan); --limit toplamı sınırlar', async () => {
   const cacheDir = await tempDir();
   const { collectors, seen } = fakeCollectors({ perSource: 25 });
-  const result = await runCollect({ args: ['--limit', '100'], collectors, http: {}, cacheDir, log: () => {} });
+  const result = await runCollect({
+    args: ['--limit', '100'],
+    collectors,
+    http: {},
+    cacheDir,
+    log: () => {},
+  });
   assert.deepEqual(
     seen.map((s) => [s.id, s.limit]),
     [
@@ -127,7 +173,13 @@ test('runner --mix: varsayılan dağılım s3 → s4 (≤10) → s2 (≤15) → 
 test('runner --mix: limit dolunca sonraki kaynaklar çağrılmaz; hata veren kaynağın payı sonrakine geçer', async () => {
   const cacheDir = await tempDir();
   const { collectors, seen } = fakeCollectors({ perSource: 25 });
-  const result = await runCollect({ args: ['--limit', '40'], collectors, http: {}, cacheDir, log: () => {} });
+  const result = await runCollect({
+    args: ['--limit', '40'],
+    collectors,
+    http: {},
+    cacheDir,
+    log: () => {},
+  });
   assert.deepEqual(
     seen.map((s) => [s.id, s.limit]),
     [
@@ -141,17 +193,30 @@ test('runner --mix: limit dolunca sonraki kaynaklar çağrılmaz; hata veren kay
 
   const broken = fakeCollectors({ perSource: 25 });
   broken.collectors.s2 = { name: 'broken', collect: async () => Promise.reject(new Error('boom')) };
-  const r2 = await runCollect({ args: ['--limit', '40', '--mix', 's2:all,s1:rest'], collectors: broken.collectors, http: {}, cacheDir, log: () => {} });
+  const r2 = await runCollect({
+    args: ['--limit', '40', '--mix', 's2:all,s1:rest'],
+    collectors: broken.collectors,
+    http: {},
+    cacheDir,
+    log: () => {},
+  });
   assert.equal(r2.failed, 1);
   assert.equal(r2.summary.s2.error, 'boom');
-  assert.deepEqual(broken.seen.map((s) => [s.id, s.limit]), [['s1', 40]]);
+  assert.deepEqual(
+    broken.seen.map((s) => [s.id, s.limit]),
+    [['s1', 40]],
+  );
   assert.equal(r2.candidates.length, 25);
 });
 
 test('runner dry-run: client/insert/DB state çağrılmaz; imleç .cache dosyasından okunur, dosya ilerletilmez', async () => {
   const cacheDir = await tempDir();
   const stateFile = path.join(cacheDir, 'v2-collect-state.json');
-  const initial = { 'cursor:s3': { offset: 11 }, s4: { offset: 5 }, 'cursor:s2-backfill': { next: '2026-09', offset: 0 } };
+  const initial = {
+    'cursor:s3': { offset: 11 },
+    s4: { offset: 5 },
+    'cursor:s2-backfill': { next: '2026-09', offset: 0 },
+  };
   await fs.writeFile(stateFile, JSON.stringify(initial));
   const { collectors, seen } = fakeCollectors();
   const repo = fakeStateRepo();
@@ -181,14 +246,20 @@ test('runner dry-run: client/insert/DB state çağrılmaz; imleç .cache dosyas�
   assert.equal(repo.calls.get.length + repo.calls.set.length, 0);
   const byId = Object.fromEntries(seen.map((s) => [s.id, s]));
   assert.equal(byId.s2.cursor, null);
-  assert.deepEqual(byId.s2.backfill, { from: '2024-03', months: 1, cursor: { next: '2026-09', offset: 0 } });
+  assert.deepEqual(byId.s2.backfill, {
+    from: '2024-03',
+    months: 1,
+    cursor: { next: '2026-09', offset: 0 },
+  });
   assert.deepEqual(byId.s3.cursor, { offset: 11 });
   assert.deepEqual(byId.s4.cursor, { offset: 5 }); // eski dosya biçimi
   assert.equal(byId.s3.backfill, undefined);
   assert.equal(result.candidates.length, 28);
 
   assert.deepEqual(JSON.parse(await fs.readFile(stateFile, 'utf8')), initial);
-  const out = JSON.parse(await fs.readFile(path.join(cacheDir, 'v2-collect-all-2026-11-20.json'), 'utf8'));
+  const out = JSON.parse(
+    await fs.readFile(path.join(cacheDir, 'v2-collect-all-2026-11-20.json'), 'utf8'),
+  );
   assert.equal(out.dry_run, true);
   assert.equal(out.cursor_store, 'file');
   assert.equal(out.mix, 's3:all,s4:10,s2:15,s1:rest');
@@ -202,14 +273,23 @@ test('runner: konsolda kaynak başına en fazla 5 örnek kanca', async () => {
   const cacheDir = await tempDir();
   const { collectors } = fakeCollectors();
   const lines = [];
-  await runCollect({ args: ['--source', 's1', '--limit', '50'], collectors, http: {}, cacheDir, log: (l) => lines.push(l) });
+  await runCollect({
+    args: ['--source', 's1', '--limit', '50'],
+    collectors,
+    http: {},
+    cacheDir,
+    log: (l) => lines.push(l),
+  });
   assert.equal(lines.filter((l) => l.startsWith('  - ')).length, 5);
 });
 
-test('runner --apply: imleçler pipeline_state\'ten okunur ve yazılır (.cache yok sayılır); sonraki run DB imlecinden başlar', async () => {
+test("runner --apply: imleçler pipeline_state'ten okunur ve yazılır (.cache yok sayılır); sonraki run DB imlecinden başlar", async () => {
   const cacheDir = await tempDir();
   // .cache'te farklı bir imleç olsa da --apply onu kullanmaz
-  await fs.writeFile(path.join(cacheDir, 'v2-collect-state.json'), JSON.stringify({ 'cursor:s1': { offset: 999 } }));
+  await fs.writeFile(
+    path.join(cacheDir, 'v2-collect-state.json'),
+    JSON.stringify({ 'cursor:s1': { offset: 999 } }),
+  );
   const { collectors, seen } = fakeCollectors();
   const client = { fake: true };
   const repo = fakeStateRepo({ 'cursor:s1': { offset: 100 } });
@@ -219,12 +299,24 @@ test('runner --apply: imleçler pipeline_state\'ten okunur ve yazılır (.cache 
     inserts.push(candidates.length);
     return { inserted: candidates.length, skipped: 0 };
   };
-  const common = { collectors, http: {}, getClient: async () => client, insert, getState: repo.getState, setState: repo.setState, cacheDir, log: () => {} };
+  const common = {
+    collectors,
+    http: {},
+    getClient: async () => client,
+    insert,
+    getState: repo.getState,
+    setState: repo.setState,
+    cacheDir,
+    log: () => {},
+  };
 
   await runCollect({ args: ['--source', 's1', '--limit', '4', '--apply'], ...common });
   assert.deepEqual(inserts, [4]);
   assert.deepEqual(seen[0].cursor, { offset: 100 });
-  assert.deepEqual(repo.calls.get.map((g) => g.key), ['cursor:s1']);
+  assert.deepEqual(
+    repo.calls.get.map((g) => g.key),
+    ['cursor:s1'],
+  );
   assert.ok(repo.calls.get.every((g) => g.client === client));
   assert.deepEqual(repo.calls.set, [{ client, key: 'cursor:s1', value: { offset: 104 } }]);
 
@@ -232,13 +324,18 @@ test('runner --apply: imleçler pipeline_state\'ten okunur ve yazılır (.cache 
   assert.deepEqual(seen[1].cursor, { offset: 104 });
   assert.deepEqual(repo.store.get('cursor:s1'), { offset: 108 });
   // .cache dosyasına dokunulmadı
-  assert.deepEqual(JSON.parse(await fs.readFile(path.join(cacheDir, 'v2-collect-state.json'), 'utf8')), { 'cursor:s1': { offset: 999 } });
+  assert.deepEqual(
+    JSON.parse(await fs.readFile(path.join(cacheDir, 'v2-collect-state.json'), 'utf8')),
+    { 'cursor:s1': { offset: 999 } },
+  );
 });
 
 test('runner --apply: S2 backfill imleci cursor:s2-backfill anahtarında okunur/yazılır', async () => {
   const cacheDir = await tempDir();
   const { collectors, seen } = fakeCollectors();
-  const repo = fakeStateRepo({ 'cursor:s2-backfill': { next: '2026-09', offset: 0, from: '2024-03', done: false } });
+  const repo = fakeStateRepo({
+    'cursor:s2-backfill': { next: '2026-09', offset: 0, from: '2024-03', done: false },
+  });
   const args = ['--source', 's2', '--limit', '20', '--backfill-from', '2024-03', '--apply'];
   await runCollect({
     args,
@@ -251,16 +348,30 @@ test('runner --apply: S2 backfill imleci cursor:s2-backfill anahtarında okunur/
     cacheDir,
     log: () => {},
   });
-  assert.deepEqual(seen[0].backfill.cursor, { next: '2026-09', offset: 0, from: '2024-03', done: false });
-  assert.deepEqual(repo.calls.get.map((g) => g.key), ['cursor:s2', 'cursor:s2-backfill']);
-  assert.deepEqual(repo.calls.set.map((s) => s.key), ['cursor:s2', 'cursor:s2-backfill']);
+  assert.deepEqual(seen[0].backfill.cursor, {
+    next: '2026-09',
+    offset: 0,
+    from: '2024-03',
+    done: false,
+  });
+  assert.deepEqual(
+    repo.calls.get.map((g) => g.key),
+    ['cursor:s2', 'cursor:s2-backfill'],
+  );
+  assert.deepEqual(
+    repo.calls.set.map((s) => s.key),
+    ['cursor:s2', 'cursor:s2-backfill'],
+  );
   assert.equal(repo.store.get('cursor:s2-backfill').next, '2026-08');
 });
 
 test('runner --apply: insert hata verirse imleç yazılmaz; null imleç yazılmaz', async () => {
   const cacheDir = await tempDir();
   const { collectors } = fakeCollectors();
-  collectors.s3 = { name: 'null cursor', collect: async () => ({ candidates: [], nextCursor: null, stats: {} }) };
+  collectors.s3 = {
+    name: 'null cursor',
+    collect: async () => ({ candidates: [], nextCursor: null, stats: {} }),
+  };
   const repo = fakeStateRepo();
   const result = await runCollect({
     args: ['--limit', '20', '--mix', 's1:5,s3:all', '--apply'],

@@ -31,7 +31,8 @@ const MONTHS = [
   'December',
 ];
 
-const SET_HEADER = /<b>\s*(\d{1,2}):(\d{2}),\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})\s*\(UTC\)\s*<\/b>/g;
+const SET_HEADER =
+  /<b>\s*(\d{1,2}):(\d{2}),\s*(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})\s*\(UTC\)\s*<\/b>/g;
 const YM = /^(\d{4})-(0[1-9]|1[0-2])$/;
 const MISSING_PAGE_CODES = new Set(['missingtitle', 'invalidtitle']);
 
@@ -66,7 +67,10 @@ export function monthArchivePages(ym) {
   if (!match) throw new Error(`Geçersiz ay (YYYY-MM bekleniyor): ${ym}`);
   const [, year, month] = match;
   const name = MONTHS[Number(month) - 1];
-  return [`Wikipedia:Recent_additions/${year}/${name}`, `Wikipedia:Did_you_know_archive/${year}/${name}`];
+  return [
+    `Wikipedia:Recent_additions/${year}/${name}`,
+    `Wikipedia:Did_you_know_archive/${year}/${name}`,
+  ];
 }
 
 /**
@@ -76,7 +80,10 @@ export function monthArchivePages(ym) {
  */
 export function recentAdditionsPages(now = new Date()) {
   const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
-  return [RECENT_ADDITIONS_PAGE, `Wikipedia:Did_you_know_archive/${prev.getUTCFullYear()}/${MONTHS[prev.getUTCMonth()]}`];
+  return [
+    RECENT_ADDITIONS_PAGE,
+    `Wikipedia:Did_you_know_archive/${prev.getUTCFullYear()}/${MONTHS[prev.getUTCMonth()]}`,
+  ];
 }
 
 /**
@@ -113,7 +120,12 @@ export function parseRecentAdditionsHtml(html, { page = RECENT_ADDITIONS_PAGE } 
         order,
         hookText,
         articleTitle: boldTitle || firstTitle,
-        meta: { origin: 'enwiki:recent_additions', page, set: `${date} ${hh.padStart(2, '0')}:${mm} UTC`, bold_title: boldTitle },
+        meta: {
+          origin: 'enwiki:recent_additions',
+          page,
+          set: `${date} ${hh.padStart(2, '0')}:${mm} UTC`,
+          bold_title: boldTitle,
+        },
       });
       order += 1;
       if (candidate) candidates.push(candidate);
@@ -145,7 +157,9 @@ export function compareDykPosition(a, b) {
 }
 
 function sortChronological(candidates) {
-  return [...candidates].sort((x, y) => compareDykPosition(dykPosition(x.source_key), dykPosition(y.source_key)));
+  return [...candidates].sort((x, y) =>
+    compareDykPosition(dykPosition(x.source_key), dykPosition(y.source_key)),
+  );
 }
 
 /**
@@ -202,7 +216,14 @@ async function readBackfill({ http, cursor, months, limit }) {
     monthStats.push(
       month.missing
         ? { month: ym, missing: true }
-        : { month: ym, page: month.page, sets: month.sets, candidates: month.candidates.length, skipped: month.skipped, offset: startOffset },
+        : {
+            month: ym,
+            page: month.page,
+            sets: month.sets,
+            candidates: month.candidates.length,
+            skipped: month.skipped,
+            offset: startOffset,
+          },
     );
     pool.push(...available);
     ym = shiftMonth(ym, -1);
@@ -245,7 +266,13 @@ export function advanceBackfillCursor(cursor, entries, taken) {
  * @param {{ from: string, months?: number, cursor?: any } | null} [options.backfill]
  * @returns {Promise<import('./types.js').CollectResult & { backfill?: { nextCursor: any, stats: object } }>}
  */
-export async function collectDykRecent({ http, limit = 200, cursor = null, now = new Date(), backfill = null }) {
+export async function collectDykRecent({
+  http,
+  limit = 200,
+  cursor = null,
+  now = new Date(),
+  backfill = null,
+}) {
   const pages = recentAdditionsPages(now);
   const after = typeof cursor?.after === 'string' ? cursor.after : null;
   const seen = new Set();
@@ -275,7 +302,9 @@ export async function collectDykRecent({ http, limit = 200, cursor = null, now =
     }
   }
 
-  const fresh = sortChronological(all.filter((c) => !after || compareDykPosition(dykPosition(c.source_key), after) > 0));
+  const fresh = sortChronological(
+    all.filter((c) => !after || compareDykPosition(dykPosition(c.source_key), after) > 0),
+  );
 
   let backfillRead = null;
   let backfillCursor = null;
@@ -283,7 +312,12 @@ export async function collectDykRecent({ http, limit = 200, cursor = null, now =
     backfillCursor = normalizeBackfillCursor(backfill.cursor, { from: backfill.from, now });
     backfillRead = backfillCursor.done
       ? { entries: [], pool: [], months: [] }
-      : await readBackfill({ http, cursor: backfillCursor, months: Math.max(1, backfill.months ?? 1), limit });
+      : await readBackfill({
+          http,
+          cursor: backfillCursor,
+          months: Math.max(1, backfill.months ?? 1),
+          limit,
+        });
   }
 
   // Limit paylaşımı: backfill açıksa yeni kancalara en az yarısı ayrılır, kullanılmayan pay diğerine geçer.
@@ -297,18 +331,35 @@ export async function collectDykRecent({ http, limit = 200, cursor = null, now =
 
   // Bir sayfa okunamadıysa imleç ilerlemez (okunamayan aydaki kancalar atlanmasın); tekrarlar DB'de elenir.
   const last = recentCandidates.at(-1);
-  const nextCursor = last && pageErrors === 0 ? { after: dykPosition(last.source_key) } : cursor ?? null;
+  const nextCursor =
+    last && pageErrors === 0 ? { after: dykPosition(last.source_key) } : (cursor ?? null);
 
   const result = {
     candidates: [...recentCandidates, ...backfillCandidates],
     nextCursor,
-    stats: { pages: perPage, sets, available: fresh.length, skipped, after, recent_taken: recentCandidates.length },
+    stats: {
+      pages: perPage,
+      sets,
+      available: fresh.length,
+      skipped,
+      after,
+      recent_taken: recentCandidates.length,
+    },
   };
   if (backfillRead) {
-    const next = backfillCursor.done ? backfillCursor : advanceBackfillCursor(backfillCursor, backfillRead.entries, backfillTake);
+    const next = backfillCursor.done
+      ? backfillCursor
+      : advanceBackfillCursor(backfillCursor, backfillRead.entries, backfillTake);
     result.backfill = {
       nextCursor: next,
-      stats: { from: backfill.from, start: { next: backfillCursor.next, offset: backfillCursor.offset }, months: backfillRead.months, available: pool.length, taken: backfillTake, done: next.done },
+      stats: {
+        from: backfill.from,
+        start: { next: backfillCursor.next, offset: backfillCursor.offset },
+        months: backfillRead.months,
+        available: pool.length,
+        taken: backfillTake,
+        done: next.done,
+      },
     };
     result.stats.backfill_taken = backfillTake;
   }

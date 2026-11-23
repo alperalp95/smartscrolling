@@ -26,9 +26,7 @@ export function cosineSimilarity(a, b) {
     throw new TypeError('cosineSimilarity: vectors must be array-like');
   }
   if (a.length !== b.length) {
-    throw new RangeError(
-      `cosineSimilarity: vector length mismatch (${a.length} vs ${b.length})`,
-    );
+    throw new RangeError(`cosineSimilarity: vector length mismatch (${a.length} vs ${b.length})`);
   }
   if (a.length === 0) {
     throw new RangeError('cosineSimilarity: vectors must not be empty');

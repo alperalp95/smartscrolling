@@ -1,10 +1,10 @@
+import assert from 'node:assert/strict';
 // V2-05e: Groq dakikalık sınırları (TPM / OTPM), "Request too large", kapanan model (410).
 // Sahte saat + sahte fetch + sahte sleep (sleep saati ilerletir). Gerçek ağ çağrısı yok.
 import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { createLlm, createMemoryUsageStore, LlmRequestTooLargeError } from '../index.js';
+import { LlmRequestTooLargeError, createLlm, createMemoryUsageStore } from '../index.js';
 import { classifyHttpFailure, parseRateLimitInfo } from '../providers/openai-compatible.js';
-import { createRateLimiter, MAX_WAIT_MS } from '../rate.js';
+import { MAX_WAIT_MS, createRateLimiter } from '../rate.js';
 import { TEST_ENV, chatOk, fakeFetch, isCloudflare, isGroq, json, realConfig } from './helpers.js';
 
 const MESSAGES = [{ role: 'user', content: 'puanla' }];
@@ -30,12 +30,23 @@ function clockSetup(handler, { fetchMs = 0, config = realConfig() } = {}) {
     clock.t += fetchMs;
     return res;
   });
-  const llm = createLlm(config, { env: TEST_ENV, fetch, sleep, now: () => clock.t, usageStore: createMemoryUsageStore() });
+  const llm = createLlm(config, {
+    env: TEST_ENV,
+    fetch,
+    sleep,
+    now: () => clock.t,
+    usageStore: createMemoryUsageStore(),
+  });
   return { llm, fetch, waits, clock };
 }
 
 test('429 / "Request too large" / 410 sınıflandırması: Limit N ve "try again in Xs" okunur', () => {
-  assert.deepEqual(parseRateLimitInfo(OTPM_429), { metric: 'OTPM', limit: 1000, used: 900, requested: 400 });
+  assert.deepEqual(parseRateLimitInfo(OTPM_429), {
+    metric: 'OTPM',
+    limit: 1000,
+    used: 900,
+    requested: 400,
+  });
   assert.deepEqual(parseRateLimitInfo('on tokens per minute (TPM): Limit 8000, Requested 9100'), {
     metric: 'TPM',
     limit: 8000,
@@ -58,12 +69,18 @@ test('429 / "Request too large" / 410 sınıflandırması: Limit N ve "try again
   // Durum kodu farklı olsa bile "deprecated" metni model_unavailable sayılır.
   assert.equal(classifyHttpFailure(400, DEPRECATED_410).kind, 'unavailable');
   // Model dışı "deprecated" uyarısı model kapanması değildir.
-  assert.equal(classifyHttpFailure(400, 'parameter `functions` is deprecated, use tools').kind, 'fatal');
+  assert.equal(
+    classifyHttpFailure(400, 'parameter `functions` is deprecated, use tools').kind,
+    'fatal',
+  );
 });
 
 test('OTPM penceresi: son 60 sn çıktısı + yeni istek > 1000 ise pencere açılana kadar beklenir', async () => {
   // Her Groq yanıtı 400 çıktı token; fetch 10 sn sürer.
-  const { llm, waits, fetch } = clockSetup(() => chatOk('{"items":[]}', { prompt: 300, completion: 400 }), { fetchMs: 10_000 });
+  const { llm, waits, fetch } = clockSetup(
+    () => chatOk('{"items":[]}', { prompt: 300, completion: 400 }),
+    { fetchMs: 10_000 },
+  );
 
   await llm.chat('scorer', { messages: MESSAGES, json: true }); // t=0 → kayıt t=10 sn (400)
   await llm.chat('scorer', { messages: MESSAGES, json: true }); // pencere 400 + 400 = 800 ≤ 1000 → beklemez; kayıt t=20 sn
@@ -83,8 +100,14 @@ test('OTPM penceresi: son 60 sn çıktısı + yeni istek > 1000 ise pencere aç�
 
 test('TPM penceresi (girdi + çıktı) da sayılır; Cloudflare gibi sınırı tanımsız sağlayıcıda bekleme yok', async () => {
   const config = realConfig();
-  config.providers.groq.perMinuteLimits['qwen/qwen3.8-27b'] = { tokensPerMinute: 3000, outputTokensPerMinute: null };
-  const { llm, waits } = clockSetup(() => chatOk('{"a":1}', { prompt: 2600, completion: 100 }), { config, fetchMs: 1000 });
+  config.providers.groq.perMinuteLimits['qwen/qwen3.8-27b'] = {
+    tokensPerMinute: 3000,
+    outputTokensPerMinute: null,
+  };
+  const { llm, waits } = clockSetup(() => chatOk('{"a":1}', { prompt: 2600, completion: 100 }), {
+    config,
+    fetchMs: 1000,
+  });
   await llm.chat('scorer', { messages: MESSAGES, json: true }); // 2700 token, kayıt t=1 sn
   await llm.chat('scorer', { messages: MESSAGES, json: true }); // 2700 + (girdi ~2 + 400) > 3000 → 61 - 1 = 60 sn
   assert.deepEqual(waits, [60_000]);
@@ -98,14 +121,20 @@ test('rate limiter: bekleme en fazla 60 sn; boş pencerede tek başına sığmay
   const clock = { t: T0 };
   const waits = [];
   const limiter = createRateLimiter({
-    providers: { groq: { perMinuteLimits: { default: { tokensPerMinute: 1000, outputTokensPerMinute: 500 } } } },
+    providers: {
+      groq: { perMinuteLimits: { default: { tokensPerMinute: 1000, outputTokensPerMinute: 500 } } },
+    },
     now: () => clock.t,
     sleep: async (ms) => {
       waits.push(ms);
       clock.t += ms;
     },
   });
-  assert.equal(await limiter.acquire('groq', 'm', { input: 5000, output: 100 }), 0, 'boş pencere: sağlayıcı karar versin');
+  assert.equal(
+    await limiter.acquire('groq', 'm', { input: 5000, output: 100 }),
+    0,
+    'boş pencere: sağlayıcı karar versin',
+  );
   limiter.record('groq', 'm', { input: 100, output: 450 });
   clock.t += 5_000;
   const w = await limiter.acquire('groq', 'm', { input: 10, output: 100 });
@@ -116,7 +145,9 @@ test('rate limiter: bekleme en fazla 60 sn; boş pencerede tek başına sığmay
 
 test('429 "try again in 6.5s" ipucuna uyulur ve mesajdaki "Limit N" o modelin sınırı olarak öğrenilir', async () => {
   const limited = OTPM_429.replace('Limit 1000', 'Limit 800');
-  const { llm, waits } = clockSetup((call, i) => (i === 0 ? json(429, { error: { message: limited } }) : chatOk('{"a":1}')));
+  const { llm, waits } = clockSetup((call, i) =>
+    i === 0 ? json(429, { error: { message: limited } }) : chatOk('{"a":1}'),
+  );
   const res = await llm.chat('scorer', { messages: MESSAGES, json: true });
   assert.equal(res.model, 'qwen/qwen3.8-27b');
   assert.deepEqual(waits, [6500]);
@@ -130,8 +161,12 @@ test('429 "try again in 6.5s" ipucuna uyulur ve mesajdaki "Limit N" o modelin s�
 
 test('"Request too large" + splittable → LlmRequestTooLargeError (yedeğe geçmez, tekrar denemez); splittable değilse yedek model', async () => {
   const big = () => json(429, { error: { message: TOO_LARGE } });
-  const a = clockSetup((call) => (isGroq(call) && call.body.model === 'qwen/qwen3.8-27b' ? big() : chatOk('{"items":[]}')));
-  const err = await a.llm.chat('scorer', { messages: MESSAGES, json: true, splittable: true }).catch((e) => e);
+  const a = clockSetup((call) =>
+    isGroq(call) && call.body.model === 'qwen/qwen3.8-27b' ? big() : chatOk('{"items":[]}'),
+  );
+  const err = await a.llm
+    .chat('scorer', { messages: MESSAGES, json: true, splittable: true })
+    .catch((e) => e);
   assert.ok(err instanceof LlmRequestTooLargeError, err?.name);
   assert.equal(err.provider, 'groq');
   assert.equal(err.model, 'qwen/qwen3.8-27b');
@@ -141,11 +176,21 @@ test('"Request too large" + splittable → LlmRequestTooLargeError (yedeğe geç
   assert.deepEqual(a.waits, []);
   assert.ok(a.llm.events.some((e) => e.type === 'request_too_large' && e.limit === 1000));
 
-  const b = clockSetup((call) => (isGroq(call) && call.body.model === 'qwen/qwen3.8-27b' ? big() : chatOk('{"items":[]}')));
+  const b = clockSetup((call) =>
+    isGroq(call) && call.body.model === 'qwen/qwen3.8-27b' ? big() : chatOk('{"items":[]}'),
+  );
   const res = await b.llm.chat('scorer', { messages: MESSAGES, json: true });
   assert.equal(res.model, 'openai/gpt-oss-20b');
-  assert.equal(b.fetch.calls[1].body.max_completion_tokens, 1000, 'düşünen yedek kendi maxTokens değeriyle');
-  assert.equal(b.fetch.calls[0].body.max_completion_tokens, 600, 'puanlayıcı maxTokens OTPM altında');
+  assert.equal(
+    b.fetch.calls[1].body.max_completion_tokens,
+    1000,
+    'düşünen yedek kendi maxTokens değeriyle',
+  );
+  assert.equal(
+    b.fetch.calls[0].body.max_completion_tokens,
+    600,
+    'puanlayıcı maxTokens OTPM altında',
+  );
 });
 
 test('410 deprecated → model_unavailable + zincirde sıradaki yedek; aynı run’da kapanan model bir daha denenmez', async () => {
@@ -158,12 +203,19 @@ test('410 deprecated → model_unavailable + zincirde sıradaki yedek; aynı run
   assert.equal(r1.model, '@cf/google/gemma-4-26b-a4b-it');
   const r2 = await llm.chat('verifier', { messages: MESSAGES, json: true });
   assert.equal(r2.model, '@cf/google/gemma-4-26b-a4b-it');
-  assert.equal(fetch.calls.filter((c) => c.body.model === '@cf/mistralai/mistral-small-3.1-24b-instruct').length, 1);
+  assert.equal(
+    fetch.calls.filter((c) => c.body.model === '@cf/mistralai/mistral-small-3.1-24b-instruct')
+      .length,
+    1,
+  );
   const ev = llm.events.filter((e) => e.type === 'model_unavailable');
   assert.equal(ev.length, 1);
   assert.equal(ev[0].status, 410);
   assert.match(ev[0].error, /deprecated/);
-  assert.ok(!llm.events.some((e) => e.type === 'provider_failed'), 'fatal değil, model_unavailable');
+  assert.ok(
+    !llm.events.some((e) => e.type === 'provider_failed'),
+    'fatal değil, model_unavailable',
+  );
 });
 
 test('config: perMinuteLimits / expectedOutputTokens / zincir üyesi maxTokens doğrulanır', async () => {
@@ -172,15 +224,38 @@ test('config: perMinuteLimits / expectedOutputTokens / zincir üyesi maxTokens d
   const { DEFAULT_CONFIG_PATH } = await import('../config.js');
   const raw = () => JSON.parse(readFileSync(DEFAULT_CONFIG_PATH, 'utf8'));
   const bad = [
-    [(c) => { c.providers.groq.perMinuteLimits['qwen/qwen3.8-27b'].outputTokensPerMinute = -5; }, /perMinuteLimits\.qwen\/qwen3\.8-27b\.outputTokensPerMinute/],
-    [(c) => { c.providers.groq.perMinuteLimits.default.tokensPerMin = 1; }, /bilinmeyen alan/],
-    [(c) => { c.roles.scorer.expectedOutputTokens = 0; }, /roles\.scorer\.expectedOutputTokens/],
-    [(c) => { c.roles.scorer.chain[1].maxTokens = 'çok'; }, /roles\.scorer\.chain\[1\]\.maxTokens/],
+    [
+      (c) => {
+        c.providers.groq.perMinuteLimits['qwen/qwen3.8-27b'].outputTokensPerMinute = -5;
+      },
+      /perMinuteLimits\.qwen\/qwen3\.8-27b\.outputTokensPerMinute/,
+    ],
+    [
+      (c) => {
+        c.providers.groq.perMinuteLimits.default.tokensPerMin = 1;
+      },
+      /bilinmeyen alan/,
+    ],
+    [
+      (c) => {
+        c.roles.scorer.expectedOutputTokens = 0;
+      },
+      /roles\.scorer\.expectedOutputTokens/,
+    ],
+    [
+      (c) => {
+        c.roles.scorer.chain[1].maxTokens = 'çok';
+      },
+      /roles\.scorer\.chain\[1\]\.maxTokens/,
+    ],
   ];
   for (const [mutate, pattern] of bad) {
     const c = raw();
     mutate(c);
-    assert.throws(() => validateConfig(c), (err) => err instanceof LlmConfigError && pattern.test(err.message));
+    assert.throws(
+      () => validateConfig(c),
+      (err) => err instanceof LlmConfigError && pattern.test(err.message),
+    );
   }
   const ok = raw();
   ok.providers.groq.perMinuteLimits['openai/gpt-oss-120b'].outputTokensPerMinute = null;

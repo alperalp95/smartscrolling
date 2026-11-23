@@ -6,7 +6,9 @@ export const DEFAULT_ALARM_STOCK_DAYS = 3;
 
 function requireNonNegativeNumber(value, name) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
-    throw new RangeError(`${name} 0 ya da pozitif bir sayı olmalı (şu an: ${JSON.stringify(value)})`);
+    throw new RangeError(
+      `${name} 0 ya da pozitif bir sayı olmalı (şu an: ${JSON.stringify(value)})`,
+    );
   }
 }
 
@@ -16,10 +18,17 @@ function requireNonNegativeNumber(value, name) {
  * @param {{ queuedCount: number, dailyCount: number, minStockDays: number, alarmStockDays?: number }} input
  * @returns {{ stockDays: number, belowTarget: boolean, alarm: boolean }}
  */
-export function stockStatus({ queuedCount, dailyCount, minStockDays, alarmStockDays = DEFAULT_ALARM_STOCK_DAYS } = {}) {
+export function stockStatus({
+  queuedCount,
+  dailyCount,
+  minStockDays,
+  alarmStockDays = DEFAULT_ALARM_STOCK_DAYS,
+} = {}) {
   if (dailyCount === 0) throw new RangeError('dailyCount 0 olamaz (stok günü hesaplanamaz)');
   if (typeof dailyCount !== 'number' || !Number.isFinite(dailyCount) || dailyCount < 0) {
-    throw new RangeError(`dailyCount pozitif bir sayı olmalı (şu an: ${JSON.stringify(dailyCount)})`);
+    throw new RangeError(
+      `dailyCount pozitif bir sayı olmalı (şu an: ${JSON.stringify(dailyCount)})`,
+    );
   }
   requireNonNegativeNumber(queuedCount, 'queuedCount');
   requireNonNegativeNumber(minStockDays, 'minStockDays');

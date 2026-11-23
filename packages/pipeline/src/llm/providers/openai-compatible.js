@@ -46,9 +46,7 @@ export function buildOpenAiChatRequest({
 function contentToText(content) {
   if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
-    return content
-      .map((part) => (typeof part === 'string' ? part : part?.text ?? ''))
-      .join('');
+    return content.map((part) => (typeof part === 'string' ? part : (part?.text ?? ''))).join('');
   }
   return '';
 }
@@ -95,7 +93,9 @@ export function parseRetryAfterMs(headers) {
  * @returns {number|undefined} milisaniye
  */
 export function parseRetryHintMs(bodyText) {
-  const m = String(bodyText ?? '').match(/try again in\s+(?:(\d+)m(?!s))?\s*(?:(\d+(?:\.\d+)?)(ms|s))?/i);
+  const m = String(bodyText ?? '').match(
+    /try again in\s+(?:(\d+)m(?!s))?\s*(?:(\d+(?:\.\d+)?)(ms|s))?/i,
+  );
   if (!m || (!m[1] && !m[2])) return undefined;
   const minutes = Number(m[1] ?? 0);
   const value = Number(m[2] ?? 0);

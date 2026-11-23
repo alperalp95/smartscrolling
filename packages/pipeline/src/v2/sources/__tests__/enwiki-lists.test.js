@@ -1,8 +1,8 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import {
-  collectEnwikiLists,
   MISCONCEPTIONS_FALLBACK_PAGES,
+  collectEnwikiLists,
   parseMisconceptionsHtml,
   parseUnusualWikitext,
   pickMisconceptionSubpages,
@@ -63,18 +63,29 @@ test('S4 misconceptions: alt liste sayfaları dizin linklerinden seçilir', () =
 });
 
 test('S4 unusual: makale adı + kısa açıklama; öznitelik, şablon, ref, çok satırlı hücre', () => {
-  const { candidates, skipped } = parseUnusualWikitext(unusualWt, 'Wikipedia:Unusual articles/Food');
+  const { candidates, skipped } = parseUnusualWikitext(
+    unusualWt,
+    'Wikipedia:Unusual articles/Food',
+  );
   assert.equal(skipped, 2); // kategori satırı + tekrar eden makale
   assert.deepEqual(
     candidates.map((c) => c.source_key),
-    ['enwiki-unusual:Ant_egg_soup', 'enwiki-unusual:Bacon_Explosion', 'enwiki-unusual:Balut_(food)', 'enwiki-unusual:Casu_martzu'],
+    [
+      'enwiki-unusual:Ant_egg_soup',
+      'enwiki-unusual:Bacon_Explosion',
+      'enwiki-unusual:Balut_(food)',
+      'enwiki-unusual:Casu_martzu',
+    ],
   );
   const [ant, bacon, balut, casu] = candidates;
   assert.equal(ant.source, 'enwiki_unusual');
   assert.equal(ant.hook_text, 'Ant egg soup — A nostalgic soup with a "distinctive, sour pop".');
   assert.equal(ant.source_url, 'https://en.wikipedia.org/wiki/Ant_egg_soup');
   assert.equal(bacon.hook_text, 'Bacon Explosion — Not as dangerous as it sounds.');
-  assert.equal(balut.hook_text, "Balut — Eggs for eating don't have bird embryos inside... except when they do.");
+  assert.equal(
+    balut.hook_text,
+    "Balut — Eggs for eating don't have bird embryos inside... except when they do.",
+  );
   assert.equal(balut.source_url, 'https://en.wikipedia.org/wiki/Balut_(food)');
   assert.equal(
     casu.hook_text,
@@ -85,27 +96,46 @@ test('S4 unusual: makale adı + kısa açıklama; öznitelik, şablon, ref, çok
 
 test('S4 unusual: alt sayfa adları ana sayfadan, makale dışı alt sayfalar hariç', () => {
   const wt = '{{/Food}}\n\n{{/History}}\n{{/Categories}}\n{{/Other pages}}\n{{Some template}}';
-  assert.deepEqual(pickUnusualSubpages(wt), ['Wikipedia:Unusual articles/Food', 'Wikipedia:Unusual articles/History']);
+  assert.deepEqual(pickUnusualSubpages(wt), [
+    'Wikipedia:Unusual articles/Food',
+    'Wikipedia:Unusual articles/History',
+  ]);
 });
 
 test('S4 toplayıcı: limit iki liste arasında bölünür, ofset imleci döner', async () => {
   const http = fakeHttp((url) => {
     const action = url.searchParams.get('action');
     if (action === 'parse' && url.searchParams.get('prop') === 'links') {
-      return { parse: { title: 'Lists of common misconceptions', links: [{ ns: 0, title: MIS_PAGE, exists: true }] } };
+      return {
+        parse: {
+          title: 'Lists of common misconceptions',
+          links: [{ ns: 0, title: MIS_PAGE, exists: true }],
+        },
+      };
     }
-    if (action === 'parse') return { parse: { title: url.searchParams.get('page'), text: misHtml } };
+    if (action === 'parse')
+      return { parse: { title: url.searchParams.get('page'), text: misHtml } };
     const titles = url.searchParams.get('titles').split('|');
     return {
       query: {
         pages: titles.map((title) => ({
           title,
-          revisions: [{ slots: { main: { content: title === 'Wikipedia:Unusual articles' ? '{{/Food}}' : unusualWt } } }],
+          revisions: [
+            {
+              slots: {
+                main: { content: title === 'Wikipedia:Unusual articles' ? '{{/Food}}' : unusualWt },
+              },
+            },
+          ],
         })),
       },
     };
   });
-  const result = await collectEnwikiLists({ http, limit: 4, cursor: { misconceptionsOffset: 1, unusualOffset: 0 } });
+  const result = await collectEnwikiLists({
+    http,
+    limit: 4,
+    cursor: { misconceptionsOffset: 1, unusualOffset: 0 },
+  });
   assert.deepEqual(
     result.candidates.map((c) => c.source_key),
     [
@@ -121,6 +151,9 @@ test('S4 toplayıcı: limit iki liste arasında bölünür, ofset imleci döner'
 
   // misconceptions bitince kalan limit unusual'a geçer
   const next = await collectEnwikiLists({ http, limit: 4, cursor: result.nextCursor });
-  assert.deepEqual(next.candidates.map((c) => c.source), ['enwiki_unusual', 'enwiki_unusual']);
+  assert.deepEqual(
+    next.candidates.map((c) => c.source),
+    ['enwiki_unusual', 'enwiki_unusual'],
+  );
   assert.deepEqual(next.nextCursor, { misconceptionsOffset: 3, unusualOffset: 4 });
 });

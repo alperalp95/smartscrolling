@@ -13,8 +13,8 @@ import { SCORE_MAX_TOKENS, buildScorePrompt } from '../prompts/score.js';
 import {
   STATUS,
   isExhausted,
-  isTooLarge,
   isFatal,
+  isTooLarge,
   markDeferred,
   newStats,
   normalizeCategory,
@@ -31,7 +31,10 @@ export const MIN_TR_RELEVANCE = 4;
 export function scoringThresholds(config) {
   const s = config?.scoring ?? {};
   const num = (v, d) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 10 ? v : d);
-  return { minSurprise: num(s.minSurprise, MIN_SURPRISE), minTrRelevance: num(s.minTrRelevance, MIN_TR_RELEVANCE) };
+  return {
+    minSurprise: num(s.minSurprise, MIN_SURPRISE),
+    minTrRelevance: num(s.minTrRelevance, MIN_TR_RELEVANCE),
+  };
 }
 
 export function wowScore(surprise, trRelevance) {
@@ -130,7 +133,10 @@ export function decideBatch(scored, batchLength, passPercent, thresholds = {}) {
   const k = passCount(batchLength, passPercent);
   const ranked = eligible
     .map((e, i) => ({ e, i }))
-    .sort((a, b) => b.e.score.wow - a.e.score.wow || b.e.score.surprise - a.e.score.surprise || a.i - b.i)
+    .sort(
+      (a, b) =>
+        b.e.score.wow - a.e.score.wow || b.e.score.surprise - a.e.score.surprise || a.i - b.i,
+    )
     .map(({ e }) => e);
   ranked.forEach((e, rank) => out.push({ ...e, decision: rank < k ? STATUS.SCORED : 'below_cut' }));
   return out;
@@ -153,7 +159,8 @@ export async function runScore(deps, { limit = 50 } = {}) {
   const retryBatches = new WeakSet();
 
   const queue = [];
-  for (let start = 0; start < cands.length; start += batchSize) queue.push(cands.slice(start, start + batchSize));
+  for (let start = 0; start < cands.length; start += batchSize)
+    queue.push(cands.slice(start, start + batchSize));
 
   while (queue.length > 0) {
     const batch = queue.shift();
@@ -209,7 +216,9 @@ export async function runScore(deps, { limit = 50 } = {}) {
         missing.push(cand);
         continue;
       }
-      const parsed = byId.has(i + 1) ? parseScoreItem(byId.get(i + 1)) : { ok: false, error: 'puanlayıcı bu adayı döndürmedi' };
+      const parsed = byId.has(i + 1)
+        ? parseScoreItem(byId.get(i + 1))
+        : { ok: false, error: 'puanlayıcı bu adayı döndürmedi' };
       if (!parsed.ok) {
         await recordFailure(deps, cand, new Error(parsed.error), stats);
         continue;
@@ -221,11 +230,18 @@ export async function runScore(deps, { limit = 50 } = {}) {
       retryBatches.add(missing);
       stats.rescored += missing.length;
       queue.unshift(missing);
-      deps.log?.(`[score] ${missing.length} aday puansız döndü; küçük batch'le bir kez daha puanlanacak`);
+      deps.log?.(
+        `[score] ${missing.length} aday puansız döndü; küçük batch'le bir kez daha puanlanacak`,
+      );
     }
 
     // Kesim, modelin geçerli puan verdiği aday sayısına göre değil batch boyutuna göre.
-    for (const { cand, score, decision } of decideBatch(valid, batch.length, passPercent, thresholds)) {
+    for (const { cand, score, decision } of decideBatch(
+      valid,
+      batch.length,
+      passPercent,
+      thresholds,
+    )) {
       const scores = {
         ...(cand.scores ?? {}),
         surprise: score.surprise,
