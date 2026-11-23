@@ -35,3 +35,4 @@ supabase/.branches/
 # Claude agent worktrees
 .claude/worktrees/
 board/
+packages/pipeline/.cache/

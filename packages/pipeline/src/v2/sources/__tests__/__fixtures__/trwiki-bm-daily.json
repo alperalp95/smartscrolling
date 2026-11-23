@@ -1,0 +1,59 @@
+{
+  "batchcomplete": true,
+  "query": {
+    "pages": [
+      {
+        "pageid": 3,
+        "ns": 4,
+        "title": "Vikipedi:Biliyor muydunuz?/2026-10-05",
+        "revisions": [
+          {
+            "slots": {
+              "main": {
+                "contentmodel": "wikitext",
+                "contentformat": "text/x-wiki",
+                "content": "<div style=\"float:right;margin-left:0.5em;\">[[Dosya:Sevilay Öztürk (cropped).jpg|100x100px|Sevilay Öztürk|alt=Sevilay Öztürk]]</div>'''[[Sevilay Öztürk]]''', [[Paralimpik Oyunları|paralimpik oyunlarda]] yüzme branşında madalya kazanan ilk Türk sporcudur."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "pageid": 1,
+        "ns": 4,
+        "title": "Vikipedi:Biliyor muydunuz?/2026-10-01",
+        "revisions": [
+          {
+            "slots": {
+              "main": {
+                "contentmodel": "wikitext",
+                "contentformat": "text/x-wiki",
+                "content": "Tarihin belli zamanlarında, [[Yahudiler]]in, [[Hristiyan]] (ve bazen [[Müslüman]]) '''[[kan iftirası|çocukların kanlarından]]''' [[matsa]] yaptıklarına inanılmıştır.<ref>Kaynak</ref>"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "pageid": 2,
+        "ns": 4,
+        "title": "Vikipedi:Biliyor muydunuz?/2026-10-02",
+        "revisions": [{ "slots": { "main": { "content": "   \n" } } }]
+      },
+      {
+        "pageid": 4,
+        "ns": 4,
+        "title": "Vikipedi:Biliyor muydunuz?/2026-12-01",
+        "revisions": [
+          {
+            "slots": {
+              "main": {
+                "content": "'''[[Gelecek]]''' tarihli bu kanca henüz ana sayfada gösterilmedi ve okunmamalı."
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

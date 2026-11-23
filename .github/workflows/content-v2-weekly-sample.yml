@@ -1,0 +1,47 @@
+# İçerik hattı v2 — haftalık kart örneği: son 7 günde yayınlanan kartlardan rastgele 10 tanesini
+# checkbox'lı bir GitHub Issue olarak açar (etiket: weekly-sample). Kötü kartları işaretleyin.
+# Ayrıntı: packages/pipeline/README.md → "Otomatik çalışma".
+#
+# KAPI: Zamanlanmış run, repo değişkeni CONTENT_V2_ENABLED = true olana kadar hiçbir şey yapmaz.
+name: content-v2-weekly-sample
+
+on:
+  schedule:
+    # Her pazartesi 07:00 UTC (İstanbul 10:00).
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: content-v2-weekly-sample
+  cancel-in-progress: false
+
+jobs:
+  sample:
+    name: Weekly card sample
+    if: github.event_name == 'workflow_dispatch' || vars.CONTENT_V2_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install pipeline dependencies
+        run: npm ci --workspace @smartscrolling/pipeline
+
+      - name: Open weekly sample issue
+        run: node packages/pipeline/src/runners/v2-weekly-sample.js --create-issue --count 10 --days 7

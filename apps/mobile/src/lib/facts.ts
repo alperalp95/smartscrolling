@@ -80,6 +80,7 @@ export async function fetchSavedFacts(userId?: string | null, limit = 10) {
     supabase
       .from('facts')
       .select(SAVED_FACT_SELECT)
+      .eq('status', 'published')
       .in('id', factIds) as PromiseLike<FactsListResult>,
     { data: null, error: { message: 'timeout' } } as FactsListResult,
   );
@@ -106,7 +107,12 @@ export async function fetchFactById(factId?: string | null) {
   }
 
   const result = await withTimeout(
-    supabase.from('facts').select(SAVED_FACT_SELECT).eq('id', factId).maybeSingle() as PromiseLike<{
+    supabase
+      .from('facts')
+      .select(SAVED_FACT_SELECT)
+      .eq('status', 'published')
+      .eq('id', factId)
+      .maybeSingle() as PromiseLike<{
       data: FactRow | null;
       error: { message: string } | null;
     }>,
