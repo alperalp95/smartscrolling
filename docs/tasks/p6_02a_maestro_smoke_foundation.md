@@ -25,7 +25,9 @@
 
 - `basic-navigation.yaml`: Feed -> Library -> Profile tab navigation.
 - `library-reader-smoke.yaml`: Library free anchor kitabi -> Reader acilisi.
-- `compliance-surfaces-smoke.yaml`: Profile icinde hesap/veri silme yuzeyinin gorunmesi.
+- `compliance-guest-smoke.yaml`: misafirde profilde giris cagrisi gorunur, `account-delete-entry` gorunmez.
+- `compliance-account-smoke.yaml`: e-posta ile giris yapip `account-delete-entry` gorunur (silmeye basmaz). Kimlik bilgisi YAML icinde degil: `maestro test -e MAESTRO_TEST_EMAIL=... -e MAESTRO_TEST_PASSWORD=... .maestro/compliance-account-smoke.yaml`.
+- Not: `maestro test .maestro` env verilmeden hesap akisini da kosar ve basarisiz olur; env ile veya akislari tek tek calistirin.
 
 ## Verification
 

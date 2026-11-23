@@ -845,6 +845,7 @@ export default function ProfileScreen() {
               style={[s.emailAuthButton]}
               onPress={() => setShowEmailForm(!showEmailForm)}
               activeOpacity={0.85}
+              testID="auth-email-toggle"
             >
               <Text style={s.emailAuthButtonText}>
                 {showEmailForm ? 'E-posta Formunu Kapat' : 'E-posta ile Giris Yap'}
@@ -864,6 +865,7 @@ export default function ProfileScreen() {
                   autoCapitalize="none"
                   keyboardType="email-address"
                   style={s.input}
+                  testID="auth-email-input"
                 />
                 <TextInput
                   value={password}
@@ -875,6 +877,7 @@ export default function ProfileScreen() {
                   placeholderTextColor="#6b7280"
                   secureTextEntry
                   style={s.input}
+                  testID="auth-password-input"
                 />
 
                 <View style={s.inlineActions}>
@@ -883,6 +886,7 @@ export default function ProfileScreen() {
                     onPress={() => void handleSignIn()}
                     activeOpacity={0.85}
                     disabled={isSubmitting}
+                    testID="auth-submit-button"
                   >
                     <Text style={s.primaryButtonText}>
                       {isSubmitting ? 'Bekleyin...' : 'Giris Yap'}
