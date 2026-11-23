@@ -3,12 +3,26 @@ import { test } from 'node:test';
 import { loadConfig } from '../../llm/index.js';
 import { WRITERS, parseArgs, runWriterCompare } from '../v2-writer-compare.js';
 
-const ENV = { GROQ_API_KEY: 'gk-test-1234', CLOUDFLARE_API_TOKEN: 'cf-test-1234', CLOUDFLARE_ACCOUNT_ID: 'acct-test-1234' };
+const ENV = {
+  GROQ_API_KEY: 'gk-test-1234',
+  CLOUDFLARE_API_TOKEN: 'cf-test-1234',
+  CLOUDFLARE_ACCOUNT_ID: 'acct-test-1234',
+};
 
 const INPUT = {
   candidates: [
-    { hook_text: 'Hook bir', lang: 'en', support_paragraph: 'Destek bir.', scores: { category: 'BİLİM' } },
-    { hook_text: 'Hook iki', lang: 'tr', support_paragraph: 'Destek iki.', scores: { category: 'TARİH' } },
+    {
+      hook_text: 'Hook bir',
+      lang: 'en',
+      support_paragraph: 'Destek bir.',
+      scores: { category: 'BİLİM' },
+    },
+    {
+      hook_text: 'Hook iki',
+      lang: 'tr',
+      support_paragraph: 'Destek iki.',
+      scores: { category: 'TARİH' },
+    },
     { hook_text: 'Destek yok', lang: 'en', scores: {} },
   ],
 };
@@ -19,7 +33,12 @@ function makeFetch({ failModel } = {}) {
     if (failModel && String(body.model) === failModel) {
       return new Response(JSON.stringify({ error: { message: 'bad request' } }), { status: 400 });
     }
-    const card = { title: `T ${body.model}`, content: `İçerik ${body.model}`, tags: [], read_time_sq: 10 };
+    const card = {
+      title: `T ${body.model}`,
+      content: `İçerik ${body.model}`,
+      tags: [],
+      read_time_sq: 10,
+    };
     return new Response(
       JSON.stringify({
         choices: [{ message: { content: JSON.stringify(card) }, finish_reason: 'stop' }],
@@ -63,7 +82,8 @@ test('2 kanca x 3 yazar: 6 kart, anahtar doğru eşleşir', async () => {
   assert.match(md, /1–5 puanlayın/);
   const key = JSON.parse(files['writer-compare-2026-11-21.key.json']);
   assert.deepEqual(Object.keys(key), ['Bilgi 1', 'Bilgi 2']);
-  for (const k of Object.values(key)) assert.deepEqual(Object.values(k).sort(), [...WRITERS].sort());
+  for (const k of Object.values(key))
+    assert.deepEqual(Object.values(k).sort(), [...WRITERS].sort());
   // Bilgi 1'deki A kartının başlığı anahtardaki modele ait olmalı
   const model = key['Bilgi 1'].A.split(':').slice(1).join(':');
   const sec = md.split('## Bilgi 2')[0];

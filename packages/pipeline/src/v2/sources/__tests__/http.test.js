@@ -1,9 +1,15 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createHttpClient, mediawikiApi, USER_AGENT } from '../http.js';
+import { test } from 'node:test';
+import { USER_AGENT, createHttpClient, mediawikiApi } from '../http.js';
 
 function response(status, body = {}) {
-  return { ok: status >= 200 && status < 300, status, headers: new Map(), json: async () => body, text: async () => '' };
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: new Map(),
+    json: async () => body,
+    text: async () => '',
+  };
 }
 
 function harness(statuses) {
@@ -61,11 +67,18 @@ test('mediawikiApi: format=json&formatversion=2 ekler, API hatasında fırlatır
   const http = {
     async getJson(url) {
       urls.push(new URL(String(url)));
-      return url.searchParams.get('page') === 'Missing' ? { error: { code: 'missingtitle', info: 'nope' } } : { ok: 1 };
+      return url.searchParams.get('page') === 'Missing'
+        ? { error: { code: 'missingtitle', info: 'nope' } }
+        : { ok: 1 };
     },
   };
-  assert.deepEqual(await mediawikiApi(http, 'en.wikipedia.org', { action: 'parse', page: 'X' }), { ok: 1 });
+  assert.deepEqual(await mediawikiApi(http, 'en.wikipedia.org', { action: 'parse', page: 'X' }), {
+    ok: 1,
+  });
   assert.equal(urls[0].searchParams.get('format'), 'json');
   assert.equal(urls[0].searchParams.get('formatversion'), '2');
-  await assert.rejects(mediawikiApi(http, 'en.wikipedia.org', { action: 'parse', page: 'Missing' }), /missingtitle/);
+  await assert.rejects(
+    mediawikiApi(http, 'en.wikipedia.org', { action: 'parse', page: 'Missing' }),
+    /missingtitle/,
+  );
 });

@@ -46,9 +46,7 @@ export function buildOpenAiChatRequest({
 function contentToText(content) {
   if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
-    return content
-      .map((part) => (typeof part === 'string' ? part : part?.text ?? ''))
-      .join('');
+    return content.map((part) => (typeof part === 'string' ? part : (part?.text ?? ''))).join('');
   }
   return '';
 }
@@ -95,7 +93,9 @@ export function parseRetryAfterMs(headers) {
  * @returns {number|undefined} milisaniye
  */
 export function parseRetryHintMs(bodyText) {
-  const m = String(bodyText ?? '').match(/try again in\s+(?:(\d+)m(?!s))?\s*(?:(\d+(?:\.\d+)?)(ms|s))?/i);
+  const m = String(bodyText ?? '').match(
+    /try again in\s+(?:(\d+)m(?!s))?\s*(?:(\d+(?:\.\d+)?)(ms|s))?/i,
+  );
   if (!m || (!m[1] && !m[2])) return undefined;
   const minutes = Number(m[1] ?? 0);
   const value = Number(m[2] ?? 0);
@@ -138,7 +138,8 @@ function extractFailedGeneration(bodyText) {
  * - invalid_json: JSON modu geçerli JSON üretemedi -> tamir denemesi
  * - fatal: diğer 4xx (401/403/400...) -> sonraki sağlayıcı, tekrar yok
  */
-export function classifyHttpFailure(status, bodyText = '', headers) {
+export function classifyHttpFailure(status, rawBody, headers) {
+  const bodyText = rawBody ?? '';
   const snippet = String(bodyText).slice(0, 300);
   const msg = `HTTP ${status}: ${snippet}`;
   if (status === 404 || status === 410 || UNAVAILABLE_RE.test(bodyText)) {

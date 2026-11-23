@@ -1,8 +1,8 @@
 // src/llm/config.js
 // pipeline.config.json okuma + doğrulama. '_' ile başlayan alanlar açıklamadır, yok sayılır.
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { LlmConfigError } from './errors.js';
 
 export const REQUIRED_ROLES = ['scorer', 'writer', 'verifier', 'judge', 'embedding'];
@@ -22,7 +22,9 @@ export function loadConfig(filePath = DEFAULT_CONFIG_PATH) {
   try {
     raw = JSON.parse(readFileSync(filePath, 'utf8'));
   } catch (err) {
-    throw new LlmConfigError(`config dosyası okunamadı/JSON geçersiz (${filePath}): ${err.message}`);
+    throw new LlmConfigError(
+      `config dosyası okunamadı/JSON geçersiz (${filePath}): ${err.message}`,
+    );
   }
   return validateConfig(raw);
 }
@@ -55,7 +57,10 @@ function requirePositiveNumber(obj, key, at) {
 
 function normalizeMember(member, providers, at) {
   if (!isObject(member)) {
-    throw new LlmConfigError('zincir öğesi { "provider": "...", "model": "..." } biçiminde olmalı', { path: at });
+    throw new LlmConfigError(
+      'zincir öğesi { "provider": "...", "model": "..." } biçiminde olmalı',
+      { path: at },
+    );
   }
   if (typeof member.provider !== 'string' || !member.provider) {
     throw new LlmConfigError("'provider' eksik", { path: at });
@@ -73,12 +78,20 @@ function normalizeMember(member, providers, at) {
     throw new LlmConfigError("'params' bir nesne olmalı", { path: `${at}.params` });
   }
   if (member.userSuffix !== undefined && typeof member.userSuffix !== 'string') {
-    throw new LlmConfigError("'userSuffix' bir metin olmalı (ör. \" /no_think\")", { path: `${at}.userSuffix` });
-  }
-  if (member.maxTokens !== undefined && (!Number.isInteger(member.maxTokens) || member.maxTokens <= 0)) {
-    throw new LlmConfigError(`'maxTokens' pozitif bir tam sayı olmalı (şu an: ${JSON.stringify(member.maxTokens)})`, {
-      path: `${at}.maxTokens`,
+    throw new LlmConfigError('\'userSuffix\' bir metin olmalı (ör. " /no_think")', {
+      path: `${at}.userSuffix`,
     });
+  }
+  if (
+    member.maxTokens !== undefined &&
+    (!Number.isInteger(member.maxTokens) || member.maxTokens <= 0)
+  ) {
+    throw new LlmConfigError(
+      `'maxTokens' pozitif bir tam sayı olmalı (şu an: ${JSON.stringify(member.maxTokens)})`,
+      {
+        path: `${at}.maxTokens`,
+      },
+    );
   }
   const out = { provider: member.provider, model: member.model, params: member.params ?? {} };
   if (member.userSuffix) out.userSuffix = member.userSuffix;
@@ -95,9 +108,12 @@ function normalizeChain(chain, providers, at) {
     if (isObject(step) && step.pool !== undefined) {
       const strategy = step.strategy ?? 'round_robin';
       if (!STRATEGIES.includes(strategy)) {
-        throw new LlmConfigError(`bilinmeyen strategy '${strategy}' (desteklenen: ${STRATEGIES.join(', ')})`, {
-          path: `${stepAt}.strategy`,
-        });
+        throw new LlmConfigError(
+          `bilinmeyen strategy '${strategy}' (desteklenen: ${STRATEGIES.join(', ')})`,
+          {
+            path: `${stepAt}.strategy`,
+          },
+        );
       }
       if (!Array.isArray(step.pool) || step.pool.length === 0) {
         throw new LlmConfigError("'pool' en az bir model içermeli", { path: `${stepAt}.pool` });
@@ -108,7 +124,9 @@ function normalizeChain(chain, providers, at) {
       };
     }
     if (isObject(step) && step.strategy !== undefined) {
-      throw new LlmConfigError("'strategy' sadece 'pool' ile birlikte kullanılır", { path: stepAt });
+      throw new LlmConfigError("'strategy' sadece 'pool' ile birlikte kullanılır", {
+        path: stepAt,
+      });
     }
     return { strategy: 'single', members: [normalizeMember(step, providers, stepAt)] };
   });
@@ -117,24 +135,34 @@ function normalizeChain(chain, providers, at) {
 function validateProvider(name, p) {
   const at = `providers.${name}`;
   if (!SUPPORTED_PROVIDERS.includes(name)) {
-    throw new LlmConfigError(`desteklenmeyen sağlayıcı (desteklenen: ${SUPPORTED_PROVIDERS.join(', ')})`, { path: at });
+    throw new LlmConfigError(
+      `desteklenmeyen sağlayıcı (desteklenen: ${SUPPORTED_PROVIDERS.join(', ')})`,
+      { path: at },
+    );
   }
   if (!isObject(p)) throw new LlmConfigError('sağlayıcı ayarı bir nesne olmalı', { path: at });
   if (typeof p.baseUrl !== 'string' || !/^https:\/\//.test(p.baseUrl)) {
-    throw new LlmConfigError("'baseUrl' https:// ile başlayan bir adres olmalı", { path: `${at}.baseUrl` });
+    throw new LlmConfigError("'baseUrl' https:// ile başlayan bir adres olmalı", {
+      path: `${at}.baseUrl`,
+    });
   }
   if (typeof p.apiKeyEnv !== 'string' || !p.apiKeyEnv) {
-    throw new LlmConfigError("'apiKeyEnv' (anahtarın durduğu ortam değişkeninin adı) eksik", { path: `${at}.apiKeyEnv` });
+    throw new LlmConfigError("'apiKeyEnv' (anahtarın durduğu ortam değişkeninin adı) eksik", {
+      path: `${at}.apiKeyEnv`,
+    });
   }
   if (name === 'cloudflare' && (typeof p.accountIdEnv !== 'string' || !p.accountIdEnv)) {
-    throw new LlmConfigError("'accountIdEnv' eksik (ör. CLOUDFLARE_ACCOUNT_ID)", { path: `${at}.accountIdEnv` });
+    throw new LlmConfigError("'accountIdEnv' eksik (ör. CLOUDFLARE_ACCOUNT_ID)", {
+      path: `${at}.accountIdEnv`,
+    });
   }
   const pct = p.stopAtPercent ?? 90;
   if (typeof pct !== 'number' || pct <= 0 || pct > 100) {
     throw new LlmConfigError("'stopAtPercent' 1-100 arası olmalı", { path: `${at}.stopAtPercent` });
   }
   const limits = p.dailyLimits ?? {};
-  if (!isObject(limits)) throw new LlmConfigError("'dailyLimits' bir nesne olmalı", { path: `${at}.dailyLimits` });
+  if (!isObject(limits))
+    throw new LlmConfigError("'dailyLimits' bir nesne olmalı", { path: `${at}.dailyLimits` });
   for (const scope of ['perModel', 'provider']) {
     if (limits[scope] === undefined) continue;
     if (!isObject(limits[scope])) {
@@ -142,19 +170,26 @@ function validateProvider(name, p) {
     }
     for (const [k, v] of Object.entries(limits[scope])) {
       if (v !== null && (typeof v !== 'number' || v < 0)) {
-        throw new LlmConfigError('sayı ya da null olmalı', { path: `${at}.dailyLimits.${scope}.${k}` });
+        throw new LlmConfigError('sayı ya da null olmalı', {
+          path: `${at}.dailyLimits.${scope}.${k}`,
+        });
       }
     }
   }
   const perMinute = p.perMinuteLimits ?? {};
   if (!isObject(perMinute)) {
-    throw new LlmConfigError("'perMinuteLimits' bir nesne olmalı", { path: `${at}.perMinuteLimits` });
+    throw new LlmConfigError("'perMinuteLimits' bir nesne olmalı", {
+      path: `${at}.perMinuteLimits`,
+    });
   }
   for (const [model, lim] of Object.entries(perMinute)) {
     if (!isObject(lim)) {
-      throw new LlmConfigError('{ "tokensPerMinute": ..., "outputTokensPerMinute": ... } biçiminde olmalı', {
-        path: `${at}.perMinuteLimits.${model}`,
-      });
+      throw new LlmConfigError(
+        '{ "tokensPerMinute": ..., "outputTokensPerMinute": ... } biçiminde olmalı',
+        {
+          path: `${at}.perMinuteLimits.${model}`,
+        },
+      );
     }
     for (const [k, v] of Object.entries(lim)) {
       if (!PER_MINUTE_KEYS.includes(k)) {
@@ -163,9 +198,12 @@ function validateProvider(name, p) {
         });
       }
       if (v !== null && (typeof v !== 'number' || !Number.isFinite(v) || v <= 0)) {
-        throw new LlmConfigError(`pozitif bir sayı ya da null olmalı (şu an: ${JSON.stringify(v)})`, {
-          path: `${at}.perMinuteLimits.${model}.${k}`,
-        });
+        throw new LlmConfigError(
+          `pozitif bir sayı ya da null olmalı (şu an: ${JSON.stringify(v)})`,
+          {
+            path: `${at}.perMinuteLimits.${model}.${k}`,
+          },
+        );
       }
     }
   }
@@ -189,17 +227,25 @@ export const SENTENCE_LIMIT_MAX = 10;
  */
 function validateWriting(writing) {
   if (writing === undefined) return undefined;
-  if (!isObject(writing)) throw new LlmConfigError("'writing' bir nesne olmalı", { path: 'writing' });
+  if (!isObject(writing))
+    throw new LlmConfigError("'writing' bir nesne olmalı", { path: 'writing' });
   for (const key of ['minSentences', 'maxSentences']) {
     const v = writing[key];
     if (v === undefined) continue;
     if (!Number.isInteger(v) || v < 1 || v > SENTENCE_LIMIT_MAX) {
-      throw new LlmConfigError(`'${key}' 1-${SENTENCE_LIMIT_MAX} arası bir tam sayı olmalı (şu an: ${JSON.stringify(v)})`, {
-        path: `writing.${key}`,
-      });
+      throw new LlmConfigError(
+        `'${key}' 1-${SENTENCE_LIMIT_MAX} arası bir tam sayı olmalı (şu an: ${JSON.stringify(v)})`,
+        {
+          path: `writing.${key}`,
+        },
+      );
     }
   }
-  if (writing.minSentences !== undefined && writing.maxSentences !== undefined && writing.minSentences > writing.maxSentences) {
+  if (
+    writing.minSentences !== undefined &&
+    writing.maxSentences !== undefined &&
+    writing.minSentences > writing.maxSentences
+  ) {
     throw new LlmConfigError(
       `'minSentences' (${writing.minSentences}) 'maxSentences' (${writing.maxSentences}) değerinden büyük olamaz`,
       { path: 'writing.minSentences' },
@@ -220,14 +266,18 @@ export function validateConfig(rawConfig) {
     throw new LlmConfigError("'providers' bölümü eksik ya da boş", { path: 'providers' });
   }
   const providers = {};
-  for (const [name, p] of Object.entries(cfg.providers)) providers[name] = validateProvider(name, p);
+  for (const [name, p] of Object.entries(cfg.providers))
+    providers[name] = validateProvider(name, p);
 
   if (!isObject(cfg.roles)) throw new LlmConfigError("'roles' bölümü eksik", { path: 'roles' });
   for (const role of REQUIRED_ROLES) {
     if (!isObject(cfg.roles[role])) {
-      throw new LlmConfigError(`'${role}' rolü eksik (gerekli roller: ${REQUIRED_ROLES.join(', ')})`, {
-        path: `roles.${role}`,
-      });
+      throw new LlmConfigError(
+        `'${role}' rolü eksik (gerekli roller: ${REQUIRED_ROLES.join(', ')})`,
+        {
+          path: `roles.${role}`,
+        },
+      );
     }
   }
 
@@ -236,16 +286,20 @@ export function validateConfig(rawConfig) {
   for (const [role, def] of pending) {
     if (def.sameAs !== undefined) continue;
     roles[role] = { ...def, steps: normalizeChain(def.chain, providers, `roles.${role}.chain`) };
-    delete roles[role].chain;
+    Reflect.deleteProperty(roles[role], 'chain');
   }
   for (const [role, def] of pending) {
     if (def.sameAs === undefined) continue;
     const target = cfg.roles[def.sameAs];
     if (!target) {
-      throw new LlmConfigError(`sameAs '${def.sameAs}' diye bir rol yok`, { path: `roles.${role}.sameAs` });
+      throw new LlmConfigError(`sameAs '${def.sameAs}' diye bir rol yok`, {
+        path: `roles.${role}.sameAs`,
+      });
     }
     if (target.sameAs !== undefined) {
-      throw new LlmConfigError('sameAs başka bir sameAs rolünü gösteremez', { path: `roles.${role}.sameAs` });
+      throw new LlmConfigError('sameAs başka bir sameAs rolünü gösteremez', {
+        path: `roles.${role}.sameAs`,
+      });
     }
     roles[role] = { ...roles[def.sameAs], ...def, steps: roles[def.sameAs].steps };
   }
@@ -254,9 +308,12 @@ export function validateConfig(rawConfig) {
     for (const key of ['maxTokens', 'expectedOutputTokens']) {
       if (def[key] === undefined) continue;
       if (!Number.isInteger(def[key]) || def[key] <= 0) {
-        throw new LlmConfigError(`'${key}' pozitif bir tam sayı olmalı (şu an: ${JSON.stringify(def[key])})`, {
-          path: `roles.${role}.${key}`,
-        });
+        throw new LlmConfigError(
+          `'${key}' pozitif bir tam sayı olmalı (şu an: ${JSON.stringify(def[key])})`,
+          {
+            path: `roles.${role}.${key}`,
+          },
+        );
       }
     }
   }
@@ -267,7 +324,8 @@ export function validateConfig(rawConfig) {
   requirePositiveNumber(emb, 'batchSize', 'roles.embedding');
 
   if (!isObject(cfg.retry)) throw new LlmConfigError("'retry' bölümü eksik", { path: 'retry' });
-  for (const k of ['maxAttempts', 'baseDelayMs', 'maxDelayMs']) requirePositiveNumber(cfg.retry, k, 'retry');
+  for (const k of ['maxAttempts', 'baseDelayMs', 'maxDelayMs'])
+    requirePositiveNumber(cfg.retry, k, 'retry');
   const retry = { requestTimeoutMs: 60000, ...cfg.retry };
   requirePositiveNumber(retry, 'requestTimeoutMs', 'retry');
 
@@ -282,5 +340,5 @@ const NORMALIZED = Symbol.for('smartscrolling.pipeline.llmConfig.normalized');
 
 /** Zaten validateConfig/loadConfig'ten geçmişse tekrar doğrulama. */
 export function ensureConfig(config) {
-  return config && config[NORMALIZED] ? config : validateConfig(config);
+  return config?.[NORMALIZED] ? config : validateConfig(config);
 }

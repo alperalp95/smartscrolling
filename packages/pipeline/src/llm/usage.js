@@ -3,8 +3,8 @@
 // stopAtPercent'e gelen sağlayıcı/model o gün için atlanır.
 // Saklama enjekte edilir (usageStore): bellek içi, JSON dosya ya da `pipeline_state` (DB; GitHub Actions).
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getState, setState } from '../v2/db/state-repo.js';
 
 export const DEFAULT_USAGE_DIR = path.resolve(
@@ -88,7 +88,8 @@ export function createStateUsageStore({
   prefix = USAGE_STATE_PREFIX,
   onError,
 } = {}) {
-  if (!client || typeof client.from !== 'function') throw new TypeError('createStateUsageStore: Supabase client gerekli');
+  if (!client || typeof client.from !== 'function')
+    throw new TypeError('createStateUsageStore: Supabase client gerekli');
   const keyFor = (day) => `${prefix}${day}`;
   const store = {
     kind: 'db',
@@ -153,7 +154,14 @@ export function createUsageTracker({ providers, store, now = () => Date.now() })
   function modelBucket(d, provider, model) {
     const p = providerBucket(d, provider);
     if (!p.models[model]) {
-      p.models[model] = { requests: 0, inputTokens: 0, outputTokens: 0, tokens: 0, neurons: 0, exhausted: false };
+      p.models[model] = {
+        requests: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        tokens: 0,
+        neurons: 0,
+        exhausted: false,
+      };
     }
     return p.models[model];
   }
@@ -195,16 +203,24 @@ export function createUsageTracker({ providers, store, now = () => Date.now() })
       const pct = cfg?.stopAtPercent ?? 90;
       const p = providerBucket(d, provider);
       const m = modelBucket(d, provider, model);
-      if (p.exhausted) return { allowed: false, reason: 'quota_exhausted', detail: { scope: 'provider' } };
-      if (m.exhausted) return { allowed: false, reason: 'quota_exhausted', detail: { scope: 'model' } };
+      if (p.exhausted)
+        return { allowed: false, reason: 'quota_exhausted', detail: { scope: 'provider' } };
+      if (m.exhausted)
+        return { allowed: false, reason: 'quota_exhausted', detail: { scope: 'model' } };
       const provHit = overLimit(p, cfg?.dailyLimits?.provider, pct);
-      if (provHit) return { allowed: false, reason: 'budget', detail: { scope: 'provider', ...provHit } };
+      if (provHit)
+        return { allowed: false, reason: 'budget', detail: { scope: 'provider', ...provHit } };
       const modelHit = overLimit(m, cfg?.dailyLimits?.perModel, pct);
-      if (modelHit) return { allowed: false, reason: 'budget', detail: { scope: 'model', ...modelHit } };
+      if (modelHit)
+        return { allowed: false, reason: 'budget', detail: { scope: 'model', ...modelHit } };
       return { allowed: true };
     },
 
-    async record(provider, model, { requests = 1, inputTokens = 0, outputTokens = 0, neurons } = {}) {
+    async record(
+      provider,
+      model,
+      { requests = 1, inputTokens = 0, outputTokens = 0, neurons } = {},
+    ) {
       const d = await current();
       const p = providerBucket(d, provider);
       const m = modelBucket(d, provider, model);

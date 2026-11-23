@@ -1,6 +1,6 @@
+import assert from 'node:assert/strict';
 // Runner v2-process: --apply olmadan DB repo'su oluşturulmaz; dry-run bellek içi repo + çıktı dosyası.
 import { test } from 'node:test';
-import assert from 'node:assert/strict';
 import { normalizeInput, parseArgs, runProcess } from '../../../runners/v2-process.js';
 import { createMemoryStepsRepo } from '../../db/steps-repo.js';
 import { resolveSteps } from '../index.js';
@@ -8,8 +8,22 @@ import { FIXED_NOW, TEST_CONFIG, fakeLlm } from './helpers.js';
 
 const INPUT = {
   candidates: [
-    { source_key: 'enwiki-dyk:1', source: 'enwiki_dyk', lang: 'en', hook_text: 'hook one about squid eyes', hook_hash: 'h1', source_url: 'https://en.wikipedia.org/wiki/Squid', source_meta: { views: 10 } },
-    { source_key: 'enwiki-dyk:2', source: 'enwiki_dyk', lang: 'en', hook_text: '', hook_hash: 'h2' },
+    {
+      source_key: 'enwiki-dyk:1',
+      source: 'enwiki_dyk',
+      lang: 'en',
+      hook_text: 'hook one about squid eyes',
+      hook_hash: 'h1',
+      source_url: 'https://en.wikipedia.org/wiki/Squid',
+      source_meta: { views: 10 },
+    },
+    {
+      source_key: 'enwiki-dyk:2',
+      source: 'enwiki_dyk',
+      lang: 'en',
+      hook_text: '',
+      hook_hash: 'h2',
+    },
   ],
 };
 
@@ -33,7 +47,12 @@ test('parseArgs: varsayılan dry-run, tüm adımlar; geçersiz adım hata', () =
 });
 
 test('resolveSteps: "dedup" iki tekrar adımını açar, sıra sabit', () => {
-  assert.deepEqual(resolveSteps('enqueue,dedup,score'), ['dedup-hook', 'score', 'dedup-card', 'enqueue']);
+  assert.deepEqual(resolveSteps('enqueue,dedup,score'), [
+    'dedup-hook',
+    'score',
+    'dedup-card',
+    'enqueue',
+  ]);
   assert.deepEqual(resolveSteps('dedup,score,support,write,verify,enqueue'), [
     'dedup-hook',
     'score',

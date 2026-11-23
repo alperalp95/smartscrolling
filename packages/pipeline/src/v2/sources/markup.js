@@ -30,7 +30,10 @@ const NAMED_ENTITIES = {
 export function decodeEntities(text) {
   return String(text ?? '').replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, code) => {
     if (code[0] === '#') {
-      const n = code[1].toLowerCase() === 'x' ? Number.parseInt(code.slice(2), 16) : Number.parseInt(code.slice(1), 10);
+      const n =
+        code[1].toLowerCase() === 'x'
+          ? Number.parseInt(code.slice(2), 16)
+          : Number.parseInt(code.slice(1), 10);
       if (!Number.isFinite(n)) return match;
       if (n === 160 || n === 8201) return ' ';
       try {
@@ -65,7 +68,10 @@ export function htmlToText(html) {
   const stripped = String(html ?? '')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<sup\b[^>]*class="[^"]*(?:reference|noprint|Inline-Template)[^"]*"[^>]*>[\s\S]*?<\/sup>/gi, '')
+    .replace(
+      /<sup\b[^>]*class="[^"]*(?:reference|noprint|Inline-Template)[^"]*"[^>]*>[\s\S]*?<\/sup>/gi,
+      '',
+    )
     .replace(/<span\b[^>]*class="[^"]*(?:mw-editsection|noprint)[^"]*"[^>]*>[\s\S]*?<\/span>/gi, '')
     .replace(/<br\s*\/?>/gi, ' ')
     .replace(/<[^>]+>/g, '');
@@ -135,11 +141,26 @@ function keepTemplate(inner) {
   if (name === 'spaced ndash' || name === 'snd' || name === 'spaced en dash') return ' – ';
   if (name === 'ndash') return '–';
   if (name === 'mdash') return '—';
-  if (['nowrap', 'nobr', 'small', 'smaller', 'em', 'strong', 'noitalic', 'not a typo', 'sic'].includes(name)) {
-    return parts.slice(1).filter((p) => !p.includes('=')).join(' ');
+  if (
+    [
+      'nowrap',
+      'nobr',
+      'small',
+      'smaller',
+      'em',
+      'strong',
+      'noitalic',
+      'not a typo',
+      'sic',
+    ].includes(name)
+  ) {
+    return parts
+      .slice(1)
+      .filter((p) => !p.includes('='))
+      .join(' ');
   }
   if (name === 'lang' || name === 'transliteration' || name === 'transl') {
-    return parts[parts.length - 1].includes('=') ? parts[2] ?? '' : parts[parts.length - 1];
+    return parts[parts.length - 1].includes('=') ? (parts[2] ?? '') : parts[parts.length - 1];
   }
   if (name === 'convert' || name === 'cvt') {
     return parts.slice(1, 3).join(' ');
@@ -209,7 +230,10 @@ export function wikiUrl(lang, title) {
   let t = String(title).trim();
   // Sorgu dizesi sadece href/URL girdisinde atılır; ham başlıkta "?" makale adının parçasıdır.
   const isHref = /^(?:(?:https?:)?\/\/|\/|\.\/)/.test(t);
-  t = t.replace(/^(?:https?:)?\/\/[^/]+/, '').replace(/^\.\//, '').replace(/^\/wiki\//, '');
+  t = t
+    .replace(/^(?:https?:)?\/\/[^/]+/, '')
+    .replace(/^\.\//, '')
+    .replace(/^\/wiki\//, '');
   if (isHref) t = t.split('?')[0];
   t = t.split('#')[0];
   try {
@@ -217,10 +241,14 @@ export function wikiUrl(lang, title) {
   } catch {
     // Bozuk kodlama: olduğu gibi bırak.
   }
-  t = decodeEntities(t).replace(/\s+/g, '_').replace(/^_+|_+$/g, '');
+  t = decodeEntities(t)
+    .replace(/\s+/g, '_')
+    .replace(/^_+|_+$/g, '');
   if (!t) return null;
   // MediaWiki ilk harfi büyütür; TR vikide i → İ.
-  t = (lang === 'tr' ? t.charAt(0).toLocaleUpperCase('tr-TR') : t.charAt(0).toUpperCase()) + t.slice(1);
+  t =
+    (lang === 'tr' ? t.charAt(0).toLocaleUpperCase('tr-TR') : t.charAt(0).toUpperCase()) +
+    t.slice(1);
   const encoded = encodeURIComponent(t)
     .replace(/%2C/g, ',')
     .replace(/%3A/g, ':')
@@ -233,7 +261,8 @@ export function wikiUrl(lang, title) {
 }
 
 /** Makale olmayan ad alanları (dosya, yardım, proje sayfaları ...). */
-const NON_ARTICLE = /^(?:file|image|dosya|resim|help|yardım|wikipedia|vikipedi|wp|special|özel|category|kategori|template|şablon|portal|talk|user|kullanıcı|draft|taslak|module|modül|mos|wiktionary|wikt|commons|meta|s|q|d|n|v|b|voy|species)\s*:/i;
+const NON_ARTICLE =
+  /^(?:file|image|dosya|resim|help|yardım|wikipedia|vikipedi|wp|special|özel|category|kategori|template|şablon|portal|talk|user|kullanıcı|draft|taslak|module|modül|mos|wiktionary|wikt|commons|meta|s|q|d|n|v|b|voy|species)\s*:/i;
 
 function hrefToTitle(href) {
   const raw = decodeEntities(href);
@@ -317,10 +346,16 @@ export function firstSentences(text, max = 2) {
   const sentences = [];
   let start = 0;
   const re = /[.!?]["”’)]?\s+(?=["“(]?[A-Z0-9ÇĞİÖŞÜ])/g;
-  let m;
-  while ((m = re.exec(src)) && sentences.length < max) {
+  for (;;) {
+    const m = re.exec(src);
+    if (!m || sentences.length >= max) break;
     const before = src.slice(start, m.index + 1);
-    if (/(?:\b[A-Z]\.|\b(?:e\.g|i\.e|etc|vs|Dr|Mr|Mrs|Ms|St|Jr|Sr|No|ca|c|approx|Gen|Col|Lt|Mt|U\.S)\.)$/.test(before)) continue;
+    if (
+      /(?:\b[A-Z]\.|\b(?:e\.g|i\.e|etc|vs|Dr|Mr|Mrs|Ms|St|Jr|Sr|No|ca|c|approx|Gen|Col|Lt|Mt|U\.S)\.)$/.test(
+        before,
+      )
+    )
+      continue;
     sentences.push(src.slice(start, m.index + m[0].trimEnd().length).trim());
     start = m.index + m[0].length;
   }

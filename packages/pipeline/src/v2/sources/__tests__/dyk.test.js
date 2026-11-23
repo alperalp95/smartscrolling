@@ -1,6 +1,11 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { collectDykArchive, parseDykArchiveRow, parseDykArchiveRows, pickSplit } from '../dyk-archive.js';
+import { test } from 'node:test';
+import {
+  collectDykArchive,
+  parseDykArchiveRow,
+  parseDykArchiveRows,
+  pickSplit,
+} from '../dyk-archive.js';
 import { collectDykRecent, parseRecentAdditionsHtml, recentAdditionsPages } from '../dyk-recent.js';
 import { dykSourceKey } from '../dyk.js';
 import { fakeHttp, fixture, jsonFixture } from './helpers.js';
@@ -43,7 +48,11 @@ test('S1: boş ve zaman damgası olmayan satırlar atlanır; deterministik', () 
   assert.equal(parsed.skipped, 2);
   assert.deepEqual(
     parsed.candidates.map((c) => c.source_key),
-    ['enwiki-dyk:2024-02-02T1200:0', 'enwiki-dyk:2024-02-02T1200:7', 'enwiki-dyk:2024-02-02T0000:0'],
+    [
+      'enwiki-dyk:2024-02-02T1200:0',
+      'enwiki-dyk:2024-02-02T1200:7',
+      'enwiki-dyk:2024-02-02T0000:0',
+    ],
   );
   assert.deepEqual(parseDykArchiveRows(rows), parsed);
 });
@@ -56,7 +65,12 @@ test('S1: limit dolunca durur, consumed sadece okunan satırlar', () => {
 
 test('S1: pickSplit default/train seçer', () => {
   assert.deepEqual(
-    pickSplit({ splits: [{ config: 'x', split: 'test' }, { config: 'default', split: 'train' }] }),
+    pickSplit({
+      splits: [
+        { config: 'x', split: 'test' },
+        { config: 'default', split: 'train' },
+      ],
+    }),
     { config: 'default', split: 'train' },
   );
   assert.throws(() => pickSplit({ splits: [] }));
@@ -64,7 +78,8 @@ test('S1: pickSplit default/train seçer', () => {
 
 test('S1 toplayıcı: /splits → /rows, offset ilerlemesini döndürür', async () => {
   const http = fakeHttp((url) => {
-    if (url.pathname === '/splits') return { splits: [{ dataset: 'd', config: 'default', split: 'train' }] };
+    if (url.pathname === '/splits')
+      return { splits: [{ dataset: 'd', config: 'default', split: 'train' }] };
     assert.equal(url.pathname, '/rows');
     assert.equal(url.searchParams.get('dataset'), 'derenrich/enwiki-did-you-know');
     assert.equal(url.searchParams.get('offset'), '96984');
@@ -81,7 +96,11 @@ test('S1 toplayıcı: veri seti bittiyse /rows isteği atılmaz', async () => {
     if (url.pathname === '/splits') return { splits: [{ config: 'default', split: 'train' }] };
     throw new Error('rows çağrılmamalı');
   });
-  const result = await collectDykArchive({ http, limit: 5, cursor: { offset: 97015, total: 97015, exhausted: true } });
+  const result = await collectDykArchive({
+    http,
+    limit: 5,
+    cursor: { offset: 97015, total: 97015, exhausted: true },
+  });
   assert.equal(result.candidates.length, 0);
   assert.equal(result.nextCursor.exhausted, true);
 });
@@ -104,7 +123,10 @@ test('S2: Recent additions HTML → setler, sıra, kalın link, bozuk satır atl
   const [pike, yobidashi, pagtatag, quoted, , misheard] = candidates;
   assert.equal(yobidashi.hook_text, 'yobidashi often receive their trousers from sumo wrestlers');
   assert.equal(yobidashi.source_url, 'https://en.wikipedia.org/wiki/Yobidashi');
-  assert.equal(pagtatag.hook_text, "SB19's second EP, Pagtatag!, is part of a trilogy about their artistry");
+  assert.equal(
+    pagtatag.hook_text,
+    "SB19's second EP, Pagtatag!, is part of a trilogy about their artistry",
+  );
   assert.equal(pagtatag.source_url, 'https://en.wikipedia.org/wiki/Pagtatag!');
   assert.equal(quoted.source_url, "https://en.wikipedia.org/wiki/Well_he_would,_wouldn't_he%3F");
   // kalın link yoksa ilk makale linki
@@ -130,7 +152,10 @@ test('S2: deterministik ve sayfa listesi bu ay + geçen ay', () => {
     'Wikipedia:Recent_additions',
     'Wikipedia:Did_you_know_archive/2026/October',
   ]);
-  assert.deepEqual(recentAdditionsPages(new Date('2027-01-03T10:00:00Z'))[1], 'Wikipedia:Did_you_know_archive/2026/December');
+  assert.deepEqual(
+    recentAdditionsPages(new Date('2027-01-03T10:00:00Z'))[1],
+    'Wikipedia:Did_you_know_archive/2026/December',
+  );
 });
 
 test('S2 toplayıcı: iki sayfayı action=parse ile okur, tekrarları eler, limit uygular', async () => {
@@ -145,7 +170,12 @@ test('S2 toplayıcı: iki sayfayı action=parse ile okur, tekrarları eler, limi
   // eskiden yeniye sıralı; imleç son alınan kanca
   assert.deepEqual(
     result.candidates.map((c) => c.source_key),
-    ['enwiki-dyk:2024-02-02T0000:0', 'enwiki-dyk:2024-02-02T0000:1', 'enwiki-dyk:2024-02-02T1200:0', 'enwiki-dyk:2024-02-02T1200:1'],
+    [
+      'enwiki-dyk:2024-02-02T0000:0',
+      'enwiki-dyk:2024-02-02T0000:1',
+      'enwiki-dyk:2024-02-02T1200:0',
+      'enwiki-dyk:2024-02-02T1200:1',
+    ],
   );
   assert.deepEqual(result.nextCursor, { after: '2024-02-02T1200:1' });
   assert.equal(result.backfill, undefined);

@@ -1,13 +1,26 @@
+import assert from 'node:assert/strict';
 // Uçtan uca durum geçişleri: 10 adaylık fixture → beklenen queued/rejected dağılımı.
 import { test } from 'node:test';
-import assert from 'node:assert/strict';
 import { createMemoryStepsRepo } from '../../db/steps-repo.js';
-import { DEFAULT_STEP_NAMES, runSteps } from '../index.js';
 import { REPAIR_MARKER } from '../../prompts/write.js';
-import { GOOD_CARD, baseCandidate, deps, fakeLlm, fakeWikiFetch, parseScoreRequest, userContent } from './helpers.js';
+import { DEFAULT_STEP_NAMES, runSteps } from '../index.js';
+import {
+  GOOD_CARD,
+  baseCandidate,
+  deps,
+  fakeLlm,
+  fakeWikiFetch,
+  parseScoreRequest,
+  userContent,
+} from './helpers.js';
 
 const C = (id, hook, title) =>
-  baseCandidate({ id, source_key: `enwiki-dyk:e2e:${id}`, hook_text: hook, source_url: `https://en.wikipedia.org/wiki/${title}` });
+  baseCandidate({
+    id,
+    source_key: `enwiki-dyk:e2e:${id}`,
+    hook_text: hook,
+    source_url: `https://en.wikipedia.org/wiki/${title}`,
+  });
 
 const CANDIDATES = [
   C('c1', 'the octopus has three hearts and blue blood', 'Octopus'),
@@ -83,7 +96,8 @@ const CARDS = {
   },
   oxford_fixed: {
     title: "Oxford, Aztek İmparatorluğu'ndan daha eski",
-    content: "Oxford'da eğitim 1096 yılında vardı. Aztek İmparatorluğu ise 1325'te kuruldu. Yani üniversite imparatorluktan daha eskidir.",
+    content:
+      "Oxford'da eğitim 1096 yılında vardı. Aztek İmparatorluğu ise 1325'te kuruldu. Yani üniversite imparatorluktan daha eskidir.",
     tags: ['oxford', 'tarih', 'üniversite'],
     read_time_sq: 15,
   },
@@ -95,24 +109,37 @@ const S = (claim) => ({ claim, verdict: 'supported', why: 'kaynakta var' });
 test('uçtan uca: 10 aday → 2 queued, 8 farklı red nedeni', async () => {
   const repo = createMemoryStepsRepo({ candidates: CANDIDATES });
   const llm = fakeLlm({
-    scorer: (req) => ({ items: parseScoreRequest(req).map(({ id, hook }) => ({ id, ...scoreFor(hook) })) }),
+    scorer: (req) => ({
+      items: parseScoreRequest(req).map(({ id, hook }) => ({ id, ...scoreFor(hook) })),
+    }),
     writer: (req) => {
       const u = userContent(req);
       if (u.includes('octopus')) return CARDS.octopus;
       if (u.includes('Napoleon')) return CARDS.napoleon;
       if (u.includes('bananas')) return CARDS.bananas_bad;
-      if (u.includes('Oxford')) return u.includes(REPAIR_MARKER) ? CARDS.oxford_fixed : CARDS.oxford;
+      if (u.includes('Oxford'))
+        return u.includes(REPAIR_MARKER) ? CARDS.oxford_fixed : CARDS.oxford;
       throw new Error(`beklenmeyen yazım isteği: ${u.slice(0, 80)}`);
     },
     verifier: (req) => {
       const u = userContent(req);
       if (u.includes(CARDS.octopus.title)) return { claims: [S('üç kalp'), S('mavi kan')] };
       if (u.includes(CARDS.napoleon.title)) {
-        return { claims: [S('tavşan avı'), { claim: 'en tuhaf yenilgisi sayılır', verdict: 'unsupported', why: 'kaynakta yok' }] };
+        return {
+          claims: [
+            S('tavşan avı'),
+            { claim: 'en tuhaf yenilgisi sayılır', verdict: 'unsupported', why: 'kaynakta yok' },
+          ],
+        };
       }
       if (u.includes(CARDS.oxford_fixed.title)) return { claims: [S('1096'), S('1325')] };
       if (u.includes(CARDS.oxford.title)) {
-        return { claims: [S('1096'), { claim: 'en köklü okullarından biri', verdict: 'unclear', why: 'genelleme' }] };
+        return {
+          claims: [
+            S('1096'),
+            { claim: 'en köklü okullarından biri', verdict: 'unclear', why: 'genelleme' },
+          ],
+        };
       }
       throw new Error('beklenmeyen doğrulama isteği');
     },
@@ -121,12 +148,27 @@ test('uçtan uca: 10 aday → 2 queued, 8 farklı red nedeni', async () => {
 
   const { stats } = await runSteps(
     DEFAULT_STEP_NAMES,
-    deps({ llm, repo, fetch: fakeWikiFetch(PAGES), config: { scoring: { batchSize: 15, passPercent: 50 }, dedup: { duplicateThreshold: 0.92, grayZoneLow: 0.85 } } }),
+    deps({
+      llm,
+      repo,
+      fetch: fakeWikiFetch(PAGES),
+      config: {
+        scoring: { batchSize: 15, passPercent: 50 },
+        dedup: { duplicateThreshold: 0.92, grayZoneLow: 0.85 },
+      },
+    }),
     { limit: 50 },
   );
 
-  const byKey = Object.fromEntries(repo.candidates().map((c) => [c.source_key.split(':').pop(), c]));
-  const outcome = Object.fromEntries(Object.entries(byKey).map(([k, c]) => [k, c.status === 'rejected' ? `rejected:${c.reject_reason}` : c.status]));
+  const byKey = Object.fromEntries(
+    repo.candidates().map((c) => [c.source_key.split(':').pop(), c]),
+  );
+  const outcome = Object.fromEntries(
+    Object.entries(byKey).map(([k, c]) => [
+      k,
+      c.status === 'rejected' ? `rejected:${c.reject_reason}` : c.status,
+    ]),
+  );
   assert.deepEqual(outcome, {
     c1: 'queued',
     c2: 'rejected:duplicate_semantic',
@@ -142,9 +184,14 @@ test('uçtan uca: 10 aday → 2 queued, 8 farklı red nedeni', async () => {
 
   const facts = repo.facts();
   assert.equal(facts.length, 2);
-  assert.ok(facts.every((f) => f.status === 'queued' && f.verified === true && f.category === '🔬 BİLİM'));
+  assert.ok(
+    facts.every((f) => f.status === 'queued' && f.verified === true && f.category === '🔬 BİLİM'),
+  );
   assert.equal(byKey.c1.fact_id, facts.find((f) => f.source_key === 'enwiki-dyk:e2e:c1').id);
-  assert.equal(facts.find((f) => f.source_key === 'enwiki-dyk:e2e:c9').title, CARDS.oxford_fixed.title);
+  assert.equal(
+    facts.find((f) => f.source_key === 'enwiki-dyk:e2e:c9').title,
+    CARDS.oxford_fixed.title,
+  );
 
   // Puanlama tek çağrı (9 aday, batchSize 15); yazar: c1, c7×2, c8, c9 + onarım c8 (unsupported,
   // onarımdan sonra da unsupported → red) + onarım c9 (unclear → verified) = 7. Doğrulama: c1, c8×2, c9×2.

@@ -37,7 +37,17 @@ const VERDICT_ALIASES = {
   belirsiz: 'unclear',
 };
 
-const TITLE_MATCH = { true: true, yes: true, evet: true, uyumlu: true, false: false, no: false, hayir: false, hayır: false, uyumsuz: false };
+const TITLE_MATCH = {
+  true: true,
+  yes: true,
+  evet: true,
+  uyumlu: true,
+  false: false,
+  no: false,
+  hayir: false,
+  hayır: false,
+  uyumsuz: false,
+};
 
 /** title_match alanı: true/false (ya da "evet"/"hayır"...); yoksa null. */
 export function parseTitleMatch(json) {
@@ -55,11 +65,15 @@ export function parseTitleMatch(json) {
  */
 export function parseVerification(json, { title } = {}) {
   const list = Array.isArray(json?.claims) ? json.claims : Array.isArray(json) ? json : null;
-  if (!list || list.length === 0) return { ok: false, error: 'doğrulayıcı iddia listesi döndürmedi' };
+  if (!list || list.length === 0)
+    return { ok: false, error: 'doğrulayıcı iddia listesi döndürmedi' };
   const claims = list
     .filter((c) => c && typeof c === 'object')
     .map((c) => {
-      const key = String(c.verdict ?? '').trim().toLowerCase().replace(/\s+/g, '_');
+      const key = String(c.verdict ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '_');
       return {
         claim: String(c.claim ?? '').slice(0, 300),
         verdict: VERDICT_ALIASES[key] ?? 'unclear',
@@ -72,7 +86,10 @@ export function parseVerification(json, { title } = {}) {
     claims.unshift({
       claim: `Başlık: ${String(title ?? '').trim() || '(başlık)'}`.slice(0, 300),
       verdict: 'unsupported',
-      why: String(json?.title_why ?? json?.titleWhy ?? 'başlık metindeki olguyla uyuşmuyor').slice(0, 200),
+      why: String(json?.title_why ?? json?.titleWhy ?? 'başlık metindeki olguyla uyuşmuyor').slice(
+        0,
+        200,
+      ),
       kind: 'title',
     });
   }
@@ -96,7 +113,12 @@ async function verifyOnce(llm, draft, support, { hook, maxTokens = VERIFY_MAX_TO
 }
 
 function roundRecord(r) {
-  return { verdict: r.verdict, claims: r.claims, model: r.model, ...(r.title_match === undefined ? {} : { title_match: r.title_match }) };
+  return {
+    verdict: r.verdict,
+    claims: r.claims,
+    model: r.model,
+    ...(r.title_match === undefined ? {} : { title_match: r.title_match }),
+  };
 }
 
 /** Sadakat sonucu tur kaydına: sorun yoksa alan eklenmez. */
@@ -105,7 +127,12 @@ function fidelityRecord(fid) {
 }
 
 function draftJson(draft) {
-  return JSON.stringify({ title: draft.title, content: draft.content, tags: draft.tags, read_time_sq: draft.read_time_sq });
+  return JSON.stringify({
+    title: draft.title,
+    content: draft.content,
+    tags: draft.tags,
+    read_time_sq: draft.read_time_sq,
+  });
 }
 
 /**
@@ -135,11 +162,18 @@ export async function runVerify(deps, { limit = 50 } = {}) {
     rounds.push({ ...roundRecord(first), ...fidelityRecord(fid1) });
     const base = { ...cand.scores };
     let repair = null;
-    const verification = () => ({ rounds, ...(repair ? { repair } : {}), checked_at: nowIso(deps.now) });
+    const verification = () => ({
+      rounds,
+      ...(repair ? { repair } : {}),
+      checked_at: nowIso(deps.now),
+    });
 
     if (first.verdict !== 'supported' || !fid1.ok) {
       // Tek onarım turu: unsupported + unclear iddialar ve sadakat sorunları (gerekçeleriyle) yazara geri gider.
-      const problems = [...first.claims.filter((c) => c.verdict !== 'supported'), ...fidelityProblems(fid1)];
+      const problems = [
+        ...first.claims.filter((c) => c.verdict !== 'supported'),
+        ...fidelityProblems(fid1),
+      ];
       const repairFor = first.verdict !== 'supported' ? first.verdict : 'name_mismatch';
       repair = {
         for: repairFor,
@@ -155,7 +189,11 @@ export async function runVerify(deps, { limit = 50 } = {}) {
       });
       if (res?.json?.skip === true || res?.json?.skip === 'true') {
         await reject(deps, cand, 'writer_skip', stats, {
-          scores: { ...base, writer_skip: String(res.json.reason ?? '').slice(0, 200), verification: verification() },
+          scores: {
+            ...base,
+            writer_skip: String(res.json.reason ?? '').slice(0, 200),
+            verification: verification(),
+          },
         });
         return;
       }
@@ -180,14 +218,18 @@ export async function runVerify(deps, { limit = 50 } = {}) {
       const fid2 = checkFidelity(draft, source);
       if (!fid2.ok) {
         repair.fidelity_after = fidelityRecord(fid2).fidelity;
-        await reject(deps, cand, 'name_mismatch', stats, { scores: { ...base, draft, verification: verification() } });
+        await reject(deps, cand, 'name_mismatch', stats, {
+          scores: { ...base, draft, verification: verification() },
+        });
         return;
       }
       const second = await verifyOnce(deps.llm, draft, support, evidence);
       rounds.push(roundRecord(second));
       if (second.verdict !== 'supported') {
         const reason = second.verdict === 'unsupported' ? 'unsupported_claim' : 'unclear_claim';
-        await reject(deps, cand, reason, stats, { scores: { ...base, draft, verification: verification() } });
+        await reject(deps, cand, reason, stats, {
+          scores: { ...base, draft, verification: verification() },
+        });
         return;
       }
     }

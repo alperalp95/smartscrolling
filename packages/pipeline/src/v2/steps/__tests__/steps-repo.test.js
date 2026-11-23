@@ -1,7 +1,12 @@
+import assert from 'node:assert/strict';
 // Supabase repo: sahte client ile sorgu biçimi (ağ yok).
 import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { DuplicateInsertError, createMemoryStepsRepo, createStepsRepo, parseVector } from '../../db/steps-repo.js';
+import {
+  DuplicateInsertError,
+  createMemoryStepsRepo,
+  createStepsRepo,
+  parseVector,
+} from '../../db/steps-repo.js';
 
 /** Zincirlenebilir sahte PostgREST sorgusu; her çağrıyı kaydeder, sonunda `result` döner. */
 function fakeClient(results = {}) {
@@ -13,7 +18,8 @@ function fakeClient(results = {}) {
       {
         get(_, prop) {
           if (prop === 'then') {
-            const res = results[`${table}:${ops.map((o) => o[0]).join('.')}`] ?? results[table] ?? { data: [], error: null };
+            const res = results[`${table}:${ops.map((o) => o[0]).join('.')}`] ??
+              results[table] ?? { data: [], error: null };
             log.push({ table, ops });
             return (resolve) => resolve(res);
           }
@@ -63,10 +69,19 @@ test('matchSimilar: 5 argümanlı match_similar (p_kinds, p_exclude_candidate), 
     },
   });
   const repo = createStepsRepo(client);
-  const rows = await repo.matchSimilar([0.1, 0.2], 0.85, 5, { kinds: ['fact', 'candidate'], excludeCandidate: 'c9' });
+  const rows = await repo.matchSimilar([0.1, 0.2], 0.85, 5, {
+    kinds: ['fact', 'candidate'],
+    excludeCandidate: 'c9',
+  });
   assert.deepEqual(client.log[0], {
     rpc: 'match_similar',
-    params: { p_embedding: [0.1, 0.2], p_threshold: 0.85, p_limit: 5, p_kinds: ['fact', 'candidate'], p_exclude_candidate: 'c9' },
+    params: {
+      p_embedding: [0.1, 0.2],
+      p_threshold: 0.85,
+      p_limit: 5,
+      p_kinds: ['fact', 'candidate'],
+      p_exclude_candidate: 'c9',
+    },
   });
   assert.equal(client.log.length, 1, 'aday durumları için ikinci sorgu yapılmaz');
   assert.ok(Array.isArray(client.log[0].params.p_embedding), 'vektör düz JS dizisi olarak gider');
@@ -85,7 +100,10 @@ test('parseVector: PostgREST vector metni → dizi; listByStatus satırlarında 
   assert.equal(parseVector(null), null);
   assert.equal(parseVector('bozuk'), null);
   const client = fakeClient({
-    fact_candidates: { data: [{ id: 'c1', embedding: '[0.1,0.2]', scores: { draft_embedding: '[0.3]' } }], error: null },
+    fact_candidates: {
+      data: [{ id: 'c1', embedding: '[0.1,0.2]', scores: { draft_embedding: '[0.3]' } }],
+      error: null,
+    },
   });
   const [row] = await createStepsRepo(client).listByStatus('written', 5);
   assert.deepEqual(row.embedding, [0.1, 0.2]);
@@ -106,23 +124,41 @@ test('bellek içi matchSimilar: p_kinds, p_exclude_candidate ve rejected filtres
     ],
   });
   const ids = (rows) => rows.map((r) => r.id).sort();
-  assert.deepEqual(ids(await repo.matchSimilar(v, 0.5, 10, { kinds: ['fact', 'candidate'], excludeCandidate: 'self' })), ['f-pub', 'other']);
+  assert.deepEqual(
+    ids(
+      await repo.matchSimilar(v, 0.5, 10, {
+        kinds: ['fact', 'candidate'],
+        excludeCandidate: 'self',
+      }),
+    ),
+    ['f-pub', 'other'],
+  );
   assert.deepEqual(ids(await repo.matchSimilar(v, 0.5, 10, { kinds: ['fact'] })), ['f-pub']);
   assert.deepEqual(ids(await repo.matchSimilar(v, 0.5, 10)), ['f-pub', 'other', 'self']);
   assert.deepEqual(repo.lastMatchArgs().kinds, ['fact', 'candidate']);
 });
 
 test('insertQueuedFact: 23505 → DuplicateInsertError; başarı → id', async () => {
-  const dup = createStepsRepo(fakeClient({ facts: { data: null, error: { code: '23505', message: 'duplicate key' } } }));
+  const dup = createStepsRepo(
+    fakeClient({ facts: { data: null, error: { code: '23505', message: 'duplicate key' } } }),
+  );
   await assert.rejects(() => dup.insertQueuedFact({ title: 'x' }), DuplicateInsertError);
   const ok = createStepsRepo(fakeClient({ facts: { data: { id: 'new-id' }, error: null } }));
   assert.deepEqual(await ok.insertQueuedFact({ title: 'x' }), { id: 'new-id' });
-  const other = createStepsRepo(fakeClient({ facts: { data: null, error: { code: '42501', message: 'denied' } } }));
-  await assert.rejects(() => other.insertQueuedFact({}), (e) => !(e instanceof DuplicateInsertError) && /denied/.test(e.message));
+  const other = createStepsRepo(
+    fakeClient({ facts: { data: null, error: { code: '42501', message: 'denied' } } }),
+  );
+  await assert.rejects(
+    () => other.insertQueuedFact({}),
+    (e) => !(e instanceof DuplicateInsertError) && /denied/.test(e.message),
+  );
 });
 
 test('updateCandidate: id ile update', async () => {
   const client = fakeClient();
   await createStepsRepo(client).updateCandidate('c1', { status: 'scored' });
-  assert.deepEqual(client.log[0].ops, [['update', { status: 'scored' }], ['eq', 'id', 'c1']]);
+  assert.deepEqual(client.log[0].ops, [
+    ['update', { status: 'scored' }],
+    ['eq', 'id', 'c1'],
+  ]);
 });

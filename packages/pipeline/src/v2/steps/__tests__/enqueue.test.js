@@ -1,5 +1,5 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { contentHash } from '../../../dedup/index.js';
 import { createMemoryStepsRepo } from '../../db/steps-repo.js';
 import { cardText } from '../dedup-card.js';
@@ -48,7 +48,10 @@ test('buildFactRow: facts satırı alanları', () => {
 
 test('attribution: TR kaynakta "Vikipedi"', () => {
   const tr = verifiedCand({ lang: 'tr', source_url: 'https://tr.wikipedia.org/wiki/Ahtapot' });
-  assert.equal(attributionText(tr), 'Kaynak: Vikipedi (CC BY-SA 4.0) — https://tr.wikipedia.org/wiki/Ahtapot');
+  assert.equal(
+    attributionText(tr),
+    'Kaynak: Vikipedi (CC BY-SA 4.0) — https://tr.wikipedia.org/wiki/Ahtapot',
+  );
   assert.equal(buildFactRow(tr).source_label, 'Vikipedi');
 });
 
@@ -66,7 +69,15 @@ test('runEnqueue: facts satırı eklenir, aday queued + fact_id', async () => {
 test('runEnqueue: source_key unique çakışması → rejected:duplicate_insert', async () => {
   const repo = createMemoryStepsRepo({
     candidates: [verifiedCand()],
-    facts: [{ id: 'f0', title: 'x', content: 'y', source_key: 'enwiki-dyk:2019-03-14:3', status: 'published' }],
+    facts: [
+      {
+        id: 'f0',
+        title: 'x',
+        content: 'y',
+        source_key: 'enwiki-dyk:2019-03-14:3',
+        status: 'published',
+      },
+    ],
   });
   const stats = await runEnqueue(deps({ repo }));
   assert.equal(repo.get('q1').status, 'rejected');

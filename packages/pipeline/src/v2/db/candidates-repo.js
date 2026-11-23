@@ -4,7 +4,15 @@ export const CANDIDATES_TABLE = 'fact_candidates';
 const CHUNK_SIZE = 500;
 const UNIQUE_VIOLATION = '23505';
 
-const COLUMNS = ['source_key', 'source', 'lang', 'hook_text', 'hook_hash', 'source_url', 'source_meta'];
+const COLUMNS = [
+  'source_key',
+  'source',
+  'lang',
+  'hook_text',
+  'hook_hash',
+  'source_url',
+  'source_meta',
+];
 
 function toRow(candidate) {
   const row = {};
@@ -55,7 +63,8 @@ export async function insertCandidates(client, candidates) {
         'hook_hash',
         part.map((c) => c.hook_hash),
       );
-    if (selectError) throw new Error(`[candidates-repo] hook_hash select failed: ${selectError.message}`);
+    if (selectError)
+      throw new Error(`[candidates-repo] hook_hash select failed: ${selectError.message}`);
     const existingHashes = new Set((existing ?? []).map((r) => r.hook_hash));
     const rows = part.filter((c) => !existingHashes.has(c.hook_hash)).map(toRow);
     if (rows.length === 0) continue;
@@ -70,7 +79,8 @@ export async function insertCandidates(client, candidates) {
       inserted += data?.length ?? 0;
       continue;
     }
-    if (error.code !== UNIQUE_VIOLATION) throw new Error(`[candidates-repo] upsert failed: ${error.message}`);
+    if (error.code !== UNIQUE_VIOLATION)
+      throw new Error(`[candidates-repo] upsert failed: ${error.message}`);
 
     // 4) Yarış: başka bir satırla hook_hash çakıştı → satır satır dene.
     for (const row of rows) {

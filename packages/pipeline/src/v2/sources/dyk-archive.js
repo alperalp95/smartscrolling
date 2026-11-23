@@ -59,7 +59,7 @@ export function parseDykArchiveRow(item) {
  * @param {{ rows: Array<{ row_idx: number, row: object }> }} page
  * @param {number} [limit]
  */
-export function parseDykArchiveRows(page, limit = Infinity) {
+export function parseDykArchiveRows(page, limit = Number.POSITIVE_INFINITY) {
   const candidates = [];
   let consumed = 0;
   let skipped = 0;

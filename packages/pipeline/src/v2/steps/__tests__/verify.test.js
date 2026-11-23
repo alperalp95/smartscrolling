@@ -1,5 +1,5 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { contentHash } from '../../../dedup/index.js';
 import { createMemoryStepsRepo } from '../../db/steps-repo.js';
 import { cardText } from '../dedup-card.js';
@@ -30,12 +30,21 @@ function repoWith() {
   });
 }
 
-const FIXED = { ...GOOD_CARD, title: 'Ahtapotun üç ayrı kalbi vardır', content: 'Bu hayvanda üç kalp bulunur. Kanı mavidir. Bunun nedeni bakırlı bir proteindir.' };
+const FIXED = {
+  ...GOOD_CARD,
+  title: 'Ahtapotun üç ayrı kalbi vardır',
+  content: 'Bu hayvanda üç kalp bulunur. Kanı mavidir. Bunun nedeni bakırlı bir proteindir.',
+};
 
 test('parseVerification: kararlar normalize edilir, tanınmayan → unclear, boş liste hata', () => {
-  const r = parseVerification({ claims: [S('a'), { claim: 'b', verdict: 'Destekleniyor' }, { claim: 'c', verdict: '???' }] });
+  const r = parseVerification({
+    claims: [S('a'), { claim: 'b', verdict: 'Destekleniyor' }, { claim: 'c', verdict: '???' }],
+  });
   assert.equal(r.ok, true);
-  assert.deepEqual(r.claims.map((c) => c.verdict), ['supported', 'supported', 'unclear']);
+  assert.deepEqual(
+    r.claims.map((c) => c.verdict),
+    ['supported', 'supported', 'unclear'],
+  );
   assert.equal(r.verdict, 'unclear');
   assert.equal(parseVerification({ claims: [S('a'), X('b'), U('c')] }).verdict, 'unsupported');
   assert.equal(parseVerification({ claims: [] }).ok, false);
@@ -56,17 +65,23 @@ test('runVerify: hepsi supported → verified, verification kaydı', async () =>
 
 test('runVerify: unsupported → hemen red yok, tek onarım; onarımdan sonra yine unsupported → rejected:unsupported_claim', async () => {
   const repo = repoWith();
-  const llm = fakeLlm({ verifier: [{ claims: [S('üç kalp'), X('kalpler 9 tane')] }, { claims: [X('kalpler 9 tane')] }], writer: [FIXED] });
+  const llm = fakeLlm({
+    verifier: [{ claims: [S('üç kalp'), X('kalpler 9 tane')] }, { claims: [X('kalpler 9 tane')] }],
+    writer: [FIXED],
+  });
   await runVerify(deps({ llm, repo }));
   assert.equal(repo.get('v1').reject_reason, 'unsupported_claim');
   assert.equal(llm.count('writer'), 1);
   assert.equal(llm.count('verifier'), 2);
 });
 
-test('runVerify: unclear → bir yeniden yazım (unclear iddialar prompt\'ta) + yeniden doğrulama → verified', async () => {
+test("runVerify: unclear → bir yeniden yazım (unclear iddialar prompt'ta) + yeniden doğrulama → verified", async () => {
   const repo = repoWith();
   const llm = fakeLlm({
-    verifier: [{ claims: [S('üç kalp'), U('kanı bütün vücuda gönderir')] }, { claims: [S('üç kalp'), S('mavi kan')] }],
+    verifier: [
+      { claims: [S('üç kalp'), U('kanı bütün vücuda gönderir')] },
+      { claims: [S('üç kalp'), S('mavi kan')] },
+    ],
     writer: [FIXED],
   });
   await runVerify(deps({ llm, repo }));
@@ -81,12 +96,19 @@ test('runVerify: unclear → bir yeniden yazım (unclear iddialar prompt\'ta) + 
   assert.equal(c.scores.draft.rewrites, 1);
   assert.equal(c.scores.verification.rounds.length, 2);
   // ikinci doğrulama yeni kartı görür
-  assert.ok(userContent({ messages: llm.calls.filter((x) => x.role === 'verifier')[1].messages }).includes(FIXED.title));
+  assert.ok(
+    userContent({ messages: llm.calls.filter((x) => x.role === 'verifier')[1].messages }).includes(
+      FIXED.title,
+    ),
+  );
 });
 
 test('runVerify: yeniden yazımdan sonra yine unclear → rejected:unclear_claim', async () => {
   const repo = repoWith();
-  const llm = fakeLlm({ verifier: [{ claims: [U('a')] }, { claims: [S('b'), U('c')] }], writer: [FIXED] });
+  const llm = fakeLlm({
+    verifier: [{ claims: [U('a')] }, { claims: [S('b'), U('c')] }],
+    writer: [FIXED],
+  });
   await runVerify(deps({ llm, repo }));
   assert.equal(repo.get('v1').reject_reason, 'unclear_claim');
   assert.equal(llm.count('verifier'), 2);
@@ -94,7 +116,10 @@ test('runVerify: yeniden yazımdan sonra yine unclear → rejected:unclear_claim
 
 test('runVerify: yeniden yazım kod kurallarını ihlal ederse → write_rules (ek retry yok)', async () => {
   const repo = repoWith();
-  const llm = fakeLlm({ verifier: [{ claims: [U('a')] }], writer: [{ ...FIXED, content: 'Tek cümle.' }] });
+  const llm = fakeLlm({
+    verifier: [{ claims: [U('a')] }],
+    writer: [{ ...FIXED, content: 'Tek cümle.' }],
+  });
   await runVerify(deps({ llm, repo }));
   assert.equal(repo.get('v1').reject_reason, 'write_rules');
   assert.equal(llm.count('writer'), 1);
@@ -103,14 +128,23 @@ test('runVerify: yeniden yazım kod kurallarını ihlal ederse → write_rules (
 
 test('runVerify: dedup_card işareti olmayan written adayı almaz; verifier tükenirse deferred', async () => {
   const repo = createMemoryStepsRepo({
-    candidates: [baseCandidate({ id: 'n', status: 'written', support_paragraph: SUPPORT, scores: { draft: GOOD_CARD } })],
+    candidates: [
+      baseCandidate({
+        id: 'n',
+        status: 'written',
+        support_paragraph: SUPPORT,
+        scores: { draft: GOOD_CARD },
+      }),
+    ],
   });
   const llm = fakeLlm({ verifier: [] });
   await runVerify(deps({ llm, repo }));
   assert.equal(llm.count('verifier'), 0);
 
   const repo2 = repoWith();
-  const stats = await runVerify(deps({ llm: fakeLlm({ verifier: () => exhausted('verifier') }), repo: repo2 }));
+  const stats = await runVerify(
+    deps({ llm: fakeLlm({ verifier: () => exhausted('verifier') }), repo: repo2 }),
+  );
   assert.equal(stats.deferred, 1);
   assert.equal(repo2.get('v1').status, 'written');
   assert.equal(repo2.get('v1').attempts, 0);

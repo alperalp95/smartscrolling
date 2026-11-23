@@ -22,7 +22,12 @@ export const SCORE_MAX_TOKENS = 600;
 
 /** İstemde emojisiz kategori adları (normalizeCategory bunları 8 sabit değere çevirir). */
 export const CATEGORY_NAMES = Object.freeze(
-  CATEGORIES.map((c) => c.replace(/^[^\p{L}]+/u, '').split(' & ')[0].trim()),
+  CATEGORIES.map((c) =>
+    c
+      .replace(/^[^\p{L}]+/u, '')
+      .split(' & ')[0]
+      .trim(),
+  ),
 );
 
 const SYSTEM = `Türk okur için bilgi kartı adaylarını puanlıyorsun. Hedef tepki: "Aa, bunu bilmiyordum, ne garipmiş!"
@@ -54,7 +59,9 @@ Sadece tek satır JSON dön, boşluksuz: {"items":[{"i":1,"s":3,"r":5,"d":0,"c":
  * @returns {{ messages: Array<{role:string, content:string}> }}
  */
 export function buildScorePrompt(items) {
-  const lines = items.map((it) => `${it.id} [${it.lang || 'en'}] ${String(it.hook).replace(/\s+/g, ' ').trim()}`);
+  const lines = items.map(
+    (it) => `${it.id} [${it.lang || 'en'}] ${String(it.hook).replace(/\s+/g, ' ').trim()}`,
+  );
   return {
     messages: [
       { role: 'system', content: SYSTEM },

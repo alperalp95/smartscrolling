@@ -1,6 +1,6 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeForHash, contentHash } from '../index.js';
+import { test } from 'node:test';
+import { contentHash, normalizeForHash } from '../index.js';
 
 test('IŞIK, ışık ve isik aynı hash', () => {
   const h = contentHash('IŞIK');
@@ -15,7 +15,10 @@ test('İstanbul ve istanbul aynı hash', () => {
 });
 
 test('şapkalı harfler ve diğer Türkçe harfler katlanır', () => {
-  assert.equal(normalizeForHash('Kâğıt Hüküm Çiçek Öğle Şûra Îmân'), 'kagit hukum cicek ogle sura iman');
+  assert.equal(
+    normalizeForHash('Kâğıt Hüküm Çiçek Öğle Şûra Îmân'),
+    'kagit hukum cicek ogle sura iman',
+  );
 });
 
 test('noktalama ve boşluk farkı aynı hash', () => {

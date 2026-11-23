@@ -65,7 +65,8 @@ function fail(what, error) {
  * @param {import('@supabase/supabase-js').SupabaseClient} client
  */
 export function createStepsRepo(client) {
-  if (!client || typeof client.from !== 'function') throw new TypeError('createStepsRepo: Supabase client gerekli');
+  if (!client || typeof client.from !== 'function')
+    throw new TypeError('createStepsRepo: Supabase client gerekli');
 
   return {
     kind: 'supabase',
@@ -131,7 +132,11 @@ export function createMemoryStepsRepo({ candidates = [], facts = [] } = {}) {
     created_at: new Date(Date.UTC(2026, 10, 20, 0, 0, i)).toISOString(),
     ...clone(c),
   }));
-  const factRows = facts.map((f, i) => ({ id: f.id ?? `fact-seed-${i + 1}`, status: 'published', ...clone(f) }));
+  const factRows = facts.map((f, i) => ({
+    id: f.id ?? `fact-seed-${i + 1}`,
+    status: 'published',
+    ...clone(f),
+  }));
   let factSeq = 0;
   let lastMatchArgs = null;
   const calls = { listByStatus: 0, updateCandidate: 0, matchSimilar: 0, insertQueuedFact: 0 };
@@ -148,7 +153,10 @@ export function createMemoryStepsRepo({ candidates = [], facts = [] } = {}) {
         .filter((c) => c.status === status)
         .filter((c) => !filter.scoresHas || hasKey(c, filter.scoresHas))
         .filter((c) => !filter.scoresLacks || !hasKey(c, filter.scoresLacks))
-        .filter((c) => filter.hasSupport === undefined || Boolean(c.support_paragraph) === filter.hasSupport)
+        .filter(
+          (c) =>
+            filter.hasSupport === undefined || Boolean(c.support_paragraph) === filter.hasSupport,
+        )
         .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
         .slice(0, limit)
         .map(clone);
@@ -169,12 +177,23 @@ export function createMemoryStepsRepo({ candidates = [], facts = [] } = {}) {
       for (const f of kinds.includes('fact') ? factRows : []) {
         if (!Array.isArray(f.embedding) || !['published', 'queued'].includes(f.status)) continue;
         if (f.embedding.length !== embedding.length) continue;
-        out.push({ kind: 'fact', id: f.id, text: `${f.title}\n${f.content}`, similarity: cosineSimilarity(f.embedding, embedding) });
+        out.push({
+          kind: 'fact',
+          id: f.id,
+          text: `${f.title}\n${f.content}`,
+          similarity: cosineSimilarity(f.embedding, embedding),
+        });
       }
       for (const c of kinds.includes('candidate') ? cands : []) {
-        if (c.status === 'rejected' || (excludeCandidate !== null && c.id === excludeCandidate)) continue;
+        if (c.status === 'rejected' || (excludeCandidate !== null && c.id === excludeCandidate))
+          continue;
         if (!Array.isArray(c.embedding) || c.embedding.length !== embedding.length) continue;
-        out.push({ kind: 'candidate', id: c.id, text: c.hook_text, similarity: cosineSimilarity(c.embedding, embedding) });
+        out.push({
+          kind: 'candidate',
+          id: c.id,
+          text: c.hook_text,
+          similarity: cosineSimilarity(c.embedding, embedding),
+        });
       }
       return out
         .filter((m) => m.similarity >= threshold)
@@ -185,7 +204,9 @@ export function createMemoryStepsRepo({ candidates = [], facts = [] } = {}) {
     async insertQueuedFact(row) {
       calls.insertQueuedFact += 1;
       const clash = factRows.find(
-        (f) => (row.content_hash && f.content_hash === row.content_hash) || (row.source_key && f.source_key === row.source_key),
+        (f) =>
+          (row.content_hash && f.content_hash === row.content_hash) ||
+          (row.source_key && f.source_key === row.source_key),
       );
       if (clash) throw new DuplicateInsertError(`facts unique çakışması (${clash.id})`);
       factSeq += 1;

@@ -1,9 +1,14 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createFileUsageStore, createMemoryUsageStore, createUsageTracker, utcDayKey } from '../usage.js';
+import { test } from 'node:test';
+import {
+  createFileUsageStore,
+  createMemoryUsageStore,
+  createUsageTracker,
+  utcDayKey,
+} from '../usage.js';
 import { DEFAULT_USAGE_DIR } from '../usage.js';
 import { realConfig } from './helpers.js';
 
@@ -21,7 +26,11 @@ test('varsayılan dosya dizini packages/pipeline/.cache', () => {
 
 test('tracker: token sınırı %90’da durdurur, Neuron tahmini yapar', async () => {
   const { providers } = realConfig();
-  const tracker = createUsageTracker({ providers, store: createMemoryUsageStore(), now: () => NOW });
+  const tracker = createUsageTracker({
+    providers,
+    store: createMemoryUsageStore(),
+    now: () => NOW,
+  });
 
   await tracker.record('groq', 'openai/gpt-oss-120b', { inputTokens: 100000, outputTokens: 79999 });
   assert.equal((await tracker.check('groq', 'openai/gpt-oss-120b')).allowed, true);
@@ -43,11 +52,16 @@ test('tracker: eşzamanlı kayıtlar kaybolmaz', async () => {
   const store = createMemoryUsageStore();
   const tracker = createUsageTracker({ providers, store, now: () => NOW });
   await Promise.all(
-    Array.from({ length: 5 }, () => tracker.record('groq', 'openai/gpt-oss-20b', { inputTokens: 10, outputTokens: 10 })),
+    Array.from({ length: 5 }, () =>
+      tracker.record('groq', 'openai/gpt-oss-20b', { inputTokens: 10, outputTokens: 10 }),
+    ),
   );
   const snap = await tracker.snapshot();
   assert.equal(snap.providers.groq.models['openai/gpt-oss-20b'].requests, 5);
-  assert.equal((await store.load('2026-11-20')).providers.groq.models['openai/gpt-oss-20b'].tokens, 100);
+  assert.equal(
+    (await store.load('2026-11-20')).providers.groq.models['openai/gpt-oss-20b'].tokens,
+    100,
+  );
 });
 
 test('dosya store: .cache/llm-usage-YYYY-MM-DD.json yazar ve geri okur', async () => {
@@ -64,7 +78,11 @@ test('dosya store: .cache/llm-usage-YYYY-MM-DD.json yazar ve geri okur', async (
     assert.equal(saved.providers.groq.models['qwen/qwen3.8-27b'].tokens, 15);
 
     // Yeni süreç gibi: aynı dosyadan devam eder
-    const tracker2 = createUsageTracker({ providers, store: createFileUsageStore({ dir }), now: () => NOW });
+    const tracker2 = createUsageTracker({
+      providers,
+      store: createFileUsageStore({ dir }),
+      now: () => NOW,
+    });
     await tracker2.record('groq', 'qwen/qwen3.8-27b', { inputTokens: 1, outputTokens: 1 });
     const snap = await tracker2.snapshot();
     assert.equal(snap.providers.groq.models['qwen/qwen3.8-27b'].requests, 2);

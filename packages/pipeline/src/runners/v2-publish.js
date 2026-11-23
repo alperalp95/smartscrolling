@@ -35,10 +35,14 @@ export function loadPublishConfig(filePath = DEFAULT_CONFIG_PATH) {
   const publish = raw?.publish ?? {};
   const { dailyCount, minStockDays } = publish;
   if (!Number.isInteger(dailyCount) || dailyCount <= 0) {
-    throw new Error(`config publish.dailyCount pozitif tam sayı olmalı (şu an: ${JSON.stringify(dailyCount)})`);
+    throw new Error(
+      `config publish.dailyCount pozitif tam sayı olmalı (şu an: ${JSON.stringify(dailyCount)})`,
+    );
   }
   if (typeof minStockDays !== 'number' || !Number.isFinite(minStockDays) || minStockDays < 0) {
-    throw new Error(`config publish.minStockDays 0 ya da pozitif sayı olmalı (şu an: ${JSON.stringify(minStockDays)})`);
+    throw new Error(
+      `config publish.minStockDays 0 ya da pozitif sayı olmalı (şu an: ${JSON.stringify(minStockDays)})`,
+    );
   }
   return { dailyCount, minStockDays };
 }
@@ -115,7 +119,11 @@ export async function runPublish({
     // Stok, bugünkü yayından SONRA kalan kartla hesaplanır (dry-run'da tahmini).
     const outgoing = args.apply ? publishedIds.length : selection.selected.length;
     const queuedAfter = Math.max(0, queuedBefore - outgoing);
-    const stock = stockStatus({ queuedCount: queuedAfter, dailyCount, minStockDays: config.minStockDays });
+    const stock = stockStatus({
+      queuedCount: queuedAfter,
+      dailyCount,
+      minStockDays: config.minStockDays,
+    });
 
     const result = {
       ok: true,
@@ -136,12 +144,19 @@ export async function runPublish({
       alarm: stock.alarm,
     };
 
-    log(`[v2-publish] mod: ${result.mode}${args.apply ? '' : ' (yazma yok; yayınlamak için --apply)'}`);
-    log(`[v2-publish] seçilen: ${result.selectedCount}/${dailyCount} (aday ${result.candidates}, stok ${queuedBefore})`);
+    log(
+      `[v2-publish] mod: ${result.mode}${args.apply ? '' : ' (yazma yok; yayınlamak için --apply)'}`,
+    );
+    log(
+      `[v2-publish] seçilen: ${result.selectedCount}/${dailyCount} (aday ${result.candidates}, stok ${queuedBefore})`,
+    );
     if (args.apply) log(`[v2-publish] yayınlanan: ${result.publishedCount}`);
     log(`[v2-publish] kategori dağılımı: ${formatCategories(result.byCategory)}`);
-    if (result.filledBeyondQuota > 0) log(`[v2-publish] kota aşılarak doldurulan: ${result.filledBeyondQuota}`);
-    log(`[v2-publish] stok: ${result.stockDays} gün (${queuedAfter} kart; hedef ≥ ${config.minStockDays} gün)${stock.belowTarget ? ' — HEDEFİN ALTINDA' : ''}`);
+    if (result.filledBeyondQuota > 0)
+      log(`[v2-publish] kota aşılarak doldurulan: ${result.filledBeyondQuota}`);
+    log(
+      `[v2-publish] stok: ${result.stockDays} gün (${queuedAfter} kart; hedef ≥ ${config.minStockDays} gün)${stock.belowTarget ? ' — HEDEFİN ALTINDA' : ''}`,
+    );
     log(`[v2-publish] alarm: ${stock.alarm ? 'VAR (stok 3 günün altında)' : 'yok'}`);
     if (json) stdout(JSON.stringify(result));
 
@@ -175,7 +190,8 @@ async function main() {
   process.exitCode = exitCode;
 }
 
-const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
+const invokedDirectly =
+  process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (invokedDirectly) {
   await main();
 }

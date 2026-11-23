@@ -16,9 +16,7 @@ export class LlmConfigError extends Error {
  */
 export class LlmExhaustedError extends Error {
   constructor(role, { attempts = [], events = [] } = {}) {
-    const summary = attempts
-      .map((a) => `${a.provider}/${a.model}: ${a.reason}`)
-      .join('; ');
+    const summary = attempts.map((a) => `${a.provider}/${a.model}: ${a.reason}`).join('; ');
     super(`LLM zinciri tükendi (role=${role})${summary ? ` -> ${summary}` : ''}`);
     this.name = 'LlmExhaustedError';
     this.role = role;
@@ -34,9 +32,7 @@ export class LlmExhaustedError extends Error {
  */
 export class LlmOutputError extends Error {
   constructor(role, { attempts = [], events = [] } = {}) {
-    const summary = attempts
-      .map((a) => `${a.provider}/${a.model}: ${a.reason}`)
-      .join('; ');
+    const summary = attempts.map((a) => `${a.provider}/${a.model}: ${a.reason}`).join('; ');
     super(`LLM çıktısı kullanılamadı (role=${role})${summary ? ` -> ${summary}` : ''}`);
     this.name = 'LlmOutputError';
     this.role = role;
@@ -89,4 +85,9 @@ export class ProviderCallError extends Error {
  * Çıktı/istek hatası türleri: zincir bunlarla biterse LlmExhaustedError değil LlmOutputError atılır
  * (aday/batch hata sayılır, adım sürer).
  */
-export const OUTPUT_ERROR_KINDS = Object.freeze(['invalid_json', 'truncated', 'empty', 'too_large']);
+export const OUTPUT_ERROR_KINDS = Object.freeze([
+  'invalid_json',
+  'truncated',
+  'empty',
+  'too_large',
+]);

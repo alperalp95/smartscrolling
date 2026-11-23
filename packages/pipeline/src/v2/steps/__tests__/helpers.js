@@ -10,7 +10,9 @@ export const TEST_CONFIG = Object.freeze({
 });
 
 export function exhausted(role) {
-  return new LlmExhaustedError(role, { attempts: [{ provider: 'fake', model: 'fake', reason: 'quota' }] });
+  return new LlmExhaustedError(role, {
+    attempts: [{ provider: 'fake', model: 'fake', reason: 'quota' }],
+  });
 }
 
 const DIMS = 256;
@@ -55,7 +57,13 @@ export function fakeLlm(handlers = {}) {
       const out = typeof h === 'function' ? await h(req, n) : Array.isArray(h) ? h[n - 1] : h;
       if (out === undefined) throw new Error(`fakeLlm: '${role}' için ${n}. yanıt yok`);
       if (out instanceof Error) throw out;
-      return { json: out, text: JSON.stringify(out), provider: 'fake', model: `fake-${role}`, usage: { inputTokens: 1, outputTokens: 1 } };
+      return {
+        json: out,
+        text: JSON.stringify(out),
+        provider: 'fake',
+        model: `fake-${role}`,
+        usage: { inputTokens: 1, outputTokens: 1 },
+      };
     },
     async embed(texts) {
       calls.push({ role: 'embedding', texts });
@@ -73,7 +81,10 @@ export function fakeLlm(handlers = {}) {
 }
 
 export function userContent(req) {
-  return req.messages.filter((m) => m.role === 'user').map((m) => m.content).join('\n');
+  return req.messages
+    .filter((m) => m.role === 'user')
+    .map((m) => m.content)
+    .join('\n');
 }
 
 /** Puanlayıcı isteğindeki "1 [en] kanca" satırlarını { id, hook } olarak ayırır. */
@@ -90,11 +101,11 @@ export function parseScoreRequest(req) {
 
 /** Wikipedia action=parse yanıtı gibi HTML. */
 export function articleHtml(paragraphs) {
-  return (
-    '<div class="mw-parser-output"><table class="infobox"><tr><td><p>Infobox text that should be ignored entirely here.</p></td></tr></table>' +
-    paragraphs.map((p, i) => (i === 1 ? `<h2>Section</h2><p>${p}<sup class="reference">[1]</sup></p>` : `<p>${p}</p>`)).join('\n') +
-    '</div>'
-  );
+  return `<div class="mw-parser-output"><table class="infobox"><tr><td><p>Infobox text that should be ignored entirely here.</p></td></tr></table>${paragraphs
+    .map((p, i) =>
+      i === 1 ? `<h2>Section</h2><p>${p}<sup class="reference">[1]</sup></p>` : `<p>${p}</p>`,
+    )
+    .join('\n')}</div>`;
 }
 
 /**
@@ -109,7 +120,10 @@ export function fakeWikiFetch(pages, { fail } = {}) {
     const body = pages[page]
       ? { parse: { title: page, text: articleHtml(pages[page]) } }
       : { error: { code: 'missingtitle', info: "The page you specified doesn't exist." } };
-    return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
   };
   fn.calls = calls;
   return fn;

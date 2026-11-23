@@ -1,6 +1,6 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getState, setState, STATE_TABLE } from '../state-repo.js';
+import { test } from 'node:test';
+import { STATE_TABLE, getState, setState } from '../state-repo.js';
 
 /** `pipeline_state` için Supabase query builder taklidi (bellekte). */
 function fakeClient({ rows = {}, error = null } = {}) {
@@ -19,7 +19,10 @@ function fakeClient({ rows = {}, error = null } = {}) {
                 maybeSingle() {
                   calls.select.push({ columns, column, value });
                   if (error) return Promise.resolve({ data: null, error });
-                  return Promise.resolve({ data: store.has(value) ? { value: store.get(value).value } : null, error: null });
+                  return Promise.resolve({
+                    data: store.has(value) ? { value: store.get(value).value } : null,
+                    error: null,
+                  });
                 },
               };
             },
@@ -48,7 +51,11 @@ test('setState: key üzerinden upsert, updated_at yazılır; getState aynı değ
   const now = new Date('2026-11-20T06:00:00Z');
   await setState(client, 'cursor:s2-backfill', { next: '2026-08', offset: 0 }, { now });
   assert.deepEqual(client.calls.upsert[0], {
-    row: { key: 'cursor:s2-backfill', value: { next: '2026-08', offset: 0 }, updated_at: '2026-11-20T06:00:00.000Z' },
+    row: {
+      key: 'cursor:s2-backfill',
+      value: { next: '2026-08', offset: 0 },
+      updated_at: '2026-11-20T06:00:00.000Z',
+    },
     options: { onConflict: 'key' },
   });
   assert.deepEqual(await getState(client, 'cursor:s2-backfill'), { next: '2026-08', offset: 0 });
@@ -57,5 +64,8 @@ test('setState: key üzerinden upsert, updated_at yazılır; getState aynı değ
 test('state-repo: Supabase hatası anahtarla birlikte fırlatılır', async () => {
   const client = fakeClient({ error: { message: 'relation "pipeline_state" does not exist' } });
   await assert.rejects(getState(client, 'cursor:s1'), /pipeline_state okunamadı \(cursor:s1\)/);
-  await assert.rejects(setState(client, 'cursor:s1', {}), /pipeline_state yazılamadı \(cursor:s1\)/);
+  await assert.rejects(
+    setState(client, 'cursor:s1', {}),
+    /pipeline_state yazılamadı \(cursor:s1\)/,
+  );
 });

@@ -7,7 +7,8 @@ const PUBLISHED = 'published';
 
 function toIso(now) {
   const date = now instanceof Date ? now : new Date(now);
-  if (Number.isNaN(date.getTime())) throw new TypeError(`now geçerli bir tarih olmalı (şu an: ${JSON.stringify(now)})`);
+  if (Number.isNaN(date.getTime()))
+    throw new TypeError(`now geçerli bir tarih olmalı (şu an: ${JSON.stringify(now)})`);
   return date.toISOString();
 }
 
@@ -29,7 +30,9 @@ export function createPublishRepo(client) {
     /** Yayın sırasına en yakın 'queued' kartlar (wow azalan, eski önce). */
     async listQueued(limit) {
       if (!Number.isInteger(limit) || limit <= 0) {
-        throw new RangeError(`listQueued: limit pozitif tam sayı olmalı (şu an: ${JSON.stringify(limit)})`);
+        throw new RangeError(
+          `listQueued: limit pozitif tam sayı olmalı (şu an: ${JSON.stringify(limit)})`,
+        );
       }
       const { data, error } = await client
         .from(FACTS_TABLE)

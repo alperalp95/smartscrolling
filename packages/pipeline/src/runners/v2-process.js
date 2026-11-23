@@ -22,7 +22,14 @@ export const DEFAULT_CACHE_DIR = path.resolve(HERE, '../../.cache');
 export const DEFAULT_LIMIT = 50;
 
 export function parseArgs(argv) {
-  const opts = { steps: DEFAULT_STEP_NAMES.join(','), limit: DEFAULT_LIMIT, apply: false, input: null, out: null, help: false };
+  const opts = {
+    steps: DEFAULT_STEP_NAMES.join(','),
+    limit: DEFAULT_LIMIT,
+    apply: false,
+    input: null,
+    out: null,
+    help: false,
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     const next = () => {
@@ -43,7 +50,8 @@ export function parseArgs(argv) {
     else if (a === '--help' || a === '-h') opts.help = true;
     else throw new Error(`bilinmeyen argüman: ${a}`);
   }
-  if (!Number.isInteger(opts.limit) || opts.limit <= 0) throw new Error('--limit pozitif bir tam sayı olmalı');
+  if (!Number.isInteger(opts.limit) || opts.limit <= 0)
+    throw new Error('--limit pozitif bir tam sayı olmalı');
   resolveSteps(opts.steps); // geçersiz adım adını erkenden yakala
   return opts;
 }
@@ -52,7 +60,10 @@ export function parseArgs(argv) {
 export function normalizeInput(json) {
   const list = Array.isArray(json)
     ? json
-    : (json?.candidates ?? json?.items ?? json?.hooks ?? Object.values(json ?? {}).find(Array.isArray));
+    : (json?.candidates ??
+      json?.items ??
+      json?.hooks ??
+      Object.values(json ?? {}).find(Array.isArray));
   if (!Array.isArray(list)) throw new Error('--input dosyasında aday listesi bulunamadı');
   return list
     .filter((c) => c && typeof c.hook_text === 'string' && c.hook_text.trim() && c.source_key)
@@ -74,7 +85,10 @@ function stripVectors(row) {
   const out = { ...row };
   if (Array.isArray(out.embedding)) out.embedding = `[vector ${out.embedding.length}]`;
   if (out.scores?.draft_embedding) {
-    out.scores = { ...out.scores, draft_embedding: `[vector ${out.scores.draft_embedding.length}]` };
+    out.scores = {
+      ...out.scores,
+      draft_embedding: `[vector ${out.scores.draft_embedding.length}]`,
+    };
   }
   return out;
 }
@@ -93,7 +107,8 @@ async function defaultCreateDbRepo() {
   const { createClient } = await import('@supabase/supabase-js');
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error('--apply için SUPABASE_URL ve SUPABASE_SERVICE_ROLE_KEY gerekli');
+  if (!url || !key)
+    throw new Error('--apply için SUPABASE_URL ve SUPABASE_SERVICE_ROLE_KEY gerekli');
   return createStepsRepo(createClient(url, key, { auth: { persistSession: false } }));
 }
 
@@ -144,7 +159,11 @@ export function formatRateEvent(e) {
   if (e.type === 'rate_limit_learned') {
     return `[rate] sınır öğrenildi ${where} ${e.metric}=${e.limit} (önceki=${e.previous ?? 'yok'})`;
   }
-  const extra = [e.status && `status=${e.status}`, e.metric && `${e.metric}`, e.limit && `limit=${e.limit}`].filter(Boolean);
+  const extra = [
+    e.status && `status=${e.status}`,
+    e.metric && `${e.metric}`,
+    e.limit && `limit=${e.limit}`,
+  ].filter(Boolean);
   const msg = e.error ? ` :: ${String(e.error).slice(0, 300)}` : '';
   return `[rate] çok büyük istek ${where}${extra.length ? ` ${extra.join(' ')}` : ''}${msg}`;
 }
@@ -168,7 +187,9 @@ export async function runProcess(argv, deps = {}) {
   const opts = parseArgs(argv);
   const log = deps.log ?? ((m) => console.log(m));
   if (opts.help) {
-    log('Kullanım: v2-process.js [--steps dedup,score,support,write,verify,enqueue] [--limit N] [--dry-run | --apply] [--input aday.json] [--out sonuc.json]');
+    log(
+      'Kullanım: v2-process.js [--steps dedup,score,support,write,verify,enqueue] [--limit N] [--dry-run | --apply] [--input aday.json] [--out sonuc.json]',
+    );
     return { help: true };
   }
   const now = deps.now ?? (() => Date.now());
@@ -180,7 +201,8 @@ export async function runProcess(argv, deps = {}) {
   if (opts.apply) {
     repo = await (deps.createDbRepo ?? defaultCreateDbRepo)();
   } else {
-    if (!opts.input) throw new Error('--dry-run için --input <aday json dosyası> gerekli (DB okunmaz)');
+    if (!opts.input)
+      throw new Error('--dry-run için --input <aday json dosyası> gerekli (DB okunmaz)');
     const read = deps.readFile ?? ((p) => readFile(p, 'utf8'));
     const candidates = normalizeInput(JSON.parse(await read(opts.input)));
     inputCount = candidates.length;
@@ -188,17 +210,34 @@ export async function runProcess(argv, deps = {}) {
   }
 
   const startedAt = new Date(now()).toISOString();
-  log(`[v2-process] mod=${opts.apply ? 'APPLY (DB)' : 'dry-run (bellek içi)'} adımlar=${resolveSteps(opts.steps).join(',')} limit=${opts.limit}`);
-  const { steps, stats } = await runSteps(opts.steps, { llm, repo, config, now, log: deps.stepLog ?? log, fetch: deps.fetch }, { limit: opts.limit });
+  log(
+    `[v2-process] mod=${opts.apply ? 'APPLY (DB)' : 'dry-run (bellek içi)'} adımlar=${resolveSteps(opts.steps).join(',')} limit=${opts.limit}`,
+  );
+  const { steps, stats } = await runSteps(
+    opts.steps,
+    { llm, repo, config, now, log: deps.stepLog ?? log, fetch: deps.fetch },
+    { limit: opts.limit },
+  );
 
   for (const name of steps) {
     const s = stats[name];
-    const rej = Object.entries(s.rejected).map(([k, v]) => `${k}=${v}`).join(' ');
-    log(`[v2-process] ${name}: görülen=${s.seen} ilerleyen=${s.advanced} red={${rej}} hata=${s.failed} ertelenen=${s.deferred}`);
+    const rej = Object.entries(s.rejected)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(' ');
+    log(
+      `[v2-process] ${name}: görülen=${s.seen} ilerleyen=${s.advanced} red={${rej}} hata=${s.failed} ertelenen=${s.deferred}`,
+    );
     if (s.exhaustedReason) log(`[v2-process] ${name}: zincir tükenme nedeni: ${s.exhaustedReason}`);
   }
 
-  const result = { mode: opts.apply ? 'apply' : 'dry-run', started_at: startedAt, finished_at: new Date(now()).toISOString(), steps, limit: opts.limit, stats };
+  const result = {
+    mode: opts.apply ? 'apply' : 'dry-run',
+    started_at: startedAt,
+    finished_at: new Date(now()).toISOString(),
+    steps,
+    limit: opts.limit,
+    stats,
+  };
 
   if (!opts.apply) {
     const candidates = repo.candidates();
@@ -212,11 +251,14 @@ export async function runProcess(argv, deps = {}) {
       queued_facts: repo.facts().map(stripVectors),
     });
     const day = new Date(now()).toISOString().slice(0, 10);
-    const outPath = opts.out ?? path.join(deps.cacheDir ?? DEFAULT_CACHE_DIR, `v2-process-${day}.json`);
-    const write = deps.writeFile ?? (async (p, data) => {
-      await mkdir(path.dirname(p), { recursive: true });
-      await writeFile(p, data, 'utf8');
-    });
+    const outPath =
+      opts.out ?? path.join(deps.cacheDir ?? DEFAULT_CACHE_DIR, `v2-process-${day}.json`);
+    const write =
+      deps.writeFile ??
+      (async (p, data) => {
+        await mkdir(path.dirname(p), { recursive: true });
+        await writeFile(p, data, 'utf8');
+      });
     await write(outPath, `${JSON.stringify(result, null, 2)}\n`);
     result.output = outPath;
     log(`[v2-process] durumlar: ${JSON.stringify(counts)} · çıktı: ${outPath}`);
@@ -224,7 +266,8 @@ export async function runProcess(argv, deps = {}) {
   return result;
 }
 
-const isMain = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
+const isMain =
+  process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (isMain) {
   (async () => {
     await import('dotenv/config');

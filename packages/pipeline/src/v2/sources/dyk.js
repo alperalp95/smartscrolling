@@ -15,7 +15,9 @@ export const DYK_SOURCE = 'enwiki_dyk';
  * @param {number} order 0 tabanlı set içi sıra
  */
 export function dykSourceKey(date, hhmm, order) {
-  const time = String(hhmm ?? '0000').replace(':', '').padStart(4, '0');
+  const time = String(hhmm ?? '0000')
+    .replace(':', '')
+    .padStart(4, '0');
   return `enwiki-dyk:${date}T${time}:${order}`;
 }
 

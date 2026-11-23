@@ -20,12 +20,25 @@ export const MAIN_FACT_COVERAGE = 0.6;
 /** İkinci aday eklenince ana paragrafın bütçeden alabileceği en büyük pay. */
 const FIRST_SHARE_WITH_SECOND = 0.65;
 
-const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '–', mdash: '—', hellip: '…' };
+const ENTITIES = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  ndash: '–',
+  mdash: '—',
+  hellip: '…',
+};
 
 function decodeEntities(s) {
   return s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, code) => {
     if (code[0] === '#') {
-      const n = code[1].toLowerCase() === 'x' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+      const n =
+        code[1].toLowerCase() === 'x'
+          ? Number.parseInt(code.slice(2), 16)
+          : Number.parseInt(code.slice(1), 10);
       return Number.isFinite(n) ? String.fromCodePoint(n) : m;
     }
     return ENTITIES[code.toLowerCase()] ?? m;
@@ -41,8 +54,9 @@ export function extractParagraphs(html) {
     .replace(/<sup\b[^>]*class="[^"]*\breference\b[^"]*"[^>]*>[\s\S]*?<\/sup>/gi, '');
   const out = [];
   const re = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
-  let m;
-  while ((m = re.exec(cleaned))) {
+  for (;;) {
+    const m = re.exec(cleaned);
+    if (!m) break;
     const text = decodeEntities(m[1].replace(/<[^>]+>/g, ''))
       .replace(/\[(?:\d+|[a-z]|citation needed|kaynak belirtilmeli|note \d+)\]/gi, '')
       .replace(/\s+/g, ' ')
@@ -67,9 +81,29 @@ const STOPWORDS = new Set(
 
 // Sayı kelimeleri rakama çevrilir ("four days" = "4 days"). Belirsiz olanlar (one, altı, yüz) yok.
 const NUMBER_WORDS = {
-  three: '3', four: '4', five: '5', six: '6', seven: '7', eight: '8', nine: '9', ten: '10',
-  eleven: '11', twelve: '12', twenty: '20', thirty: '30', hundred: '100', thousand: '1000', million: '1000000',
-  üç: '3', dört: '4', beş: '5', yedi: '7', sekiz: '8', dokuz: '9', milyon: '1000000', milyar: '1000000000',
+  three: '3',
+  four: '4',
+  five: '5',
+  six: '6',
+  seven: '7',
+  eight: '8',
+  nine: '9',
+  ten: '10',
+  eleven: '11',
+  twelve: '12',
+  twenty: '20',
+  thirty: '30',
+  hundred: '100',
+  thousand: '1000',
+  million: '1000000',
+  üç: '3',
+  dört: '4',
+  beş: '5',
+  yedi: '7',
+  sekiz: '8',
+  dokuz: '9',
+  milyon: '1000000',
+  milyar: '1000000000',
 };
 
 function lowerFor(lang, s) {
@@ -149,7 +183,9 @@ function truncateAtSentence(text, max) {
 function focusSentences(text, keys, lang, budget) {
   if (text.length <= budget) return text;
   const wanted = new Set(keys);
-  const kept = splitSentences(text).filter((sent) => [...stemSet(sent, lang)].some((k) => wanted.has(k)));
+  const kept = splitSentences(text).filter((sent) =>
+    [...stemSet(sent, lang)].some((k) => wanted.has(k)),
+  );
   return truncateAtSentence(kept.join(' ') || text, budget);
 }
 
@@ -176,7 +212,13 @@ export function scoreParagraphs(paragraphs, hook, lang = 'en') {
   return paragraphs.map((text, index) => {
     const matchedKeys = terms.filter((t) => stemSets[index].has(t.key)).map((t) => t.key);
     const got = matchedKeys.reduce((sum, k) => sum + weight.get(k), 0);
-    return { index, text, coverage: total > 0 ? got / total : 0, matched: matchedKeys.length, matchedKeys };
+    return {
+      index,
+      text,
+      coverage: total > 0 ? got / total : 0,
+      matched: matchedKeys.length,
+      matchedKeys,
+    };
   });
 }
 
@@ -187,7 +229,11 @@ export function scoreParagraphs(paragraphs, hook, lang = 'en') {
  * mainFact: seçilen metin kancadaki, makalede geçen tüm sayı/özel adları içeriyor mu.
  * @returns {{ text: string, indexes: number[], coverage: number, mainFact: boolean } | null}
  */
-export function selectSupport(paragraphs, hook, { lang = 'en', maxChars = MAX_SUPPORT_CHARS } = {}) {
+export function selectSupport(
+  paragraphs,
+  hook,
+  { lang = 'en', maxChars = MAX_SUPPORT_CHARS } = {},
+) {
   const all = scoreParagraphs(paragraphs, hook, lang);
   const eligible = all
     .filter((p) => p.coverage >= MIN_COVERAGE && p.matched >= MIN_MATCHED_KEYWORDS)
@@ -213,7 +259,11 @@ export function selectSupport(paragraphs, hook, { lang = 'en', maxChars = MAX_SU
       const share = covered.reduce((sum, t) => sum + weight.get(t.key), 0) / missingTotal;
       // İkinci aday: eksik bir sayı/özel adı içermeli ya da eksiklerin en az 2'sini (%25+ ağırlık) kapsamalı.
       if (!covered.some((t) => t.anchor) && (covered.length < 2 || share < 0.25)) continue;
-      if (!second || share > second.share || (share === second.share && p.coverage > second.p.coverage)) {
+      if (
+        !second ||
+        share > second.share ||
+        (share === second.share && p.coverage > second.p.coverage)
+      ) {
         second = { p, share, keys: covered.map((t) => t.key) };
       }
     }
@@ -227,8 +277,18 @@ export function selectSupport(paragraphs, hook, { lang = 'en', maxChars = MAX_SU
     indexes = [best.index];
   } else {
     const sep = '\n\n';
-    const firstText = focusSentences(best.text, best.matchedKeys, lang, Math.floor(maxChars * FIRST_SHARE_WITH_SECOND));
-    const secondText = focusSentences(second.p.text, second.keys, lang, maxChars - firstText.length - sep.length);
+    const firstText = focusSentences(
+      best.text,
+      best.matchedKeys,
+      lang,
+      Math.floor(maxChars * FIRST_SHARE_WITH_SECOND),
+    );
+    const secondText = focusSentences(
+      second.p.text,
+      second.keys,
+      lang,
+      maxChars - firstText.length - sep.length,
+    );
     const parts = [
       { index: best.index, text: firstText },
       { index: second.p.index, text: secondText },

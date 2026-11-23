@@ -74,7 +74,14 @@ export function cleanHookText(text, lang = 'en') {
  * @param {Record<string, unknown>} [input.source_meta]
  * @returns {Candidate}
  */
-export function makeCandidate({ source_key, source, lang, hook_text, source_url = null, source_meta = {} }) {
+export function makeCandidate({
+  source_key,
+  source,
+  lang,
+  hook_text,
+  source_url = null,
+  source_meta = {},
+}) {
   return {
     source_key,
     source,

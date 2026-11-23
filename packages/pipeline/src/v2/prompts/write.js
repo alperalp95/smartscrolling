@@ -11,7 +11,10 @@ export const WRITE_MAX_TOKENS = 1000;
 
 const DEFAULT_LIMITS = Object.freeze({ minSentences: 2, maxSentences: 4 });
 
-function sentenceRange({ minSentences = DEFAULT_LIMITS.minSentences, maxSentences = DEFAULT_LIMITS.maxSentences } = {}) {
+function sentenceRange({
+  minSentences = DEFAULT_LIMITS.minSentences,
+  maxSentences = DEFAULT_LIMITS.maxSentences,
+} = {}) {
   return minSentences === maxSentences ? `${minSentences}` : `${minSentences}-${maxSentences}`;
 }
 
@@ -96,7 +99,8 @@ export const REPAIR_MARKER = 'Kartı onar';
 const VERDICT_LABEL = { unsupported: 'kaynakta yok', unclear: 'kaynakta açık değil' };
 // Kod sadakat kontrolü (steps/fidelity.js): claim zaten "bu ad/sayı kaynakta yok: X".
 const FIDELITY_KINDS = new Set(['name', 'number']);
-const TITLE_LABEL = 'başlık metindeki olguyla aynı şeyi söylemiyor ya da bir terim yanlış çevrilmiş';
+const TITLE_LABEL =
+  'başlık metindeki olguyla aynı şeyi söylemiyor ya da bir terim yanlış çevrilmiş';
 
 /**
  * Doğrulayıcı unsupported/unclear iddia bulduğunda TEK onarım turu için ek mesajlar.
@@ -109,7 +113,7 @@ export function buildRepairMessages(previousText, problems, limits = DEFAULT_LIM
     .map((c) => {
       const why = String(c.why ?? '').trim();
       if (FIDELITY_KINDS.has(c.kind)) return `- ${c.claim}${why ? ` (${why})` : ''}`;
-      const label = c.kind === 'title' ? TITLE_LABEL : VERDICT_LABEL[c.verdict] ?? c.verdict;
+      const label = c.kind === 'title' ? TITLE_LABEL : (VERDICT_LABEL[c.verdict] ?? c.verdict);
       return `- "${c.claim}" (${label}${why ? `: ${why}` : ''})`;
     })
     .join('\n');
@@ -117,13 +121,7 @@ export function buildRepairMessages(previousText, problems, limits = DEFAULT_LIM
     { role: 'assistant', content: previousText || '(boş)' },
     {
       role: 'user',
-      content:
-        `Doğrulama şu iddiaları kancada ya da kaynak paragrafta bulamadı:\n${list}\n` +
-        `${REPAIR_MARKER}: bu iddiaları çıkar ya da kancaya/kaynağa birebir uyacak şekilde düzelt. ` +
-        'Yeni bilgi, yorum ya da genelleme ekleme. Sorunlu ifade başlıktaysa başlığı da düzelt: başlık gövdedeki olguyu ' +
-        'söyleyen, yüklemli, doğal bir Türkçe cümle olsun; terimleri doğru çevir. Diğer cümlelere dokunma. ' +
-        `Gövde ${sentenceRange(limits)} cümle kalmalı; aynı kurallar ve aynı JSON biçimi. ` +
-        'Düzeltince ilginç bir kart kalmıyorsa {"skip":true,"reason":"..."} dön.',
+      content: `Doğrulama şu iddiaları kancada ya da kaynak paragrafta bulamadı:\n${list}\n${REPAIR_MARKER}: bu iddiaları çıkar ya da kancaya/kaynağa birebir uyacak şekilde düzelt. Yeni bilgi, yorum ya da genelleme ekleme. Sorunlu ifade başlıktaysa başlığı da düzelt: başlık gövdedeki olguyu söyleyen, yüklemli, doğal bir Türkçe cümle olsun; terimleri doğru çevir. Diğer cümlelere dokunma. Gövde ${sentenceRange(limits)} cümle kalmalı; aynı kurallar ve aynı JSON biçimi. Düzeltince ilginç bir kart kalmıyorsa {"skip":true,"reason":"..."} dön.`,
     },
   ];
 }

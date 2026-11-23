@@ -43,7 +43,7 @@ export function createHttpClient({
   maxAttempts = MAX_ATTEMPTS,
   baseBackoffMs = BASE_BACKOFF_MS,
 } = {}) {
-  let lastRequestAt = -Infinity;
+  let lastRequestAt = Number.NEGATIVE_INFINITY;
   let requests = 0;
 
   async function throttle() {
@@ -65,7 +65,11 @@ export function createHttpClient({
       let response;
       try {
         response = await fetchImpl(href, {
-          headers: { 'User-Agent': USER_AGENT, 'Api-User-Agent': USER_AGENT, Accept: 'application/json' },
+          headers: {
+            'User-Agent': USER_AGENT,
+            'Api-User-Agent': USER_AGENT,
+            Accept: 'application/json',
+          },
         });
       } catch (error) {
         lastError = new HttpError(`network error: ${error.message}`, null, href);
@@ -113,7 +117,11 @@ export async function mediawikiApi(http, host, params) {
   }
   const json = await http.getJson(url);
   if (json?.error) {
-    const error = new HttpError(`MediaWiki API error ${json.error.code}: ${json.error.info}`, null, String(url));
+    const error = new HttpError(
+      `MediaWiki API error ${json.error.code}: ${json.error.info}`,
+      null,
+      String(url),
+    );
     error.code = json.error.code; // ör. "missingtitle" (sayfa yok)
     throw error;
   }

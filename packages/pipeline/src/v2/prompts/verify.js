@@ -37,7 +37,10 @@ Sadece JSON dön: {"claims":[{"claim":"<başlık>","verdict":"supported"},{"clai
  * @param {{ hook?: string, title: string, content: string, support: string }} input
  */
 export function buildVerifyPrompt({ hook, title, content, support }) {
-  const hookText = String(hook ?? '').replace(/\s+/g, ' ').trim() || '(yok)';
+  const hookText =
+    String(hook ?? '')
+      .replace(/\s+/g, ' ')
+      .trim() || '(yok)';
   return {
     messages: [
       { role: 'system', content: SYSTEM },

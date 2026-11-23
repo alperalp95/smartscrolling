@@ -64,7 +64,9 @@ export async function runDedupHook(deps, { limit = 50 } = {}) {
     });
     const matches = (raw ?? []).filter((m) => !(m.kind === 'candidate' && m.id === cand.id));
 
-    const { judge, state } = createJudge(deps.llm, buildJudgePrompt, { maxTokens: roleMaxTokens(deps.config, 'judge', 200) });
+    const { judge, state } = createJudge(deps.llm, buildJudgePrompt, {
+      maxTokens: roleMaxTokens(deps.config, 'judge', 200),
+    });
     const decision = await decideDuplicate({
       candidate: { sourceKey: cand.source_key, text: cand.hook_text, embedding },
       matches,

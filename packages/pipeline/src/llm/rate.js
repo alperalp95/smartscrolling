@@ -53,7 +53,10 @@ export function createRateLimiter({ providers, now, sleep, emit = () => {} }) {
   }
 
   function sums(list) {
-    return list.reduce((acc, e) => ({ total: acc.total + e.input + e.output, output: acc.output + e.output }), { total: 0, output: 0 });
+    return list.reduce(
+      (acc, e) => ({ total: acc.total + e.input + e.output, output: acc.output + e.output }),
+      { total: 0, output: 0 },
+    );
   }
 
   function fits(list, limits, need) {
@@ -126,7 +129,15 @@ export function createRateLimiter({ providers, now, sleep, emit = () => {} }) {
       if (current === info.limit) return false;
       const k = key(provider, model);
       learned.set(k, { ...(learned.get(k) ?? {}), [field]: info.limit });
-      emit({ type: 'rate_limit_learned', ...ctx, provider, model, metric: info.metric, limit: info.limit, previous: current ?? null });
+      emit({
+        type: 'rate_limit_learned',
+        ...ctx,
+        provider,
+        model,
+        metric: info.metric,
+        limit: info.limit,
+        previous: current ?? null,
+      });
       return true;
     },
 

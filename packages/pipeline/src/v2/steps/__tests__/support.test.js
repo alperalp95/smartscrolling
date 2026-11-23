@@ -1,14 +1,22 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { createMemoryStepsRepo } from '../../db/steps-repo.js';
+import {
+  MAX_SUPPORT_CHARS,
+  extractParagraphs,
+  hookKeywords,
+  parseWikiUrl,
+  selectSupport,
+} from '../support-parse.js';
 import { USER_AGENT, buildParseUrl, runSupport } from '../support.js';
-import { MAX_SUPPORT_CHARS, extractParagraphs, hookKeywords, parseWikiUrl, selectSupport } from '../support-parse.js';
 import { articleHtml, baseCandidate, deps, fakeWikiFetch } from './helpers.js';
 
-const INTRO = 'The giant squid is a species of deep-ocean dwelling squid in the family Architeuthidae.';
+const INTRO =
+  'The giant squid is a species of deep-ocean dwelling squid in the family Architeuthidae.';
 const BODY_FACT =
   'The giant squid has the largest eyes of any living animal, measuring up to 27 centimetres in diameter, which helps the squid detect sperm whales.';
-const BODY_OTHER = 'Giant squid feed on deep-sea fish and other squid species, catching prey with two long tentacles.';
+const BODY_OTHER =
+  'Giant squid feed on deep-sea fish and other squid species, catching prey with two long tentacles.';
 const HOOK = 'the giant squid has the largest eyes of any animal';
 
 test('extractParagraphs: <p> metni, referans/etiket/entity temizliği, infobox tablosu atlanır', () => {
@@ -24,7 +32,13 @@ test('extractParagraphs: <p> metni, referans/etiket/entity temizliği, infobox t
 });
 
 test('hookKeywords: stopword ve "... that" atılır, sayılar korunur', () => {
-  assert.deepEqual(hookKeywords('... that the giant squid has eyes 27 cm wide'), ['giant', 'squid', 'eyes', '27', 'wide']);
+  assert.deepEqual(hookKeywords('... that the giant squid has eyes 27 cm wide'), [
+    'giant',
+    'squid',
+    'eyes',
+    '27',
+    'wide',
+  ]);
 });
 
 test('selectSupport: anahtar kelime örtüşmesiyle gövde paragrafı seçilir, giriş değil', () => {
@@ -35,7 +49,10 @@ test('selectSupport: anahtar kelime örtüşmesiyle gövde paragrafı seçilir, 
 });
 
 test('selectSupport: örtüşen paragraf yoksa giriş paragrafına düşmez → null', () => {
-  const r = selectSupport([INTRO, BODY_OTHER], 'the giant squid was first photographed alive in 2004 near Japan');
+  const r = selectSupport(
+    [INTRO, BODY_OTHER],
+    'the giant squid was first photographed alive in 2004 near Japan',
+  );
   assert.equal(r, null);
 });
 
@@ -47,10 +64,13 @@ test('selectSupport: en fazla 1.500 karakter, en çok 2 paragraf', () => {
 });
 
 test('parseWikiUrl + buildParseUrl: action=parse&prop=text', () => {
-  assert.deepEqual(parseWikiUrl('https://tr.wikipedia.org/wiki/Dev_m%C3%BCrekkep_bal%C4%B1%C4%9F%C4%B1'), {
-    lang: 'tr',
-    title: 'Dev mürekkep balığı',
-  });
+  assert.deepEqual(
+    parseWikiUrl('https://tr.wikipedia.org/wiki/Dev_m%C3%BCrekkep_bal%C4%B1%C4%9F%C4%B1'),
+    {
+      lang: 'tr',
+      title: 'Dev mürekkep balığı',
+    },
+  );
   assert.equal(parseWikiUrl('https://example.com/wiki/X'), null);
   const url = new URL(buildParseUrl({ lang: 'en', title: 'Giant squid' }));
   assert.equal(url.hostname, 'en.wikipedia.org');
@@ -66,9 +86,21 @@ function scoredCand(over) {
 test('runSupport: paragrafı yazar, User-Agent gönderir; makale yoksa ya da örtüşme yoksa no_support', async () => {
   const repo = createMemoryStepsRepo({
     candidates: [
-      scoredCand({ id: 'ok', hook_text: HOOK, source_url: 'https://en.wikipedia.org/wiki/Giant_squid' }),
-      scoredCand({ id: 'nofact', hook_text: 'the giant squid was first photographed alive in 2004', source_url: 'https://en.wikipedia.org/wiki/Giant_squid' }),
-      scoredCand({ id: 'missing', hook_text: HOOK, source_url: 'https://en.wikipedia.org/wiki/No_such_page' }),
+      scoredCand({
+        id: 'ok',
+        hook_text: HOOK,
+        source_url: 'https://en.wikipedia.org/wiki/Giant_squid',
+      }),
+      scoredCand({
+        id: 'nofact',
+        hook_text: 'the giant squid was first photographed alive in 2004',
+        source_url: 'https://en.wikipedia.org/wiki/Giant_squid',
+      }),
+      scoredCand({
+        id: 'missing',
+        hook_text: HOOK,
+        source_url: 'https://en.wikipedia.org/wiki/No_such_page',
+      }),
       scoredCand({ id: 'notwiki', hook_text: HOOK, source_url: 'https://example.com/a' }),
     ],
   });
@@ -88,7 +120,9 @@ test('runSupport: paragrafı yazar, User-Agent gönderir; makale yoksa ya da ör
 
 test('runSupport: ağ hatası → attempts++, aday scored kalır', async () => {
   const repo = createMemoryStepsRepo({ candidates: [scoredCand({ id: 'a', hook_text: HOOK })] });
-  const stats = await runSupport(deps({ repo, fetch: fakeWikiFetch({}, { fail: true }), sleep: async () => {} }));
+  const stats = await runSupport(
+    deps({ repo, fetch: fakeWikiFetch({}, { fail: true }), sleep: async () => {} }),
+  );
   assert.equal(repo.get('a').status, 'scored');
   assert.equal(repo.get('a').attempts, 1);
   assert.equal(repo.get('a').support_paragraph, null);
@@ -101,7 +135,15 @@ test('articleHtml fixture referansı temizlenir', () => {
 });
 
 test('runSupport: 429 → bekleyip tekrar dener (Retry-After), sonra başarır', async () => {
-  const repo = createMemoryStepsRepo({ candidates: [scoredCand({ id: 'r1', hook_text: HOOK, source_url: 'https://en.wikipedia.org/wiki/Giant_squid' })] });
+  const repo = createMemoryStepsRepo({
+    candidates: [
+      scoredCand({
+        id: 'r1',
+        hook_text: HOOK,
+        source_url: 'https://en.wikipedia.org/wiki/Giant_squid',
+      }),
+    ],
+  });
   const ok = fakeWikiFetch({ Giant_squid: [INTRO, BODY_FACT] });
   let n = 0;
   const fetch = async (url, init) => {
@@ -113,11 +155,16 @@ test('runSupport: 429 → bekleyip tekrar dener (Retry-After), sonra başarır',
   const stats = await runSupport(deps({ repo, fetch, sleep: async (ms) => sleeps.push(ms) }));
   assert.equal(n, 3);
   assert.equal(stats.advanced, 1);
-  assert.ok(sleeps.some((ms) => ms >= 2000), 'Retry-After kadar beklendi');
+  assert.ok(
+    sleeps.some((ms) => ms >= 2000),
+    'Retry-After kadar beklendi',
+  );
 });
 
 test('runSupport: 3 denemeden sonra hâlâ 429 → hata, attempts++', async () => {
-  const repo = createMemoryStepsRepo({ candidates: [scoredCand({ id: 'r2', source_url: 'https://en.wikipedia.org/wiki/Giant_squid' })] });
+  const repo = createMemoryStepsRepo({
+    candidates: [scoredCand({ id: 'r2', source_url: 'https://en.wikipedia.org/wiki/Giant_squid' })],
+  });
   let n = 0;
   const fetch = async () => {
     n += 1;

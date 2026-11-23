@@ -1,4 +1,4 @@
-import { normalizeForHash, contentHash } from './normalize.js';
+import { contentHash, normalizeForHash } from './normalize.js';
 import { classifySimilarity } from './similarity.js';
 
 /** Gri bölgede hakeme sorulacak en fazla eşleşme sayısı. */

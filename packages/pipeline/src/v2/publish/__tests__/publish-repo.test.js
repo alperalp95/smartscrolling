@@ -1,5 +1,5 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { createPublishRepo } from '../index.js';
 import { fakeSupabase } from './helpers.js';
 
@@ -15,9 +15,15 @@ test('markPublished: tek update, in(id) + sadece status=queued filtresi, publish
   const [q] = client.queries;
   assert.equal(q.table, 'facts');
   const ops = q.ops.map((o) => o.method);
-  assert.deepEqual(ops.filter((m) => m === 'update'), ['update']);
+  assert.deepEqual(
+    ops.filter((m) => m === 'update'),
+    ['update'],
+  );
   const update = q.ops.find((o) => o.method === 'update');
-  assert.deepEqual(update.args[0], { status: 'published', published_at: '2026-11-20T06:00:00.000Z' });
+  assert.deepEqual(update.args[0], {
+    status: 'published',
+    published_at: '2026-11-20T06:00:00.000Z',
+  });
   assert.deepEqual(q.ops.find((o) => o.method === 'in').args, ['id', [1, 2, 3]]);
   assert.deepEqual(q.ops.find((o) => o.method === 'eq').args, ['status', 'queued']);
   assert.deepEqual(res, { publishedIds: [1, 3] });
@@ -32,7 +38,10 @@ test('markPublished: boş liste → DB çağrısı yok', async () => {
 
 test('markPublished: DB hatası fırlatılır', async () => {
   const client = fakeSupabase(() => ({ data: null, error: { message: 'boom' } }));
-  await assert.rejects(createPublishRepo(client).markPublished([1], NOW), /markPublished başarısız: boom/);
+  await assert.rejects(
+    createPublishRepo(client).markPublished([1], NOW),
+    /markPublished başarısız: boom/,
+  );
 });
 
 test('listQueued: status=queued, wow azalan, eski önce, limit', async () => {
@@ -42,7 +51,9 @@ test('listQueued: status=queued, wow azalan, eski önce, limit', async () => {
   assert.deepEqual(res, rows);
   const [q] = client.queries;
   assert.equal(q.table, 'facts');
-  assert.deepEqual(q.ops.find((o) => o.method === 'select').args, ['id, category, wow_score, created_at']);
+  assert.deepEqual(q.ops.find((o) => o.method === 'select').args, [
+    'id, category, wow_score, created_at',
+  ]);
   assert.deepEqual(q.ops.find((o) => o.method === 'eq').args, ['status', 'queued']);
   const orders = q.ops.filter((o) => o.method === 'order').map((o) => o.args);
   assert.deepEqual(orders[0], ['wow_score', { ascending: false, nullsFirst: false }]);
@@ -55,6 +66,9 @@ test('countQueued: head count, status=queued', async () => {
   const client = fakeSupabase(() => ({ data: null, count: 42, error: null }));
   assert.equal(await createPublishRepo(client).countQueued(), 42);
   const [q] = client.queries;
-  assert.deepEqual(q.ops.find((o) => o.method === 'select').args, ['id', { count: 'exact', head: true }]);
+  assert.deepEqual(q.ops.find((o) => o.method === 'select').args, [
+    'id',
+    { count: 'exact', head: true },
+  ]);
   assert.deepEqual(q.ops.find((o) => o.method === 'eq').args, ['status', 'queued']);
 });

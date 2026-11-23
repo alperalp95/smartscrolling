@@ -1,20 +1,37 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { createLlm, extractJson } from '../index.js';
 import { JSON_REPAIR_INSTRUCTION } from '../json.js';
-import { FIXED_NOW, TEST_ENV, chatOk, fakeFetch, fakeSleep, isCloudflare, isGroq, json, realConfig } from './helpers.js';
+import {
+  FIXED_NOW,
+  TEST_ENV,
+  chatOk,
+  fakeFetch,
+  fakeSleep,
+  isCloudflare,
+  isGroq,
+  json,
+  realConfig,
+} from './helpers.js';
 
 const MESSAGES = [{ role: 'user', content: 'JSON ver' }];
 
 function setup(handler) {
   const fetch = fakeFetch(handler);
-  const llm = createLlm(realConfig(), { env: TEST_ENV, fetch, sleep: fakeSleep(), now: () => FIXED_NOW });
+  const llm = createLlm(realConfig(), {
+    env: TEST_ENV,
+    fetch,
+    sleep: fakeSleep(),
+    now: () => FIXED_NOW,
+  });
   return { llm, fetch };
 }
 
 test('extractJson: çit, <think> ve ön/son metin temizlenir', () => {
   assert.deepEqual(extractJson('```json\n{"a":1}\n```').value, { a: 1 });
-  assert.deepEqual(extractJson('<think>düşünüyorum {x}</think>Sonuç: {"a":[1,2]} bitti').value, { a: [1, 2] });
+  assert.deepEqual(extractJson('<think>düşünüyorum {x}</think>Sonuç: {"a":[1,2]} bitti').value, {
+    a: [1, 2],
+  });
   assert.deepEqual(extractJson('[{"id":1}]').value, [{ id: 1 }]);
   assert.equal(extractJson('JSON yok').ok, false);
   assert.equal(extractJson('{"a":').ok, false);
@@ -24,7 +41,9 @@ test('extractJson: çit, <think> ve ön/son metin temizlenir', () => {
 test('JSON tamir denemesi: geçersiz yanıt -> tek tamir çağrısı -> geçerli JSON', async () => {
   // verifier birincili Cloudflare (jsonMode=false): response_format gönderilmez, yanıttan ayıklanır
   const { llm, fetch } = setup((call, i) =>
-    i === 0 ? chatOk('Elbette, işte: {"claims": [ "eksik"', { prompt: 10, completion: 5 }) : chatOk('```json\n{"claims":["tamam"]}\n```', { prompt: 20, completion: 6 }),
+    i === 0
+      ? chatOk('Elbette, işte: {"claims": [ "eksik"', { prompt: 10, completion: 5 })
+      : chatOk('```json\n{"claims":["tamam"]}\n```', { prompt: 20, completion: 6 }),
   );
 
   const res = await llm.chat('verifier', { messages: MESSAGES, json: true });
@@ -42,7 +61,9 @@ test('JSON tamir denemesi: geçersiz yanıt -> tek tamir çağrısı -> geçerli
 });
 
 test('tamir de başarısızsa zincirde sonraki sağlayıcıya geçilir (tek tamir denemesi)', async () => {
-  const { llm, fetch } = setup((call) => (isCloudflare(call) ? chatOk('hâlâ JSON değil') : chatOk('{"ok":true}')));
+  const { llm, fetch } = setup((call) =>
+    isCloudflare(call) ? chatOk('hâlâ JSON değil') : chatOk('{"ok":true}'),
+  );
 
   const res = await llm.chat('verifier', { messages: MESSAGES, json: true });
 
@@ -57,7 +78,12 @@ test('Groq json_validate_failed (400) -> failed_generation ile tamir edilir', as
   const { llm, fetch } = setup((call, i) => {
     if (i === 0) {
       return json(400, {
-        error: { message: 'Failed to validate JSON', type: 'invalid_request_error', code: 'json_validate_failed', failed_generation: '{"score": 7,' },
+        error: {
+          message: 'Failed to validate JSON',
+          type: 'invalid_request_error',
+          code: 'json_validate_failed',
+          failed_generation: '{"score": 7,',
+        },
       });
     }
     return chatOk('{"score": 7}');

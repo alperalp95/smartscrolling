@@ -25,7 +25,14 @@ export const STEPS = Object.freeze({
 });
 
 export const STEP_ORDER = Object.freeze(Object.keys(STEPS));
-export const DEFAULT_STEP_NAMES = Object.freeze(['dedup', 'score', 'support', 'write', 'verify', 'enqueue']);
+export const DEFAULT_STEP_NAMES = Object.freeze([
+  'dedup',
+  'score',
+  'support',
+  'write',
+  'verify',
+  'enqueue',
+]);
 
 const ALIASES = { dedup: ['dedup-hook', 'dedup-card'] };
 
@@ -36,8 +43,9 @@ export function resolveSteps(names = DEFAULT_STEP_NAMES) {
   for (const raw of list) {
     const name = String(raw).trim();
     if (!name) continue;
-    if (ALIASES[name]) ALIASES[name].forEach((n) => wanted.add(n));
-    else if (STEPS[name]) wanted.add(name);
+    if (ALIASES[name]) {
+      for (const n of ALIASES[name]) wanted.add(n);
+    } else if (STEPS[name]) wanted.add(name);
     else throw new Error(`bilinmeyen adım '${name}' (geçerli: dedup, ${STEP_ORDER.join(', ')})`);
   }
   return STEP_ORDER.filter((n) => wanted.has(n));

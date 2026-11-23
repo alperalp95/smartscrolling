@@ -1,5 +1,5 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { buildJudgePrompt } from '../index.js';
 
 test('buildJudgePrompt: iki metni de içerir, yanıt şemasını belirtir', () => {
