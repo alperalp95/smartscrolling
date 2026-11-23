@@ -8,7 +8,7 @@ export const groqAdapter = {
   name: 'groq',
 
   credentials(providerCfg, env) {
-    const apiKey = env[providerCfg.apiKeyEnv];
+    const apiKey = env[providerCfg.apiKeyEnv]?.trim();
     if (!apiKey) return { ok: false, missing: [providerCfg.apiKeyEnv] };
     return { ok: true, apiKey, baseUrl: trimSlash(providerCfg.baseUrl) };
   },

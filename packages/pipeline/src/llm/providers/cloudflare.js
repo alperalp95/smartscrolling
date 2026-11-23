@@ -13,8 +13,8 @@ export const cloudflareAdapter = {
   name: 'cloudflare',
 
   credentials(providerCfg, env) {
-    const apiKey = env[providerCfg.apiKeyEnv];
-    const accountId = env[providerCfg.accountIdEnv];
+    const apiKey = env[providerCfg.apiKeyEnv]?.trim();
+    const accountId = env[providerCfg.accountIdEnv]?.trim();
     const missing = [];
     if (!apiKey) missing.push(providerCfg.apiKeyEnv);
     if (!accountId) missing.push(providerCfg.accountIdEnv);
