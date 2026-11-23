@@ -22,6 +22,7 @@ export function buildWriteSystemPrompt(limits = DEFAULT_LIMITS) {
 Girdi: kanca, kaynak paragraf, kategori. Kanca kartın konusudur ve editörlerce kaynaklıdır; kaynak paragraf sadece bağlam ve ayrıntı içindir.
 Odak:
 - Kart kancadaki şaşırtıcı olgunun etrafında kalır. Kaynak paragraftan sadece bu olguyu açıklayan ya da destekleyen bilgiyi al.
+- Kanca olgusunu açıkladıktan sonra destek paragrafından 1-2 ek ilginç ayrıntı ver (yeni bilgi, yorum değil); okur kaynağın devamını merak etsin.
 - Kancayla ilgisi olmayan ayrıntı (hastalık, kariyer, başka olaylar, tarih listesi) ekleme. Az ama ilgili cümle, çok ama dağınık cümleden iyidir.
 - Sadece kancada ya da kaynak paragrafta yazanı kullan. Sayı, tarih, isim uydurma.
 - Kişi adlarını kaynaktaki yazımıyla aynen yaz, başka bir adla değiştirme ("Osama bin Laden"; "Ömer bin Laden" değil). Yer adlarının yerleşik Türkçesi olur (Hindistan, Viyana).
@@ -39,10 +40,12 @@ Dil:
 - Yabancı terimleri Türkçeye çevir; gerekirse orijinalini ilk geçtiği yerde parantezde ver: "Kafaya verilen zayıf elektrik akımı (CES)".
 - Anlamından emin olmadığın terimi tahminle çevirme (ör. "forced conversion" = zorla din değiştirtme, "evrim" değil).
 - Terimin bağlamdaki doğru Türkçe karşılığını kullan, sözlükteki ilk anlamını değil: "rehearsal" = prova ("rehberlik" ya da "tatbikat" değil), "thesis" = tez.
+- Türkçe dilbilgisi: iyelik ve hâl eklerini doğru kullan ("suçlardan dolay" değil "suçlarından dolayı"); aynı kelimeyi ya da cümleyi tekrarlama. Göndermeden önce metni bir kez dilbilgisi açısından kontrol et.
 - İlk cümle yabancı bir terimle ya da kısaltmayla başlamaz.
 Başlık:
 - 12-58 karakter. Olguyu söyleyen, yüklemli, tam ve doğal bir Türkçe cümle; yarım kalmış bir parça ya da sadece isim tamlaması değil.
 - Türkçe cümle düzeni: ilk harf büyük, sonra sadece özel adlar büyük ("Ahtapotun üç kalbi var", "Her Kelimesi Büyük Başlık" değil). Sonda nokta yok.
+- Kancadaki en şaşırtıcı somut öğeyi (hayvan, sayı, yer, nesne adı; ör. "puma") içerir; merak uyandırır ama tıklama tuzağı değildir, olguyu söyler.
 - Gövdedeki olguyla aynı şeyi söyler; gövdede olmayan bilgi ya da yorum eklemez. "X nedir", "X kimdir" kalıbı yasak.
 Kötü başlık: "hamlet en çok filme çekilen öykü" (küçük harf, eksik) · İyi: "Hamlet, Külkedisi'nden sonra en çok filme çekilen hikâye"
 Kötü başlık: "Helmi Kurrik'in 1930'larda kanlı yemekler üzerine tez" (yüklem yok) · İyi: "Helmi Kurrik yüksek lisans tezini kanlı yemeklere ayırdı"

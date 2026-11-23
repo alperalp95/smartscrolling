@@ -16,18 +16,12 @@
       ]
     },
     "writer": {
-      "_aciklama": "Yazar: Türkçe kartı yazar. İlk adımdaki 'pool' içindeki iki model sırayla (bir o, bir bu) kullanılır; ikisi de doluysa Cloudflare'e geçilir. maxTokens 1000: kart ≈ 120 token + gpt-oss 'low' düşünme ≈ 180; Groq OTPM sınırını (1000) aşmaz.",
+      "_aciklama": "Yazar: Türkçe kartı yazar. Kör testte kullanıcı 120b'yi seçti (8/15). 120b günlük limiti (200K token) dolunca 20b'ye geçer, o da dolarsa Cloudflare'e. maxTokens 1000: kart ≈ 150 token + gpt-oss 'low' düşünme ≈ 180; Groq OTPM sınırını (1000) aşmaz.",
       "maxTokens": 1000,
       "expectedOutputTokens": 350,
       "chain": [
-        {
-          "_aciklama": "round_robin = yük havuzdaki modellere sırayla dağıtılır.",
-          "strategy": "round_robin",
-          "pool": [
-            { "provider": "groq", "model": "openai/gpt-oss-120b", "params": { "reasoning_effort": "low" } },
-            { "provider": "groq", "model": "openai/gpt-oss-20b", "params": { "reasoning_effort": "low" } }
-          ]
-        },
+        { "provider": "groq", "model": "openai/gpt-oss-120b", "params": { "reasoning_effort": "low" } },
+        { "provider": "groq", "model": "openai/gpt-oss-20b", "params": { "reasoning_effort": "low" } },
         { "provider": "cloudflare", "model": "@cf/openai/gpt-oss-20b" }
       ]
     },
@@ -129,8 +123,8 @@
 
   "writing": {
     "_aciklama": "Yazar kod kuralı: kart gövdesi en az / en fazla kaç cümle olabilir (1-10 arası tam sayı). Her cümle kanca ya da destek paragrafındaki bir olguya dayanmalı; yorum cümlesi yasak (yazar istemi).",
-    "minSentences": 2,
-    "maxSentences": 4
+    "minSentences": 3,
+    "maxSentences": 5
   },
 
   "dedup": {

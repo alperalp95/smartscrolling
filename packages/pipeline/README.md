@@ -59,7 +59,7 @@ Bir zincir satırına ayrıca `"maxTokens"` yazılabilir; o model için rolünki
 #### Puanlayıcı zinciri
 
 1. `groq / qwen/qwen3.8-27b` (`reasoning_effort: none`, düşünmez).
-2. `groq / openai/gpt-oss-20b` (`reasoning_effort: low`): Groq'ta aynı ücretsiz sınırlara sahip ikinci model. Yazar havuzuyla aynı modeldir; puanlayıcı ona sadece qwen dolunca ya da hata verince gider.
+2. `groq / openai/gpt-oss-20b` (`reasoning_effort: low`): Groq'ta aynı ücretsiz sınırlara sahip ikinci model. Yazar zincirinde de kullanılan modeldir; puanlayıcı ona sadece qwen dolunca ya da hata verince gider.
 3. `cloudflare / @cf/mistralai/mistral-small-3.1-24b-instruct`: düşünmez, Türkçe destekli. 10 kancalık bir grup ≈ 47 Neuron.
 4. `cloudflare / @cf/meta/llama-4-scout-17b-16e-instruct`: düşünmez, çok dilli. 10 kancalık bir grup ≈ 52 Neuron.
 
@@ -130,21 +130,9 @@ Kullanılabilecek sağlayıcılar şimdilik `groq`, `cloudflare` ve `gemini`. Ye
 
 Doğrulayıcı zincirine yazarla aynı aileden model koymayın. Yazar OpenAI ailesi (gpt-oss), doğrulayıcı Mistral / Google ailesi (Mistral Small, Gemma, Gemini). Aynı aile kendi hatasını daha zor yakalar.
 
-#### Havuz (`pool`) ve `round_robin`
+#### Yazar zinciri
 
-Yazarın ilk adımı tek model değil, iki modelli bir havuzdur:
-
-```json
-{
-  "strategy": "round_robin",
-  "pool": [
-    { "provider": "groq", "model": "openai/gpt-oss-120b", "params": { "reasoning_effort": "low" } },
-    { "provider": "groq", "model": "openai/gpt-oss-20b", "params": { "reasoning_effort": "low" } }
-  ]
-}
-```
-
-`round_robin`, işin havuzdaki modellere sırayla dağıtılması demektir: 1. kart 120b ile, 2. kart 20b ile, 3. kart yine 120b ile yazılır. Groq'ta günlük sınır her model için ayrı sayıldığından bu yöntemle günde iki kat kart yazılabilir. Havuzdaki bir model dolarsa diğeri kullanılır. İkisi de dolarsa zincirde sıradaki adıma (Cloudflare) geçilir.
+Yazar modelleri sırayla denenir: önce `groq / openai/gpt-oss-120b`, o dolarsa `groq / openai/gpt-oss-20b`, o da dolarsa `cloudflare / @cf/openai/gpt-oss-20b`. Kör testte kullanıcı 120b'nin yazdığı kartı en çok seçti (15 bilgide 8 kez), bu yüzden ilk sırada o var. 120b'nin günlük limiti (200K token) dolunca hat otomatik olarak 20b'ye geçer.
 
 `params` isteğe bağlıdır; modele giden ek ayarlardır. `reasoning_effort: "low"` modelin "düşünme" kısmını kısa tutar, böylece daha az token harcanır.
 
@@ -234,8 +222,8 @@ Sağlayıcı "günlük kotanız bitti" derse (ör. Groq "tokens per day") boşun
 | `scoring.passPercent` | `30` | Puanlanan adayların en iyi yüzde kaçı yazıma geçer. |
 | `scoring.minSurprise` | `6` | Şaşırtıcılık puanı (0–10) bunun altındaysa aday elenir (`low_surprise`). Kartlar yeterince "Aa!" dedirtmiyorsa artırın. |
 | `scoring.minTrRelevance` | `4` | Türk okur için ilgi puanı (0–10) bunun altındaysa aday elenir (`low_relevance`). |
-| `writing.minSentences` | `2` | Kart gövdesi en az kaç cümle olmalı (1–10). Daha az cümleli kart bir kez yeniden yazdırılır, yine kısaysa elenir (`write_rules`). |
-| `writing.maxSentences` | `4` | Kart gövdesi en fazla kaç cümle olabilir (1–10, `minSentences`'tan küçük olamaz). Kısa kart daha az yorum cümlesi ve daha az doğrulama reddi demektir. |
+| `writing.minSentences` | `3` | Kart gövdesi en az kaç cümle olmalı (1–10). Daha az cümleli kart bir kez yeniden yazdırılır, yine kısaysa elenir (`write_rules`). |
+| `writing.maxSentences` | `5` | Kart gövdesi en fazla kaç cümle olabilir (1–10, `minSentences`'tan küçük olamaz). Kısa kart daha az yorum cümlesi ve daha az doğrulama reddi demektir. |
 | `dedup.duplicateThreshold` | `0.92` | İki kartın benzerliği (0–1) bunun üstündeyse yeni kart "tekrar" sayılır ve elenir. |
 | `dedup.grayZoneLow` | `0.85` | Benzerlik bu değer ile `duplicateThreshold` arasındaysa "gri bölge"dir; hakeme sorulur. |
 | `publish.dailyCount` | `100` | Günde kaç kart yayınlanır. |
