@@ -71,7 +71,7 @@ function expectError(mutate, pattern) {
 }
 
 test('config doğrulama: writing.minSentences / maxSentences', () => {
-  assert.deepEqual(validateConfig(raw()).writing, { minSentences: 2, maxSentences: 4 });
+  assert.deepEqual(validateConfig(raw()).writing, { minSentences: 3, maxSentences: 5 });
   expectError((c) => { c.writing.minSentences = 0; }, /writing\.minSentences.*1-10 arası bir tam sayı/);
   expectError((c) => { c.writing.maxSentences = 2.5; }, /writing\.maxSentences/);
   expectError((c) => { c.writing.maxSentences = 'dört'; }, /writing\.maxSentences/);

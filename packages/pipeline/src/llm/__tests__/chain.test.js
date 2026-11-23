@@ -304,17 +304,17 @@ test('anahtar env’de yoksa sağlayıcı atlanır; anahtar değeri hiçbir yere
   }
 });
 
-test('writer round_robin iki Groq modeli arasında dağıtır', async () => {
+test('writer her zaman önce gpt-oss-120b kullanır (dağıtım yok)', async () => {
   const { llm, fetch } = setup(() => chatOk('kart'));
 
   const models = [];
   for (let i = 0; i < 4; i += 1) models.push((await llm.chat('writer', { messages: MESSAGES })).model);
 
-  assert.deepEqual(models, ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']);
+  assert.deepEqual(models, Array(4).fill('openai/gpt-oss-120b'));
   assert.ok(fetch.calls.every((c) => c.body.reasoning_effort === 'low'));
 });
 
-test('writer havuzunda bir model doluysa diğer havuz üyesine, ikisi de doluysa Cloudflare’e geçer', async () => {
+test('writer 120b doluysa 20b’ye, ikisi de doluysa Cloudflare’e geçer', async () => {
   const { llm } = setup((call) => {
     if (isGroq(call) && call.body.model === 'openai/gpt-oss-120b') {
       return rateLimited({}, 'Rate limit reached on tokens per day (TPD)');

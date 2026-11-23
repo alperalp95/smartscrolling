@@ -207,6 +207,14 @@ test('madde 1 · cümle sınırı config writing.minSentences / maxSentences\'ta
   assert.equal(repo2.get('w2').status, 'written');
 });
 
+test('V2-05h · yazar istemi: şaşırtıcı öğe başlıkta, 1-2 ek ayrıntı, dilbilgisi kuralı', () => {
+  assert.match(WRITE_SYSTEM_PROMPT, /en şaşırtıcı somut öğeyi/);
+  assert.match(WRITE_SYSTEM_PROMPT, /tıklama tuzağı değildir/);
+  assert.match(WRITE_SYSTEM_PROMPT, /1-2 ek ilginç ayrıntı/);
+  assert.match(WRITE_SYSTEM_PROMPT, /suçlarından dolayı/);
+  assert.match(WRITE_SYSTEM_PROMPT, /tekrarlama/);
+});
+
 test('madde 1 · yazar istemi: 2-4 cümle, yorum/genelleme yasağı, 2 kötü + 2 iyi örnek', () => {
   assert.match(WRITE_SYSTEM_PROMPT, /content: 2-4 cümle/);
   assert.match(WRITE_SYSTEM_PROMPT, /Her cümle kancadaki ya da kaynak paragraftaki bir olguyu aktarır/);
