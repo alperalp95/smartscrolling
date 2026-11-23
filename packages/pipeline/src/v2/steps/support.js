@@ -4,12 +4,26 @@
 // (≤1.500 karakter) support_paragraph'a yazar. Bulunamazsa giriş paragrafına
 // düşmez → rejected:no_support. Ayrıştırma support-parse.js'te (saf).
 //
-// Bağımlılık: deps.fetch (varsayılan global fetch). LLM kullanmaz.
+// Bağımlılık: deps.http (createHttpClient: ≥200 ms aralık, 429/5xx'te üstel bekleme, en fazla 3 deneme)
+// ya da deps.fetch (testte; aynı istemciyle sarılır). LLM kullanmaz.
 import { STATUS, forEachCandidate, newStats, nowIso, reject } from './common.js';
+import { createHttpClient } from '../sources/http.js';
 import { extractParagraphs, parseWikiUrl, selectSupport } from './support-parse.js';
 
-export const USER_AGENT = 'content-pipeline/2.0 (educational fact app)';
-const TIMEOUT_MS = 20000;
+export { USER_AGENT } from '../sources/http.js';
+
+let defaultHttp = null;
+/** Modül içinde bir kez oluşturulan varsayılan istemci (istekler arası aralık run boyunca korunur). */
+function getDefaultHttp() {
+  defaultHttp ??= createHttpClient();
+  return defaultHttp;
+}
+
+function resolveHttp(deps) {
+  if (deps.http) return deps.http;
+  if (deps.fetch) return createHttpClient({ fetchImpl: deps.fetch, sleep: deps.sleep });
+  return getDefaultHttp();
+}
 
 export function buildParseUrl({ lang, title }) {
   const params = new URLSearchParams({
@@ -27,31 +41,25 @@ export function buildParseUrl({ lang, title }) {
 
 /**
  * Makale HTML'ini çeker.
+ * @param {{ getJson: (url: string) => Promise<any> }} http
  * @returns {Promise<{ ok: true, html: string } | { ok: false, missing: true }>}
- *   Sayfa yoksa missing; ağ/5xx hatasında exception (attempts++).
+ *   Sayfa yoksa missing; ağ/429/5xx hatasında (yeniden denemelerden sonra) exception (attempts++).
  */
-export async function fetchArticleHtml(fetchImpl, ref) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  timer.unref?.();
+export async function fetchArticleHtml(http, ref) {
+  let body;
   try {
-    const res = await fetchImpl(buildParseUrl(ref), {
-      headers: { 'User-Agent': USER_AGENT, 'Api-User-Agent': USER_AGENT, Accept: 'application/json' },
-      signal: controller.signal,
-    });
-    if (res.status === 404) return { ok: false, missing: true };
-    if (!res.ok) throw new Error(`Wikipedia HTTP ${res.status}`);
-    const body = await res.json();
-    if (body?.error) {
-      if (body.error.code === 'missingtitle' || body.error.code === 'invalidtitle') return { ok: false, missing: true };
-      throw new Error(`Wikipedia API hatası: ${body.error.code}`);
-    }
-    const html = typeof body?.parse?.text === 'string' ? body.parse.text : body?.parse?.text?.['*'];
-    if (typeof html !== 'string') throw new Error('Wikipedia yanıtında parse.text yok');
-    return { ok: true, html };
-  } finally {
-    clearTimeout(timer);
+    body = await http.getJson(buildParseUrl(ref));
+  } catch (err) {
+    if (err?.status === 404) return { ok: false, missing: true };
+    throw err;
   }
+  if (body?.error) {
+    if (body.error.code === 'missingtitle' || body.error.code === 'invalidtitle') return { ok: false, missing: true };
+    throw new Error(`Wikipedia API hatası: ${body.error.code}`);
+  }
+  const html = typeof body?.parse?.text === 'string' ? body.parse.text : body?.parse?.text?.['*'];
+  if (typeof html !== 'string') throw new Error('Wikipedia yanıtında parse.text yok');
+  return { ok: true, html };
 }
 
 /**
@@ -60,7 +68,7 @@ export async function fetchArticleHtml(fetchImpl, ref) {
  */
 export async function runSupport(deps, { limit = 50 } = {}) {
   const stats = newStats('support');
-  const fetchImpl = deps.fetch ?? globalThis.fetch;
+  const http = resolveHttp(deps);
   const cands = await deps.repo.listByStatus(STATUS.SCORED, limit, { hasSupport: false });
 
   await forEachCandidate(deps, cands, stats, async (cand) => {
@@ -71,7 +79,7 @@ export async function runSupport(deps, { limit = 50 } = {}) {
       });
       return;
     }
-    const article = await fetchArticleHtml(fetchImpl, ref);
+    const article = await fetchArticleHtml(http, ref);
     const picked = article.ok
       ? selectSupport(extractParagraphs(article.html), cand.hook_text, { lang: cand.lang || ref.lang })
       : null;

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // Content pipeline v2 — adım 1 "Topla": kaynaklardan kancaları toplar.
 //
-//   node src/runners/v2-collect.js [--source s1|s2|s3|s4|all] [--limit 200] [--mix s2:all,s3:all,s4:30,s1:rest]
+//   node src/runners/v2-collect.js [--source s1|s2|s3|s4|all] [--limit 200] [--mix s3:all,s4:10,s2:15,s1:rest]
 //                                  [--backfill-from YYYY-MM] [--backfill-months 1] [--dry-run | --apply]
 //
 // `--limit` TOPLAM aday sayısını sınırlar; `--mix` kaynak sırasını ve paylarını belirler (`all`/`rest`:
-// kalan payın tamamı, sayı: en fazla o kadar). Varsayılan: önce yeni (S2) ve TR (S3) kancalar, sonra
-// S4'ten 30, kalan S1 arşivine.
+// kalan payın tamamı, sayı: en fazla o kadar). Varsayılan: önce TR (S3) kancalar, sonra S4'ten 10,
+// yeni DYK (S2) en fazla 15 (niş/ABD-İngiltere ağırlıklı), kalan S1 arşivine.
 //
 // `--backfill-from YYYY-MM`: S2, normal penceresinin (bu ay + geçen ay) öncesindeki DYK aylarını geriye
 // doğru bu aya kadar okur; her run en fazla `--backfill-months` ay ilerler (imleç `cursor:s2-backfill`).
@@ -25,7 +25,7 @@ import { COLLECTORS, SOURCE_IDS, createHttpClient } from '../v2/sources/index.js
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_CACHE_DIR = path.resolve(__dirname, '..', '..', '.cache');
 export const DEFAULT_LIMIT = 200;
-export const DEFAULT_MIX = 's2:all,s3:all,s4:30,s1:rest';
+export const DEFAULT_MIX = 's3:all,s4:10,s2:15,s1:rest';
 export const DEFAULT_BACKFILL_MONTHS = 1;
 export const BACKFILL_CURSOR_KEY = 'cursor:s2-backfill';
 const SAMPLE_COUNT = 5;
@@ -41,7 +41,7 @@ function positiveInt(raw, label) {
 }
 
 /**
- * `s2:all,s3:all,s4:30,s1:rest` → `[{ id: 's2', quota: 'all' }, …, { id: 's4', quota: 30 }, …]`.
+ * `s3:all,s4:10,s2:15,s1:rest` → `[{ id: 's2', quota: 'all' }, …, { id: 's4', quota: 30 }, …]`.
  * @param {string} spec
  * @returns {Array<{ id: string, quota: 'all' | 'rest' | number }>}
  */

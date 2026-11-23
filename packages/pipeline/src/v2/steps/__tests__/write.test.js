@@ -72,6 +72,7 @@ test('runWrite: ikinci ihlal → rejected:write_rules (üçüncü çağrı yok)'
   assert.equal(llm.count('writer'), 2);
   assert.equal(repo.get('w1').reject_reason, 'write_rules');
   assert.ok(repo.get('w1').scores.write_violations[0].includes('cümle'));
+  assert.ok(repo.get('w1').scores.write_issues[0].includes('cümle'));
 });
 
 test('runWrite: skip:true → rejected:writer_skip, yeniden deneme yok', async () => {

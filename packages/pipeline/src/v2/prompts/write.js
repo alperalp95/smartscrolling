@@ -26,6 +26,7 @@ Odak:
 - Kancayla ilgisi olmayan ayrıntı (hastalık, kariyer, başka olaylar, tarih listesi) ekleme. Az ama ilgili cümle, çok ama dağınık cümleden iyidir.
 - Sadece kancada ya da kaynak paragrafta yazanı kullan. Sayı, tarih, isim uydurma.
 - Kişi adlarını kaynaktaki yazımıyla aynen yaz, başka bir adla değiştirme ("Osama bin Laden"; "Ömer bin Laden" değil). Yer adlarının yerleşik Türkçesi olur (Hindistan, Viyana).
+- Kurum, parti, eser ve ülke adlarını Türkçeleştir; ilk geçişte orijinalini parantezde ver ("Halk Demokratik Birliği (Popular Democratic Union)"). Yerleşik Türkçe karşılığı olanlar doğrudan Türkçe yazılır (United States → ABD, Marxist → Marksist). Türkçe cümlenin içinde İngilizce ad ya da ek bırakma ("United States'ta" değil, "ABD'de").
 - Sayı ve yılları kaynaktaki gibi yaz; birim çevirme, yaş/süre/fark hesaplama.
 Sadece olgu, yorum yok:
 - Her cümle kancadaki ya da kaynak paragraftaki bir olguyu aktarır.

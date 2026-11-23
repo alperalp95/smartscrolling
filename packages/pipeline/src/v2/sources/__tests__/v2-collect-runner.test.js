@@ -53,7 +53,7 @@ async function tempDir() {
 test('parseArgs: varsayılanlar dry-run, all, 200 toplam, varsayılan mix; geçersiz değerler hata', () => {
   assert.deepEqual(parseArgs([]), {
     source: 'all',
-    sources: ['s2', 's3', 's4', 's1'],
+    sources: ['s3', 's4', 's2', 's1'],
     limit: 200,
     apply: false,
     mix: parseMix(DEFAULT_MIX),
@@ -62,7 +62,7 @@ test('parseArgs: varsayılanlar dry-run, all, 200 toplam, varsayılan mix; geçe
   });
   const s2 = parseArgs(['--source', 's2', '--limit', '20', '--dry-run', '--backfill-from', '2024-03', '--backfill-months', '2']);
   assert.deepEqual(s2.sources, ['s2']);
-  assert.deepEqual(s2.mix, [{ id: 's2', quota: 'all' }]);
+  assert.deepEqual(s2.mix, [{ id: 's2', quota: 15 }]); // --source karışımdaki payı korur
   assert.equal(s2.limit, 20);
   assert.equal(s2.backfillFrom, '2024-03');
   assert.equal(s2.backfillMonths, 2);
@@ -80,9 +80,9 @@ test('parseArgs: varsayılanlar dry-run, all, 200 toplam, varsayılan mix; geçe
 
 test('parseMix: varsayılan sıra ve paylar; hatalı girişler', () => {
   assert.deepEqual(parseMix(DEFAULT_MIX), [
-    { id: 's2', quota: 'all' },
     { id: 's3', quota: 'all' },
-    { id: 's4', quota: 30 },
+    { id: 's4', quota: 10 },
+    { id: 's2', quota: 15 },
     { id: 's1', quota: 'rest' },
   ]);
   assert.deepEqual(parseMix(' s4:10 , s1 '), [
@@ -104,23 +104,23 @@ test('shareFor: all/rest kalanın tamamı, sayı min(sayı, kalan), kalan yoksa 
   assert.equal(shareFor({ quota: 'all' }, 0), 0);
 });
 
-test('runner --mix: varsayılan dağılım s2 → s3 → s4 (≤30) → s1 (kalan); --limit toplamı sınırlar', async () => {
+test('runner --mix: varsayılan dağılım s3 → s4 (≤10) → s2 (≤15) → s1 (kalan); --limit toplamı sınırlar', async () => {
   const cacheDir = await tempDir();
   const { collectors, seen } = fakeCollectors({ perSource: 25 });
   const result = await runCollect({ args: ['--limit', '100'], collectors, http: {}, cacheDir, log: () => {} });
   assert.deepEqual(
     seen.map((s) => [s.id, s.limit]),
     [
-      ['s2', 100],
-      ['s3', 75],
-      ['s4', 30],
-      ['s1', 25],
+      ['s3', 100],
+      ['s4', 10],
+      ['s2', 15],
+      ['s1', 50],
     ],
   );
-  assert.equal(result.candidates.length, 100);
+  assert.equal(result.candidates.length, 75);
   assert.deepEqual(
     Object.fromEntries(Object.entries(result.summary).map(([id, s]) => [id, s.count])),
-    { s2: 25, s3: 25, s4: 25, s1: 25 },
+    { s3: 25, s4: 10, s2: 15, s1: 25 },
   );
 });
 
@@ -131,11 +131,11 @@ test('runner --mix: limit dolunca sonraki kaynaklar çağrılmaz; hata veren kay
   assert.deepEqual(
     seen.map((s) => [s.id, s.limit]),
     [
-      ['s2', 40],
-      ['s3', 15],
+      ['s3', 40],
+      ['s4', 10],
+      ['s2', 5],
     ],
   );
-  assert.equal(result.summary.s4.skipped, 'limit');
   assert.equal(result.summary.s1.skipped, 'limit');
   assert.equal(result.candidates.length, 40);
 
@@ -191,9 +191,9 @@ test('runner dry-run: client/insert/DB state çağrılmaz; imleç .cache dosyas�
   const out = JSON.parse(await fs.readFile(path.join(cacheDir, 'v2-collect-all-2026-11-20.json'), 'utf8'));
   assert.equal(out.dry_run, true);
   assert.equal(out.cursor_store, 'file');
-  assert.equal(out.mix, 's2:all,s3:all,s4:30,s1:rest');
+  assert.equal(out.mix, 's3:all,s4:10,s2:15,s1:rest');
   assert.equal(out.candidates.length, 28);
-  assert.ok(lines.some((l) => l.includes('[s2] fake s2: 7 aday (pay 30)')));
+  assert.ok(lines.some((l) => l.includes('[s2] fake s2: 7 aday (pay 15)')));
   assert.ok(lines.some((l) => l.includes('backfill: 0 aday') && l.includes('2026-09 (sayfa yok)')));
   assert.ok(lines.filter((l) => l.startsWith('  - ')).length <= 20);
 });
