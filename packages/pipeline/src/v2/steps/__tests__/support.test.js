@@ -88,7 +88,7 @@ test('runSupport: paragrafı yazar, User-Agent gönderir; makale yoksa ya da ör
 
 test('runSupport: ağ hatası → attempts++, aday scored kalır', async () => {
   const repo = createMemoryStepsRepo({ candidates: [scoredCand({ id: 'a', hook_text: HOOK })] });
-  const stats = await runSupport(deps({ repo, fetch: fakeWikiFetch({}, { fail: true }) }));
+  const stats = await runSupport(deps({ repo, fetch: fakeWikiFetch({}, { fail: true }), sleep: async () => {} }));
   assert.equal(repo.get('a').status, 'scored');
   assert.equal(repo.get('a').attempts, 1);
   assert.equal(repo.get('a').support_paragraph, null);
@@ -98,4 +98,34 @@ test('runSupport: ağ hatası → attempts++, aday scored kalır', async () => {
 test('articleHtml fixture referansı temizlenir', () => {
   const ps = extractParagraphs(articleHtml([INTRO, BODY_FACT]));
   assert.deepEqual(ps, [INTRO, BODY_FACT]);
+});
+
+test('runSupport: 429 → bekleyip tekrar dener (Retry-After), sonra başarır', async () => {
+  const repo = createMemoryStepsRepo({ candidates: [scoredCand({ id: 'r1', hook_text: HOOK, source_url: 'https://en.wikipedia.org/wiki/Giant_squid' })] });
+  const ok = fakeWikiFetch({ Giant_squid: [INTRO, BODY_FACT] });
+  let n = 0;
+  const fetch = async (url, init) => {
+    n += 1;
+    if (n <= 2) return new Response('slow down', { status: 429, headers: { 'retry-after': '2' } });
+    return ok(url, init);
+  };
+  const sleeps = [];
+  const stats = await runSupport(deps({ repo, fetch, sleep: async (ms) => sleeps.push(ms) }));
+  assert.equal(n, 3);
+  assert.equal(stats.advanced, 1);
+  assert.ok(sleeps.some((ms) => ms >= 2000), 'Retry-After kadar beklendi');
+});
+
+test('runSupport: 3 denemeden sonra hâlâ 429 → hata, attempts++', async () => {
+  const repo = createMemoryStepsRepo({ candidates: [scoredCand({ id: 'r2', source_url: 'https://en.wikipedia.org/wiki/Giant_squid' })] });
+  let n = 0;
+  const fetch = async () => {
+    n += 1;
+    return new Response('x', { status: 429 });
+  };
+  const stats = await runSupport(deps({ repo, fetch, sleep: async () => {} }));
+  assert.equal(n, 3);
+  assert.equal(stats.failed, 1);
+  assert.equal(repo.get('r2').attempts, 1);
+  assert.equal(repo.get('r2').status, 'scored');
 });

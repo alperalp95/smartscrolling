@@ -309,7 +309,10 @@ export async function runWrite(deps, { limit = 50 } = {}) {
       return;
     }
     if (r.outcome === 'rules') {
-      await reject(deps, cand, 'write_rules', stats, { scores: { ...(cand.scores ?? {}), write_violations: r.violations } });
+      deps.log?.(`[write] ${cand.id} write_rules nedeni: ${r.violations.join(' | ')}`);
+      await reject(deps, cand, 'write_rules', stats, {
+        scores: { ...(cand.scores ?? {}), write_violations: r.violations, write_issues: r.violations },
+      });
       return;
     }
     const draft = { ...r.draft, writer_model: r.model, rewrites: r.rewrites, written_at: nowIso(deps.now) };

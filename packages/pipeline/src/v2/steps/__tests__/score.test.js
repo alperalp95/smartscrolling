@@ -45,6 +45,11 @@ test('normalizeCategory: kategori dışı değer normalize edilir ya da null', (
   assert.equal(normalizeCategory('SAĞLIK'), '🌱 SAĞLIK');
   assert.equal(normalizeCategory('sanat & kültür'), '🎨 SANAT & KÜLTÜR');
   assert.equal(normalizeCategory('Sports'), '🏆 SPOR');
+  assert.equal(normalizeCategory('science'), '🔬 BİLİM');
+  assert.equal(normalizeCategory('history'), '📜 TARİH');
+  assert.equal(normalizeCategory('Nature'), '🔬 BİLİM');
+  assert.equal(normalizeCategory('Coğrafya'), '🔬 BİLİM');
+  assert.equal(normalizeCategory('xyz'), null);
   assert.equal(normalizeCategory('Astroloji'), null);
   assert.equal(normalizeCategory(42), null);
   assert.equal(CATEGORIES.length, 8);

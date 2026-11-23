@@ -31,6 +31,13 @@ export const CATEGORIES = Object.freeze([
 const CATEGORY_ALIASES = {
   bilim: '🔬 BİLİM',
   science: '🔬 BİLİM',
+  nature: '🔬 BİLİM',
+  animal: '🔬 BİLİM',
+  animals: '🔬 BİLİM',
+  geography: '🔬 BİLİM',
+  doga: '🔬 BİLİM',
+  hayvan: '🔬 BİLİM',
+  cografya: '🔬 BİLİM',
   tarih: '📜 TARİH',
   history: '📜 TARİH',
   teknoloji: '💻 TEKNOLOJİ',
