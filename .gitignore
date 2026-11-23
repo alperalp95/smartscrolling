@@ -34,4 +34,4 @@ supabase/.branches/
 
 # Claude agent worktrees
 .claude/worktrees/
-board/logs/dryrun/
+board/
