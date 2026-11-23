@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthPromptModal } from '../components/auth-prompt-modal';
 import { PremiumPromptModal } from '../components/premium-prompt-modal';
+import { initializeGoogleMobileAdsForDemoSmoke } from '../src/lib/adMob';
 import {
   cancelSmartScrollingScheduledNotifications,
   reconcileDailyLocalReminder,
@@ -38,6 +39,10 @@ export default function RootLayout() {
     (state) => state.hydrateNotificationPreference,
   );
   const resetOnboarding = useOnboardingStore((state) => state.resetOnboarding);
+
+  useEffect(() => {
+    void initializeGoogleMobileAdsForDemoSmoke();
+  }, []);
 
   useEffect(() => {
     async function syncSessionSideEffects(userId?: string) {
