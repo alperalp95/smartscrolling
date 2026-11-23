@@ -120,7 +120,7 @@ test('parseArgs: varsayılanlar dry-run, all, 200 toplam, varsayılan mix; geçe
 
 test('parseMix: varsayılan sıra ve paylar; hatalı girişler', () => {
   assert.deepEqual(parseMix(DEFAULT_MIX), [
-    { id: 's3', quota: 'all' },
+    { id: 's3', quota: 150 },
     { id: 's4', quota: 10 },
     { id: 's2', quota: 15 },
     { id: 's1', quota: 'rest' },
@@ -262,7 +262,7 @@ test('runner dry-run: client/insert/DB state çağrılmaz; imleç .cache dosyas�
   );
   assert.equal(out.dry_run, true);
   assert.equal(out.cursor_store, 'file');
-  assert.equal(out.mix, 's3:all,s4:10,s2:15,s1:rest');
+  assert.equal(out.mix, 's3:150,s4:10,s2:15,s1:rest');
   assert.equal(out.candidates.length, 28);
   assert.ok(lines.some((l) => l.includes('[s2] fake s2: 7 aday (pay 15)')));
   assert.ok(lines.some((l) => l.includes('backfill: 0 aday') && l.includes('2026-09 (sayfa yok)')));

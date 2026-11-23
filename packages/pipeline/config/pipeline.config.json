@@ -25,7 +25,7 @@
       ]
     },
     "writer": {
-      "_aciklama": "Yazar: Türkçe kartı yazar. Kör testte kullanıcı 120b'yi seçti (8/15). 120b günlük limiti (200K token) dolunca 20b'ye geçer, o da dolarsa Cloudflare'e. maxTokens 1000: kart ≈ 150 token + gpt-oss 'low' düşünme ≈ 180; Groq OTPM sınırını (1000) aşmaz.",
+      "_aciklama": "Yazar: Türkçe kartı yazar. Kör testte kullanıcı 120b'yi seçti (8/15). 120b günlük limiti (200K token) dolunca 20b'ye geçer, o da dolarsa Cloudflare'e. maxTokens 1000: kart ≈ 150 token + gpt-oss 'low' düşünme ≈ 180; Groq OTPM sınırını (1000) aşmaz. Cloudflare yedeğinde düşünme ayarı yok, uzun düşünüp 1000'de kesiliyordu; onun maxTokens'ı 2500 (Cloudflare'de dakikalık çıktı sınırı yok).",
       "maxTokens": 1000,
       "expectedOutputTokens": 350,
       "chain": [
@@ -39,7 +39,7 @@
           "model": "openai/gpt-oss-20b",
           "params": { "reasoning_effort": "low" }
         },
-        { "provider": "cloudflare", "model": "@cf/openai/gpt-oss-20b" }
+        { "provider": "cloudflare", "model": "@cf/openai/gpt-oss-20b", "maxTokens": 2500 }
       ]
     },
     "verifier": {

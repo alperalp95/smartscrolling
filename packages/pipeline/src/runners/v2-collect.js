@@ -25,7 +25,7 @@ import { COLLECTORS, SOURCE_IDS, createHttpClient } from '../v2/sources/index.js
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_CACHE_DIR = path.resolve(__dirname, '..', '..', '.cache');
 export const DEFAULT_LIMIT = 200;
-export const DEFAULT_MIX = 's3:all,s4:10,s2:15,s1:rest';
+export const DEFAULT_MIX = 's3:150,s4:10,s2:15,s1:rest';
 export const DEFAULT_BACKFILL_MONTHS = 1;
 export const BACKFILL_CURSOR_KEY = 'cursor:s2-backfill';
 const SAMPLE_COUNT = 5;
