@@ -106,6 +106,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       const { data, error } = await supabase
         .from('facts')
         .select(FEED_FACT_SELECT)
+        .eq('status', 'published')
         .order('created_at', { ascending: false })
         .range(offset, offset + pageSize - 1);
 

@@ -262,7 +262,10 @@ export default function LibraryScreen() {
   };
 
   return (
-    <View style={[s.container, Platform.OS === 'web' && !isFocused ? s.webHiddenScreen : null]}>
+    <View
+      style={[s.container, Platform.OS === 'web' && !isFocused ? s.webHiddenScreen : null]}
+      testID="library-screen"
+    >
       <View style={[s.header, { paddingTop: topPadding + 10 }]}>
         <Text style={s.title}>Kutuphane</Text>
       </View>
@@ -440,6 +443,9 @@ export default function LibraryScreen() {
                 onPress={() => openBook(book)}
                 style={s.gridItem}
                 activeOpacity={0.8}
+                testID={
+                  access.isFreeAnchor ? 'library-free-book-card' : `library-book-card-${book.id}`
+                }
               >
                 <View>
                   <BookCover book={book} size="lg" />

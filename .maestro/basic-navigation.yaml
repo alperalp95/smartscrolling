@@ -1,0 +1,23 @@
+appId: com.smartscrolling.mobile
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: feed-screen
+    timeout: 15000
+- assertVisible:
+    id: feed-screen
+- tapOn: Kutuphane
+- extendedWaitUntil:
+    visible:
+      id: library-screen
+    timeout: 10000
+- assertVisible:
+    id: library-screen
+- tapOn: Profil
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 10000
+- assertVisible:
+    id: profile-screen

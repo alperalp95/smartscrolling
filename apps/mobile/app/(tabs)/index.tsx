@@ -26,7 +26,13 @@ import {
 import type { ImageSourcePropType, LayoutChangeEvent, ViewToken } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PremiumUpsellCard } from '../../components/premium-upsell-card';
-import { type FeedAdSlot, getAdAudience, insertFeedAdSlots } from '../../src/lib/ads';
+import { getGoogleMobileAdsBannerComponents } from '../../src/lib/adMob';
+import {
+  type FeedAdSlot,
+  getAdAudience,
+  getFeedAdUnitId,
+  insertFeedAdSlots,
+} from '../../src/lib/ads';
 import { promptForAuth } from '../../src/lib/authPrompt';
 import { isBadFactMediaUrl } from '../../src/lib/factVisuals';
 import { reconcileDailyLocalReminder } from '../../src/lib/notifications';
@@ -710,14 +716,38 @@ function FeedAdCard({
 }) {
   const cardBottomOffset = tabBarHeight + Math.max(bottomInset, Platform.OS === 'ios' ? 12 : 8);
   const isNativeSlot = slot.kind === 'inline_video';
+  const [failedBannerSlotId, setFailedBannerSlotId] = useState<string | null>(null);
+  const bannerLoadFailed = failedBannerSlotId === slot.id;
 
   const renderBanner = () => {
+    if (!isNativeSlot && !bannerLoadFailed) {
+      const bannerComponents = getGoogleMobileAdsBannerComponents();
+
+      if (bannerComponents) {
+        const { BannerAd, bannerSize } = bannerComponents;
+
+        return (
+          <View style={s.adBannerBox}>
+            <BannerAd
+              onAdFailedToLoad={(error) => {
+                console.warn('[AdMob] Demo banner failed to load:', error);
+                setFailedBannerSlotId(slot.id);
+              }}
+              onAdLoaded={() => setFailedBannerSlotId(null)}
+              size={bannerSize}
+              unitId={getFeedAdUnitId('static')}
+            />
+          </View>
+        );
+      }
+    }
+
     return (
       <View style={s.adFallbackBox}>
         <Text style={s.adFallbackText}>
           {isNativeSlot
             ? 'Inline native reklam slotu'
-            : 'Test banner slotu - native AdMob render kapali'}
+            : 'Test banner slotu - demo render bekleniyor'}
         </Text>
       </View>
     );
@@ -891,6 +921,7 @@ function FullScreenFactCard({
 
   return (
     <View
+      testID="feed-fact-card"
       style={[
         s.cardOuter,
         {
@@ -1116,7 +1147,11 @@ function FullScreenFactCard({
             <Text style={s.actionLabel}>{(item.likes || 0) + (isLiked ? 1 : 0)}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={s.actionBtnVertical} onPress={() => toggleSave(item.id)}>
+          <TouchableOpacity
+            style={s.actionBtnVertical}
+            onPress={() => toggleSave(item.id)}
+            testID="feed-save-button"
+          >
             <Text style={s.actionEmoji}>{isSaved ? '🔖' : '📑'}</Text>
             <Text style={s.actionLabel}>Kaydet</Text>
           </TouchableOpacity>
@@ -1493,7 +1528,10 @@ export default function FeedScreen() {
   };
 
   return (
-    <View style={[s.container, Platform.OS === 'web' && !isFocused ? s.webHiddenScreen : null]}>
+    <View
+      style={[s.container, Platform.OS === 'web' && !isFocused ? s.webHiddenScreen : null]}
+      testID="feed-screen"
+    >
       <View
         onLayout={handleListWrapperLayout}
         style={[
@@ -1507,7 +1545,7 @@ export default function FeedScreen() {
         ]}
       >
         {isLoading ? (
-          <View style={s.centerState}>
+          <View style={s.centerState} testID="feed-loading">
             <Text style={s.centerStateText}>Bilgiler Yukleniyor...</Text>
           </View>
         ) : orderedFacts.length === 0 ? (
@@ -1517,6 +1555,7 @@ export default function FeedScreen() {
         ) : (
           <FlashList
             ref={flatListRef}
+            testID="feed-list"
             data={feedItems}
             keyExtractor={(item) => item.id}
             refreshing={isLoading}
@@ -1829,6 +1868,12 @@ const s = StyleSheet.create({
     height: 250,
     justifyContent: 'center',
     paddingHorizontal: 16,
+    width: '100%',
+  },
+  adBannerBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 90,
     width: '100%',
   },
   adFallbackText: {

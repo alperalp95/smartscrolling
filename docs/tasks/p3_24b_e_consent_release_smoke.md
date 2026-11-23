@@ -30,3 +30,5 @@ Reklam entegrasyonunu store policy, consent ve release smoke testleriyle kapatma
 
 - Bu task tamamlanmadan production reklam yayina alinmaz.
 - Consent olmadan kisisellestirilmis reklam akisi baslatilmaz.
+- `p3_24b_f` demo banner smoke consent yerine gecmez; production ad unit switch consent/release checklist kapanana kadar yapilmaz.
+- iOS AdMob backoffice ve ATT/App Store privacy isi `p3_24b_j` altinda ayri takip edilir.

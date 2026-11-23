@@ -1,13 +1,8 @@
+# ESKİ HAT — v2 ile değiştirildi (.github/workflows/content-v2.yml). Zamanlanmış tetikler kaldırıldı;
+# sadece elle çalıştırma (workflow_dispatch) kaldı. Dosya CL-01 temizliğinde silinecek.
 name: Facts Ingest
 
 on:
-  schedule:
-    # 08:17 and 20:17 Europe/Istanbul.
-    - cron: "17 5,17 * * *"
-    # Backup check at 08:47 and 20:47 Europe/Istanbul.
-    - cron: "47 5,17 * * *"
-    # Weekly catch-up check: Sunday 09:17 Europe/Istanbul.
-    - cron: "17 6 * * 0"
   workflow_dispatch:
     inputs:
       mode:

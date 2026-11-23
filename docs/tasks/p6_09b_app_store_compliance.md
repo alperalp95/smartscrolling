@@ -43,7 +43,7 @@
 - [x] Supabase remote migration apply yap.
 - [x] `delete-account` Edge Function deploy yap.
 - [x] Emulator smoke test listesini cikar.
-- [ ] Roadmap, changelog ve task kapanis notlarini guncelle.
+- [x] Roadmap, changelog ve task kapanis notlarini guncelle.
 
 ## Kapsam Disi
 
@@ -203,3 +203,9 @@
   - `book_highlights = 0`
 - App'in kullandigi anon REST sorgusu ile `books` listesi 200 OK dondu.
 - Gecici recovery dosyalari temizlendi.
+
+### 2026-05-14 - Emulator / Dev Build Smoke Kabulu
+
+- Kullanici smoke sonucunu kabul etti: account deletion akisi emulator/dev-build uzerinde basarili goruldu.
+- Kullanici smoke sonucunu kabul etti: Reader AI Chat icindeki AI report UI ve report submit akisi emulator/dev-build uzerinde basarili goruldu.
+- P6-09b icin implementation, remote migration apply, `delete-account` Edge Function deploy, emulator/dev-build smoke ve docs closure tamamlandi.

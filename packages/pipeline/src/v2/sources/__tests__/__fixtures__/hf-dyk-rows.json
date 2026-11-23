@@ -1,0 +1,79 @@
+{
+  "features": [],
+  "rows": [
+    {
+      "row_idx": 96984,
+      "row": {
+        "subject": "William Thomas Pike",
+        "subject_article": "William_Thomas_Pike",
+        "dyk_text": "... that William Thomas Pike, a convicted felon, published a biographical series , which includes traders, bishops, and a lord mayor of London, but almost no women?",
+        "dyk_html": "... that <b id=\"mwAQ\"><a href=\"./William_Thomas_Pike\" rel=\"mw:WikiLink\" title=\"William Thomas Pike\">William Thomas Pike</a></b>, a convicted felon, <a href=\"./William_Thomas_Pike_bibliography\" rel=\"mw:WikiLink\">published a biographical series</a> <i>(volume pictured)</i>, which includes traders, bishops, and <a href=\"./Sir_John_Pound,_1st_Baronet\" rel=\"mw:WikiLink\">a lord mayor of London</a>, but almost no women?",
+        "timestamp": "2024-02-02T12:00:00",
+        "order": 0,
+        "day_before_before_views": 10,
+        "day_before_views": 12,
+        "day_of_views": 5830,
+        "day_after_views": 400
+      },
+      "truncated_cells": []
+    },
+    {
+      "row_idx": 96985,
+      "row": {
+        "subject": "Well he would, wouldn't he?",
+        "subject_article": "Well_he_would,_wouldn't_he%3F",
+        "dyk_text": "... that \"he would, wouldn't he\"?",
+        "dyk_html": "... that \"<b id=\"mwBQ\"><a href=\"./Well_he_would,_wouldn't_he%3F\" rel=\"mw:WikiLink\" title=\"Well he would, wouldn't he?\">he would, wouldn't he</a></b>\"?",
+        "timestamp": "2024-02-02T12:00:00",
+        "order": 7,
+        "day_before_before_views": null,
+        "day_before_views": null,
+        "day_of_views": null,
+        "day_after_views": null
+      },
+      "truncated_cells": []
+    },
+    {
+      "row_idx": 96986,
+      "row": {
+        "subject": null,
+        "subject_article": null,
+        "dyk_text": "",
+        "dyk_html": null,
+        "timestamp": "2024-02-02T00:00:00",
+        "order": 0,
+        "day_of_views": null
+      },
+      "truncated_cells": []
+    },
+    {
+      "row_idx": 96987,
+      "row": {
+        "subject": "Cochin Jews",
+        "subject_article": null,
+        "dyk_text": "...that the Cochin Jews have had a settlement in India since the 16th century?",
+        "dyk_html": "...that the <b id=\"mwGg\"><a href=\"./Cochin_Jews\" rel=\"mw:WikiLink\" title=\"Cochin Jews\">Cochin Jews</a></b> have had a settlement in <a href=\"./India\" rel=\"mw:WikiLink\" title=\"India\">India</a> since the <a href=\"./16th_century\" rel=\"mw:WikiLink\">16th century</a>?",
+        "timestamp": null,
+        "order": 2,
+        "day_of_views": null
+      },
+      "truncated_cells": []
+    },
+    {
+      "row_idx": 96988,
+      "row": {
+        "subject": "Donald H. Bochkay",
+        "subject_article": null,
+        "dyk_text": "... that fighter pilot Donald H. Bochkay shot down two jet-powered Messerschmitt Me 262s?",
+        "dyk_html": "... that fighter pilot <b><a href=\"./Donald_H._Bochkay\" rel=\"mw:WikiLink\">Donald H. Bochkay</a></b> shot down two jet-powered <a href=\"./Messerschmitt_Me_262\" rel=\"mw:WikiLink\">Messerschmitt Me 262s</a>?",
+        "timestamp": "2024-02-02T00:00:00",
+        "order": 0,
+        "day_of_views": 442
+      },
+      "truncated_cells": []
+    }
+  ],
+  "num_rows_total": 96989,
+  "num_rows_per_page": 100,
+  "partial": false
+}

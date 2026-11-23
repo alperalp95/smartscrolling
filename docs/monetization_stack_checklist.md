@@ -78,7 +78,7 @@ Kod entegrasyonuna gecmeden once su degerler hazir olmali:
   - Guest: ilk reklam 5. karttan sonra, sonra her 6 kartta 1; static/banner ve inline video sirayla doner.
   - Free: ilk reklam 9. karttan sonra, sonra her 10 kartta 1; iki static/banner slotundan sonra bir inline video slotu gelir.
   - Premium: reklam kapali.
-- Placeholder cadence smoke guest/free/premium icin dogrulandi; gercek AdMob banner render'i ayri adimda acilacak.
+- Placeholder cadence smoke guest/free/premium icin dogrulandi; Android static slotlarda guarded Google demo banner foundation eklendi, fiziksel development build smoke bekliyor.
 
 ## 3. Implementasyon Sirasi
 
@@ -106,3 +106,5 @@ Bu nedenle sonraki mantikli adim, once paywall giris noktalarini uygulama icinde
 - `docs/tasks/p3_24b_c_ads_sdk_test_setup.md`
 - `docs/tasks/p3_24b_d_feed_ad_cadence.md`
 - `docs/tasks/p3_24b_e_consent_release_smoke.md`
+- `docs/tasks/p3_24b_f_android_demo_banner_render_smoke.md`
+- `docs/tasks/p3_24b_j_ios_admob_release_setup.md`
