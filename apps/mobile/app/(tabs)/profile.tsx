@@ -680,7 +680,10 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={[s.container, Platform.OS === 'web' && !isFocused ? s.webHiddenScreen : null]}>
+    <View
+      style={[s.container, Platform.OS === 'web' && !isFocused ? s.webHiddenScreen : null]}
+      testID="profile-screen"
+    >
       <View style={[s.header, { paddingTop: topPadding + 10 }]}>
         <Text style={s.title}>Profil</Text>
       </View>
@@ -1125,6 +1128,7 @@ export default function ProfileScreen() {
                   onPress={() => setIsDeleteConfirmVisible(true)}
                   activeOpacity={0.8}
                   disabled={isDeletingAccount}
+                  testID="account-delete-entry"
                 >
                   <View style={s.settingsIconWrap}>
                     <Ionicons name="trash-outline" size={18} color="#ef4444" />
