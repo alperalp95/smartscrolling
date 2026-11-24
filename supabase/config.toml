@@ -441,3 +441,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/revenuecat-webhook/deno.json"
 entrypoint = "./functions/revenuecat-webhook/index.ts"
+
+[functions.card-ask]
+enabled = true
+verify_jwt = false
+import_map = "./functions/card-ask/deno.json"
+entrypoint = "./functions/card-ask/index.ts"
