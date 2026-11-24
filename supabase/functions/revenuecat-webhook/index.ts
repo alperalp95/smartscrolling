@@ -28,6 +28,15 @@ Deno.serve(async (req) => {
     return json({ error: 'Webhook not configured' }, 500);
   }
   if (auth !== 'ok') {
+    // Teşhis: değerler değil, sadece uzunluklar loglanır.
+    const h = (req.headers.get('Authorization') ?? '').trim();
+    const tokenLen = h.replace(/^Bearer\s+/i, '').trim().length;
+    const secretLen = (Deno.env.get('REVENUECAT_WEBHOOK_SECRET') ?? '').trim().length;
+    console.warn('[revenuecat-webhook] unauthorized', {
+      hasBearer: /^Bearer\s/i.test(h),
+      tokenLen,
+      secretLen,
+    });
     return json({ error: 'Unauthorized' }, 401);
   }
 

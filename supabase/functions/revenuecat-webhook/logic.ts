@@ -84,12 +84,16 @@ export function checkWebhookAuth(
   authorizationHeader: string | null | undefined,
   secret: string | null | undefined,
 ): AuthCheck {
-  if (!secret) return 'misconfigured';
+  const cleanSecret = (secret ?? '')
+    .trim()
+    .replace(/^Bearer\s+/i, '')
+    .trim();
+  if (!cleanSecret) return 'misconfigured';
   const header = (authorizationHeader ?? '').trim();
   if (!header) return 'unauthorized';
   const token = header.replace(/^Bearer\s+/i, '').trim();
-  const okPlain = timingSafeEqualStrings(header, secret);
-  const okBearer = timingSafeEqualStrings(token, secret);
+  const okPlain = timingSafeEqualStrings(header, cleanSecret);
+  const okBearer = timingSafeEqualStrings(token, cleanSecret);
   return okPlain || okBearer ? 'ok' : 'unauthorized';
 }
 
