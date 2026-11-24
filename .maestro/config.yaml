@@ -1,0 +1,3 @@
+# Sadece kok klasordeki akislar calisir; subflows/ tek basina calistirilmaz.
+flows:
+  - "*"

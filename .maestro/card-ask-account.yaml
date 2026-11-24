@@ -5,7 +5,7 @@ tags:
 # Karta Sor akisi (giris yapmis): ilk kartta Sor -> panel -> hazir soru -> cevap ya da hata -> kapat.
 # Kimlik bilgisi dosyaya yazilmaz; calistirma:
 #   maestro test -e MAESTRO_TEST_EMAIL=... -e MAESTRO_TEST_PASSWORD=... .maestro/card-ask-account.yaml
-- launchApp
+- runFlow: subflows/launch.yaml
 - tapOn:
     id: tab-profile
 - extendedWaitUntil:

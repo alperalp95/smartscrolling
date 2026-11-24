@@ -1,0 +1,28 @@
+appId: com.smartscrolling.mobile
+env:
+  # Varsayilan Metro adresi (emulatorde bilgisayar = 10.0.2.2). Degistirmek icin: -e DEV_SERVER_URL=...
+  DEV_SERVER_URL: http://10.0.2.2:8090
+---
+# Ortak acilis adimi. Uretim/preview APK'da sunucu ekrani cikmaz, ilgili adimlar atlanir.
+- launchApp
+- extendedWaitUntil:
+    visible: "http://localhost:8081|SmartScrolling|Continue"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "http://localhost:8081"
+    commands:
+      - tapOn: "http://localhost:8081"
+      - inputText: ${DEV_SERVER_URL}
+      - tapOn: "Connect"
+      - extendedWaitUntil:
+          visible: "Continue|SmartScrolling"
+          timeout: 90000
+- tapOn:
+    text: "Continue"
+    optional: true
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - pressKey: back
