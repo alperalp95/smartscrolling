@@ -21,7 +21,7 @@ type AuthResult =
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const userOwnedTables = ['bookmarks', 'reading_progress', 'chat_sessions', 'user_activity'];
+const userOwnedTables = ['bookmarks', 'user_activity'];
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

@@ -7,13 +7,6 @@ appId: com.smartscrolling.mobile
     timeout: 15000
 - assertVisible:
     id: feed-screen
-- tapOn: Kutuphane
-- extendedWaitUntil:
-    visible:
-      id: library-screen
-    timeout: 10000
-- assertVisible:
-    id: library-screen
 - tapOn: Profil
 - extendedWaitUntil:
     visible:

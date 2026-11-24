@@ -17,7 +17,7 @@ const DEFAULT_NOTIFICATION_TIME: NotificationTimePreference = {
 
 type OnboardingState = {
   dailyGoal: DailyGoalPreference;
-  ftueEntryPath: 'feed' | 'free_book' | null;
+  ftueEntryPath: 'feed' | null;
   hasCompletedDailyGoal: boolean;
   hasCompletedInterestPicker: boolean;
   hasCompletedNotificationPreference: boolean;
@@ -35,7 +35,7 @@ type OnboardingState = {
   setNotificationsEnabled: (enabled: boolean) => void;
   setNotificationTime: (time: NotificationTimePreference) => void;
   setSelectedInterests: (interests: string[]) => void;
-  setFtueEntryPath: (path: 'feed' | 'free_book') => void;
+  setFtueEntryPath: (path: 'feed') => void;
   toggleInterest: (interest: string) => void;
 };
 

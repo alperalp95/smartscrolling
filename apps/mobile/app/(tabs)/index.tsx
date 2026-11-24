@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 import type { ImageSourcePropType, LayoutChangeEvent, ViewToken } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CardAskSheet } from '../../components/card-ask-sheet';
 import { PremiumUpsellCard } from '../../components/premium-upsell-card';
 import { getGoogleMobileAdsBannerComponents } from '../../src/lib/adMob';
 import {
@@ -763,8 +764,7 @@ function FeedAdCard({
           {isNativeSlot ? 'Video destekli reklam alani' : 'Sponsorlu alan'}
         </Text>
         <Text style={s.adBody}>
-          Premium'a gecince feed reklamlarini kaldirabilir, kitaplik ve AI deneyimini daha derin
-          kullanabilirsin.
+          Premium'a geçince akıştaki reklamlar kalkar ve kartlara günde 30 soru sorabilirsin.
         </Text>
         <View style={s.adUnitWrap}>{renderBanner()}</View>
         <TouchableOpacity onPress={onNext} style={s.adContinueButton}>
@@ -792,6 +792,7 @@ type FullScreenFactCardProps = {
   isReviewMode: boolean;
   reviewVerdict: FactReviewVerdict | null;
   onOpenReview: (fact: FactType) => void;
+  onAsk: (fact: FactType) => void;
 };
 
 function FullScreenFactCard({
@@ -811,6 +812,7 @@ function FullScreenFactCard({
   isReviewMode,
   reviewVerdict,
   onOpenReview,
+  onAsk,
 }: FullScreenFactCardProps) {
   const progress = useRef(new Animated.Value(0)).current;
   const progressValue = useRef(0);
@@ -1077,17 +1079,26 @@ function FullScreenFactCard({
             >
               <Text style={s.cardTextExpanded}>{item.content}</Text>
 
-              {item.source_url ? (
+              <View style={s.sourceRow}>
+                {item.source_url ? (
+                  <TouchableOpacity
+                    onPress={() => item.source_url && Linking.openURL(item.source_url)}
+                  >
+                    <Text style={s.cardSource}>
+                      Kaynak: {item.source_label} {'->'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={s.cardSource}>Kaynak: {item.source_label}</Text>
+                )}
                 <TouchableOpacity
-                  onPress={() => item.source_url && Linking.openURL(item.source_url)}
+                  onPress={() => onAsk(item)}
+                  style={s.askButton}
+                  testID="card-ask-button"
                 >
-                  <Text style={s.cardSource}>
-                    Kaynak: {item.source_label} {'->'}
-                  </Text>
+                  <Text style={s.askButtonText}>Sor</Text>
                 </TouchableOpacity>
-              ) : (
-                <Text style={s.cardSource}>Kaynak: {item.source_label}</Text>
-              )}
+              </View>
 
               <ScrollView
                 horizontal
@@ -1115,15 +1126,26 @@ function FullScreenFactCard({
             </Text>
             <Text style={s.expandHint}>Devamini okumak icin dokun</Text>
 
-            {item.source_url ? (
-              <TouchableOpacity onPress={() => item.source_url && Linking.openURL(item.source_url)}>
-                <Text style={s.cardSource}>
-                  Kaynak: {item.source_label} {'->'}
-                </Text>
+            <View style={s.sourceRow}>
+              {item.source_url ? (
+                <TouchableOpacity
+                  onPress={() => item.source_url && Linking.openURL(item.source_url)}
+                >
+                  <Text style={s.cardSource}>
+                    Kaynak: {item.source_label} {'->'}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={s.cardSource}>Kaynak: {item.source_label}</Text>
+              )}
+              <TouchableOpacity
+                onPress={() => onAsk(item)}
+                style={s.askButton}
+                testID="card-ask-button"
+              >
+                <Text style={s.askButtonText}>Sor</Text>
               </TouchableOpacity>
-            ) : (
-              <Text style={s.cardSource}>Kaynak: {item.source_label}</Text>
-            )}
+            </View>
 
             <ScrollView
               horizontal
@@ -1512,6 +1534,23 @@ export default function FeedScreen() {
     });
   };
 
+  const [askTargetFact, setAskTargetFact] = useState<FactType | null>(null);
+
+  const handleOpenAsk = (fact: FactType) => {
+    if (!user) {
+      promptForAuth({
+        title: 'Giriş gerekli',
+        message: 'Kartlara soru sormak için giriş yap.',
+        onConfirm: () => {
+          setPostAuthRedirectPath('/');
+          router.push('/profile');
+        },
+      });
+      return;
+    }
+    setAskTargetFact(fact);
+  };
+
   const handleToggleSave = (id: string) => {
     if (!user) {
       promptForAuth({
@@ -1613,6 +1652,7 @@ export default function FeedScreen() {
                   isReviewMode={isReviewMode}
                   reviewVerdict={reviewsByFactId[item.id]?.verdict ?? null}
                   onOpenReview={openReviewForFact}
+                  onAsk={handleOpenAsk}
                 />
               );
             }}
@@ -1632,13 +1672,13 @@ export default function FeedScreen() {
           <PremiumUpsellCard
             eyebrow="Reklamsiz Deneyim"
             title="Akisi reklamsiz ve daha derin kullan"
-            body="Premium ile reklamsiz devam et, serbest AI sorulari sor ve tum kutuphaneyi ac. Bu yumusak kart ileride reklam sonrasi da ayni yerde kullanilacak."
+            body="Premium ile reklamsız devam et, kartlara günde 30 soru sor ve kendi sorunu yaz."
             ctaLabel="Premiumu Incele"
             onPress={() =>
               promptForPremium({
                 title: 'Reklamsiz premium deneyime gec',
                 message:
-                  'Premium ile akista reklamsiz devam edebilir, tum kutuphaneyi acabilir ve AI deneyimini derinlestirebilirsin.',
+                  'Premium ile akışta reklamsız devam edebilir, kartlara günde 30 soru sorabilir ve kendi sorunu yazabilirsin.',
                 onConfirm: () => router.push('/profile'),
               })
             }
@@ -1704,6 +1744,16 @@ export default function FeedScreen() {
           </View>
         </SafeAreaView>
       </View>
+
+      <CardAskSheet
+        fact={askTargetFact}
+        hasPremium={hasPremium}
+        onClose={() => setAskTargetFact(null)}
+        onPremiumPress={() => {
+          setAskTargetFact(null);
+          router.push('/premium' as never);
+        }}
+      />
 
       <Modal
         animationType="slide"
@@ -2059,7 +2109,17 @@ const s = StyleSheet.create({
     borderRadius: 8,
   },
   cardTagInfoText: { fontSize: 12, color: '#fff', fontWeight: '700' },
-  cardSource: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 16, fontWeight: '600' },
+  sourceRow: { alignItems: 'center', flexDirection: 'row', gap: 12, marginTop: 16 },
+  askButton: {
+    backgroundColor: 'rgba(139,92,246,0.16)',
+    borderColor: 'rgba(167,139,250,0.5)',
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  askButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  cardSource: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
   actionContainer: {
     position: 'absolute',
     right: 12,

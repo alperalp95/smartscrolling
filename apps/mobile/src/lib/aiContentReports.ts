@@ -8,8 +8,7 @@ export type AiContentReportReason =
 
 export type SubmitAiContentReportInput = {
   assistantMessage: string;
-  bookId?: string | null;
-  bookTitle?: string | null;
+  factId: string;
   note?: string;
   reason: AiContentReportReason;
 };
@@ -45,14 +44,12 @@ export async function submitAiContentReport(
   }
 
   const userId = await getOptionalUserId();
-  const bookId = input.bookId && isUuid(input.bookId) ? input.bookId : null;
-  const bookTitle = input.bookTitle?.trim() || null;
+  const factId = isUuid(input.factId) ? input.factId : null;
   const note = input.note?.trim() || null;
 
   const { error } = await supabase.from('ai_content_reports').insert({
     assistant_message: assistantMessage,
-    book_id: bookId,
-    book_title: bookTitle,
+    fact_id: factId,
     note,
     reason: input.reason,
     user_id: userId,

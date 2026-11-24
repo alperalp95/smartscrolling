@@ -4,12 +4,9 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFtueStore } from '../src/store/ftueStore';
 import { useOnboardingStore } from '../src/store/onboardingStore';
 
-const FREE_ANCHOR_BOOK_ID = '11111111-1111-1111-1111-111111111111';
-
 const VALUE_POINTS = [
   'Her gun kisa bilgi kartlariyla ogrenmeye basla',
-  'Bir serbest anchor kitabi hemen ac ve AI destekli oku',
-  'Hazir oldugunda premium kutuphane ile daha derin metinlere gec',
+  'Hazir oldugunda hesabinla deneyimi buyut',
 ];
 
 export function FtueModal() {
@@ -33,13 +30,13 @@ export function FtueModal() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.eyebrow}>Hos Geldin</Text>
-              <Text style={s.title}>Scroll ederek ogren, okuyarak derinles</Text>
+              <Text style={s.title}>Scroll ederek ogren</Text>
             </View>
           </View>
 
           <Text style={s.body}>
-            SmartScrolling once sana degeri gosterir. Feed'de kesfet, serbest metni hemen ac, AI ile
-            baglam sor. Hazir oldugunda hesabin ve premium kutuphane ile deneyimi buyut.
+            SmartScrolling once sana degeri gosterir. Feed'de kesfet, ilginc bilgi kartlarini ac.
+            Hazir oldugunda hesabinla deneyimi buyut.
           </Text>
 
           <View style={s.pointsBox}>
@@ -58,19 +55,9 @@ export function FtueModal() {
                 hideFtue();
                 router.push('/');
               }}
-              style={[s.button, s.secondaryButton]}
-            >
-              <Text style={s.secondaryText}>Feed'e Gec</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setFtueEntryPath('free_book');
-                hideFtue();
-                router.push(`/book/${FREE_ANCHOR_BOOK_ID}`);
-              }}
               style={[s.button, s.primaryButton]}
             >
-              <Text style={s.primaryText}>Serbest Kitabi Gor</Text>
+              <Text style={s.primaryText}>Akisa Gec</Text>
             </Pressable>
           </View>
         </View>

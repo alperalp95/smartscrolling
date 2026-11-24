@@ -14,3 +14,15 @@ appId: com.smartscrolling.mobile
     id: auth-email-toggle
 - assertNotVisible:
     id: account-delete-entry
+# Misafir Karta Sor: giris isteme metni gorunur, kapatilir.
+- tapOn: Akis
+- extendedWaitUntil:
+    visible:
+      id: card-ask-button
+    timeout: 20000
+- tapOn:
+    id: card-ask-button
+- extendedWaitUntil:
+    visible: "Giriş gerekli"
+    timeout: 10000
+- tapOn: Daha Sonra

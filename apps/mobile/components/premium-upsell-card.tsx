@@ -23,7 +23,7 @@ export function PremiumUpsellCard({
       <View style={s.featureRow}>
         <Text style={s.featureText}>Reklamsiz akis</Text>
         <Text style={s.featureDot}>•</Text>
-        <Text style={s.featureText}>Tam kutuphane</Text>
+        <Text style={s.featureText}>Günde 30 kart sorusu</Text>
         <Text style={s.featureDot}>•</Text>
         <Text style={s.featureText}>Serbest AI</Text>
       </View>

@@ -10,10 +10,6 @@ const DEFAULT_TARGET_SAVED = 15;
 const DEFAULT_WIKIPEDIA_TARGET = 8;
 const DEFAULT_WIKIPEDIA_MAX_CANDIDATES = 45;
 const DEFAULT_WIKIPEDIA_MAX_GROQ = 16;
-const DEFAULT_PDF_RESERVE_MAX_COUNT = 12;
-const DEFAULT_PDF_RESERVE_ATTEMPTS = 3;
-const PDF_DATA_DIR = path.resolve(process.cwd(), 'data', 'pdf-curated');
-const PDF_FILE_PREFIX = 'luzumsuz-bilgiler-';
 
 function parseNonNegativeInt(value, fallback) {
   const parsed = Number.parseInt(value, 10);
@@ -27,19 +23,11 @@ function parseArgs(argv) {
     wikipediaTarget: DEFAULT_WIKIPEDIA_TARGET,
     wikipediaMaxCandidates: DEFAULT_WIKIPEDIA_MAX_CANDIDATES,
     wikipediaMaxGroq: DEFAULT_WIKIPEDIA_MAX_GROQ,
-    pdfReserveMaxCount: DEFAULT_PDF_RESERVE_MAX_COUNT,
-    pdfReserveAttempts: DEFAULT_PDF_RESERVE_ATTEMPTS,
-    pdfReserve: true,
   };
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     const nextValue = args[index + 1];
-
-    if (arg === '--no-pdf-reserve') {
-      config.pdfReserve = false;
-      continue;
-    }
 
     if (!nextValue || nextValue.startsWith('--')) {
       continue;
@@ -59,14 +47,6 @@ function parseArgs(argv) {
 
     if (arg === '--wikipedia-max-groq') {
       config.wikipediaMaxGroq = parseNonNegativeInt(nextValue, config.wikipediaMaxGroq);
-    }
-
-    if (arg === '--pdf-reserve-max-count') {
-      config.pdfReserveMaxCount = parseNonNegativeInt(nextValue, config.pdfReserveMaxCount);
-    }
-
-    if (arg === '--pdf-reserve-attempts') {
-      config.pdfReserveAttempts = parseNonNegativeInt(nextValue, config.pdfReserveAttempts);
     }
   }
 
@@ -146,44 +126,6 @@ function collectSummary(label, output) {
   };
 }
 
-function listPdfFiles() {
-  if (!fs.existsSync(PDF_DATA_DIR)) {
-    return [];
-  }
-
-  return fs
-    .readdirSync(PDF_DATA_DIR)
-    .filter((fileName) => fileName.startsWith(PDF_FILE_PREFIX) && fileName.endsWith('.json'))
-    .sort()
-    .map((fileName) => path.join(PDF_DATA_DIR, fileName));
-}
-
-function countPdfEntries(filePath) {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/u, ''));
-    return Array.isArray(parsed) ? parsed.length : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function selectPdfReserveSource(now = new Date(), attempt = 0) {
-  const files = listPdfFiles().filter((filePath) => countPdfEntries(filePath) > 0);
-
-  if (files.length === 0) {
-    return null;
-  }
-
-  const dayIndex = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
-  const runWindow = now.getUTCHours() < 12 ? 0 : 1;
-  const fileIndex = (dayIndex * 2 + runWindow + attempt) % files.length;
-  const filePath = files[fileIndex];
-  const entryCount = countPdfEntries(filePath);
-  const offset = entryCount > 0 ? ((dayIndex + runWindow + attempt) * 7) % entryCount : 0;
-
-  return { filePath, offset, entryCount };
-}
-
 async function fetchFactCounts() {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -209,7 +151,7 @@ async function fetchFactCounts() {
   };
 }
 
-function writeGithubSummary({ config, summaries, totalSaved, factCounts, pdfReserveSource }) {
+function writeGithubSummary({ config, summaries, totalSaved, factCounts }) {
   if (!process.env.GITHUB_STEP_SUMMARY) {
     return;
   }
@@ -230,14 +172,6 @@ function writeGithubSummary({ config, summaries, totalSaved, factCounts, pdfRese
     ),
   ];
 
-  if (pdfReserveSource) {
-    rows.push(
-      '',
-      `PDF reserve file: \`${path.relative(process.cwd(), pdfReserveSource.filePath)}\``,
-      `PDF reserve offset: ${pdfReserveSource.offset}`,
-    );
-  }
-
   rows.push('');
   fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, rows.join('\n'));
 }
@@ -251,7 +185,7 @@ async function main() {
   const summaries = [];
 
   console.log(
-    `[DailyIngest] started target_saved=${config.targetSaved} wikipedia_target=${config.wikipediaTarget} pdf_reserve=${config.pdfReserve}`,
+    `[DailyIngest] started target_saved=${config.targetSaved} wikipedia_target=${config.wikipediaTarget}`,
   );
 
   const wikipediaTarget = Math.min(config.targetSaved, config.wikipediaTarget);
@@ -277,8 +211,6 @@ async function main() {
               '0',
               '--nasa-count',
               '0',
-              '--pdf-curated-count',
-              '0',
             ])
           ).output,
         )
@@ -295,58 +227,9 @@ async function main() {
         };
   summaries.push(wikipediaSummary);
 
-  let totalSaved = wikipediaSummary.saved;
-  let pdfReserveSource = null;
-  const remaining = Math.max(config.targetSaved - totalSaved, 0);
-
-  if (config.pdfReserve && remaining > 0) {
-    pdfReserveSource = selectPdfReserveSource();
-
-    if (!pdfReserveSource) {
-      console.warn('[DailyIngest] PDF reserve skipped: no curated source files found.');
-    } else {
-      for (
-        let attempt = 0;
-        totalSaved < config.targetSaved && attempt < config.pdfReserveAttempts;
-        attempt += 1
-      ) {
-        const attemptSource = selectPdfReserveSource(new Date(), attempt);
-
-        if (!attemptSource) {
-          break;
-        }
-
-        pdfReserveSource = attemptSource;
-        const attemptRemaining = Math.max(config.targetSaved - totalSaved, 0);
-        const pdfCount = Math.min(config.pdfReserveMaxCount, Math.max(attemptRemaining * 2, 4));
-        console.log(
-          `[DailyIngest] PDF reserve attempt=${attempt + 1} remaining=${attemptRemaining} count=${pdfCount} file=${path.relative(process.cwd(), attemptSource.filePath)} offset=${attemptSource.offset}`,
-        );
-        const pdfRun = await runNodeScript(scriptPath, [
-          '--wikipedia-count',
-          '0',
-          '--stanford-count',
-          '0',
-          '--medlineplus-count',
-          '0',
-          '--nasa-count',
-          '0',
-          '--pdf-curated-count',
-          String(pdfCount),
-          '--pdf-curated-file',
-          attemptSource.filePath,
-          '--pdf-curated-offset',
-          String(attemptSource.offset),
-        ]);
-        const pdfSummary = collectSummary(`PDF Curated ${attempt + 1}`, pdfRun.output);
-        summaries.push(pdfSummary);
-        totalSaved += pdfSummary.saved;
-      }
-    }
-  }
-
+  const totalSaved = wikipediaSummary.saved;
   const factCounts = await fetchFactCounts();
-  writeGithubSummary({ config, summaries, totalSaved, factCounts, pdfReserveSource });
+  writeGithubSummary({ config, summaries, totalSaved, factCounts });
 
   console.log('=== DAILY INGEST SUMMARY ===');
   console.log(`target_saved: ${config.targetSaved}`);

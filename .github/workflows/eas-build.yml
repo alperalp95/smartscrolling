@@ -48,8 +48,8 @@ jobs:
       - name: Verify Supabase function entrypoints
         shell: bash
         run: |
-          test -f supabase/functions/ai-chat/index.ts
-          test -f supabase/functions/ai-definition/index.ts
+          test -f supabase/functions/card-ask/index.ts
+          test -f supabase/functions/revenuecat-webhook/index.ts
 
   build-preview:
     name: Build Preview App

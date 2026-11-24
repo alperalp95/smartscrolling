@@ -15,6 +15,22 @@ export function attributionText(cand) {
   return `Kaynak: ${sourceLabel(cand)} (CC BY-SA 4.0) — ${cand.source_url}`;
 }
 
+export const CONTEXT_MAX_CHARS = 2000;
+
+/** Kaynak paragrafı: boşluk-normalize, kelime sınırında ≤2000 karakter; boşsa null (saf). */
+export function contextText(cand, max = CONTEXT_MAX_CHARS) {
+  const text = String(cand?.support_paragraph ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return null;
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  // Sonraki karakter boşluksa kesim zaten kelime sınırında.
+  const out = text[max] === ' ' || lastSpace <= 0 ? cut : cut.slice(0, lastSpace);
+  return out.trimEnd();
+}
+
 /** Adaydan facts satırı (saf). */
 export function buildFactRow(cand) {
   const s = cand.scores ?? {};
@@ -38,6 +54,7 @@ export function buildFactRow(cand) {
     wow_score: typeof s.wow === 'number' ? s.wow : null,
     verification: s.verification ?? null,
     attribution: attributionText(cand),
+    context_text: contextText(cand),
   };
 }
 

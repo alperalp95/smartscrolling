@@ -2,9 +2,9 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { usePremiumPromptStore } from '../src/store/premiumPromptStore';
 
 const BENEFITS = [
-  'Reklamsiz akista okumaya devam et',
-  'Kutuphanenin tamamini ac',
-  'Serbest AI sorulari ve sohbet gecmisi kullan',
+  'Reklamsız akışta okumaya devam et',
+  'Kartlara günde 30 AI sorusu sor',
+  'Kendi sorunu yaz',
 ];
 
 export function PremiumPromptModal() {
