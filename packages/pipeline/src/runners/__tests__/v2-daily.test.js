@@ -385,7 +385,10 @@ const prevRun = (queued, day) => ({
 test('alarm no_cards_3_runs: 2 önceki run + bu run 0 kart', async () => {
   const { deps, calls } = harness({ queued: 0, recentRuns: [prevRun(0, 20), prevRun(0, 19)] });
   const s = await runDaily(['--mode', 'apply'], deps);
-  assert.deepEqual(calls.find((c) => c[0] === 'fetchRecentRuns'), ['fetchRecentRuns', 2]);
+  assert.deepEqual(
+    calls.find((c) => c[0] === 'fetchRecentRuns'),
+    ['fetchRecentRuns', 2],
+  );
   assert.deepEqual(
     s.alarms.map((a) => a.code),
     ['no_new_queued', 'no_cards_3_runs'],
