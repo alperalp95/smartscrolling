@@ -558,7 +558,7 @@ export default function FeedScreen() {
           {
             maxWidth: Platform.OS === 'web' ? 500 : '100%',
             alignSelf: 'center',
-            backgroundColor: '#000',
+            backgroundColor: colors.bg,
             width: '100%',
           },
         ]}
@@ -788,7 +788,7 @@ export default function FeedScreen() {
                     }
                   }}
                   placeholder="Kötüyse neden kötü olduğunu kısaca yaz..."
-                  placeholderTextColor="#71717a"
+                  placeholderTextColor={colors.textTertiary}
                   style={s.reviewCommentInput}
                   value={reviewDraft.comment}
                 />
@@ -813,7 +813,7 @@ export default function FeedScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000', overflow: 'hidden' },
+  container: { flex: 1, backgroundColor: colors.bg, overflow: 'hidden' },
   listWrapper: { flex: 1, overflow: 'hidden' },
   adScreen: {
     alignItems: 'center',
@@ -861,214 +861,6 @@ const s = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  cardOuter: {
-    width: '100%',
-    overflow: 'hidden',
-  },
-  backgroundImage: {
-    width: '100%',
-    height: '100%',
-  },
-  backgroundImageHidden: {
-    opacity: 0,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  infoContainer: {
-    position: 'absolute',
-    left: 16,
-    right: 80,
-    justifyContent: 'flex-end',
-  },
-  infoContainerExpanded: {
-    left: 16,
-    right: 16,
-    paddingTop: 8,
-  },
-  catBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginBottom: 8,
-  },
-  catBadgeText: { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
-  imageDebugBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0,0,0,0.34)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginBottom: 10,
-  },
-  imageDebugBadgeText: {
-    color: '#d1d5db',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  reviewToolbar: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  reviewButton: {
-    backgroundColor: 'rgba(139,92,246,0.22)',
-    borderColor: 'rgba(196,181,253,0.45)',
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  reviewButtonText: {
-    color: '#f5f3ff',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  reviewVerdictBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  reviewVerdictGood: { backgroundColor: 'rgba(34,197,94,0.2)' },
-  reviewVerdictBad: { backgroundColor: 'rgba(248,113,113,0.2)' },
-  reviewVerdictUnsure: { backgroundColor: 'rgba(251,191,36,0.2)' },
-  reviewVerdictText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  collapsedPressArea: {
-    alignSelf: 'stretch',
-  },
-  expandedContentWrap: {
-    flex: 1,
-  },
-  expandedHeaderRow: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    marginBottom: 14,
-  },
-  cardTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#fff',
-    marginBottom: 12,
-    lineHeight: 30,
-    textShadowColor: 'rgba(0,0,0,0.85)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
-  },
-  cardTitleExpanded: {
-    color: '#fff',
-    flex: 1,
-    fontSize: 24,
-    fontWeight: '800',
-    lineHeight: 31,
-    marginRight: 12,
-  },
-  cardTextPreview: {
-    color: 'rgba(255,255,255,0.95)',
-    fontSize: 15,
-    lineHeight: 22,
-    textShadowColor: 'rgba(0,0,0,0.85)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 5,
-  },
-  cardTextPreviewCompact: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  cardTextExpanded: {
-    color: 'rgba(255,255,255,0.96)',
-    fontSize: 16,
-    lineHeight: 25,
-    paddingBottom: 12,
-  },
-  expandedScroll: {
-    flex: 1,
-  },
-  expandedScrollContent: {
-    paddingBottom: 8,
-  },
-  collapseButton: {
-    backgroundColor: 'rgba(0,0,0,0.28)',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  collapseButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  expandHint: {
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 10,
-  },
-  tagsRow: { flexDirection: 'row', gap: 8, marginTop: 12, flexGrow: 0 },
-  cardTagInfo: {
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  cardTagInfoText: { fontSize: 12, color: '#fff', fontWeight: '700' },
-  sourceRow: { alignItems: 'center', flexDirection: 'row', gap: 12, marginTop: 16 },
-  askButton: {
-    backgroundColor: 'rgba(139,92,246,0.16)',
-    borderColor: 'rgba(167,139,250,0.5)',
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  askButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  cardSource: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
-  actionContainer: {
-    position: 'absolute',
-    right: 12,
-    alignItems: 'center',
-    gap: 24,
-  },
-  actionBtnVertical: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionEmoji: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  actionLabel: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 4,
-    textShadowColor: 'rgba(0,0,0,0.9)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 5,
-  },
-  progressBarBg: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    zIndex: 10,
-  },
-  progressBarFill: { height: '100%', backgroundColor: '#fff', borderRadius: 2 },
   topOverlay: {
     position: 'absolute',
     top: 0,
@@ -1116,14 +908,13 @@ const s = StyleSheet.create({
   },
   loadMoreFooter: {
     alignItems: 'center',
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     minHeight: 80,
   },
   loadMoreText: {
-    color: '#8e8e93',
-    fontSize: 13,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    ...type.button,
   },
   centerState: {
     flex: 1,
@@ -1131,59 +922,16 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   centerStateText: {
-    color: '#8e8e93',
-    fontSize: 16,
-  },
-  fallbackCopyWrap: {
-    bottom: 44,
-    left: 18,
-    position: 'absolute',
-    right: 24,
-  },
-  fallbackEyebrow: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 10,
-    textTransform: 'uppercase',
-  },
-  fallbackTitle: {
-    color: '#fff',
-    fontSize: 28,
-    fontWeight: '800',
-    lineHeight: 34,
-    maxWidth: '92%',
-  },
-  fallbackSubcopy: {
-    color: 'rgba(255,255,255,0.74)',
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 18,
-    marginTop: 12,
-    maxWidth: '84%',
-  },
-  fallbackGlow: {
-    borderRadius: 999,
-    height: 220,
-    opacity: 0.2,
-    position: 'absolute',
-    width: 220,
-  },
-  fallbackGlowSecondary: {
-    borderRadius: 999,
-    borderWidth: 1,
-    height: 180,
-    opacity: 0.7,
-    position: 'absolute',
-    width: 180,
+    color: colors.textSecondary,
+    ...type.stat,
   },
   reviewModalBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: colors.scrim,
     justifyContent: 'flex-end',
   },
   reviewModalSheet: {
-    backgroundColor: '#111214',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -1198,20 +946,17 @@ const s = StyleSheet.create({
     width: 44,
   },
   reviewModalTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '800',
+    color: colors.text,
+    ...type.cardTitle,
   },
   reviewMetaText: {
-    color: '#8e8e93',
-    fontSize: 11,
-    fontWeight: '700',
+    color: colors.textSecondary,
+    ...type.chip,
     marginTop: 6,
   },
   reviewFactTitle: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    color: colors.text,
+    ...type.stat,
     lineHeight: 22,
     marginTop: 10,
   },
@@ -1221,7 +966,7 @@ const s = StyleSheet.create({
     marginTop: 18,
   },
   reviewVerdictChoice: {
-    backgroundColor: '#1c1c1f',
+    backgroundColor: colors.surfaceRaised,
     borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 14,
     borderWidth: 1,
@@ -1233,18 +978,16 @@ const s = StyleSheet.create({
     borderColor: 'rgba(167,139,250,0.5)',
   },
   reviewVerdictChoiceText: {
-    color: '#d4d4d8',
-    fontSize: 13,
-    fontWeight: '700',
+    color: colors.textSecondary,
+    ...type.button,
     textTransform: 'uppercase',
   },
   reviewVerdictChoiceTextActive: {
-    color: '#fff',
+    color: colors.text,
   },
   reviewSectionLabel: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '700',
+    color: colors.text,
+    ...type.button,
     marginTop: 18,
     marginBottom: 10,
   },
@@ -1254,7 +997,7 @@ const s = StyleSheet.create({
     gap: 8,
   },
   reviewTagChip: {
-    backgroundColor: '#1a1a1c',
+    backgroundColor: colors.surfaceRaised,
     borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 999,
     borderWidth: 1,
@@ -1266,20 +1009,19 @@ const s = StyleSheet.create({
     borderColor: 'rgba(167,139,250,0.4)',
   },
   reviewTagChipText: {
-    color: '#d4d4d8',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    ...type.chip,
   },
   reviewTagChipTextActive: {
-    color: '#fff',
+    color: colors.text,
   },
   reviewCommentInput: {
-    backgroundColor: '#1a1a1c',
+    backgroundColor: colors.surfaceRaised,
     borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 16,
     borderWidth: 1,
-    color: '#fff',
-    fontSize: 14,
+    color: colors.text,
+    ...type.body,
     lineHeight: 20,
     minHeight: 108,
     paddingHorizontal: 14,
@@ -1287,9 +1029,8 @@ const s = StyleSheet.create({
     textAlignVertical: 'top',
   },
   reviewErrorText: {
-    color: '#fca5a5',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.danger,
+    ...type.chip,
     marginTop: 10,
   },
   reviewActionsRow: {
@@ -1299,7 +1040,7 @@ const s = StyleSheet.create({
   },
   reviewSecondaryButton: {
     alignItems: 'center',
-    backgroundColor: '#1a1a1c',
+    backgroundColor: colors.surfaceRaised,
     borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 14,
     borderWidth: 1,
@@ -1308,21 +1049,19 @@ const s = StyleSheet.create({
     paddingVertical: 14,
   },
   reviewSecondaryButtonText: {
-    color: '#d4d4d8',
-    fontSize: 14,
-    fontWeight: '700',
+    color: colors.textSecondary,
+    ...type.button,
   },
   reviewPrimaryButton: {
     alignItems: 'center',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.brandGradient[2],
     borderRadius: 14,
     flex: 1,
     justifyContent: 'center',
     paddingVertical: 14,
   },
   reviewPrimaryButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '800',
+    color: colors.text,
+    ...type.button,
   },
 });

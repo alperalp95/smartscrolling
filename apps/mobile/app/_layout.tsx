@@ -29,6 +29,7 @@ import { fetchUserPreferences } from '../src/lib/userPreferences';
 import { useAuthStore } from '../src/store/authStore';
 import { useFeedStore } from '../src/store/feedStore';
 import { useOnboardingStore } from '../src/store/onboardingStore';
+import { colors } from '../src/theme';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -173,7 +174,7 @@ export default function RootLayout() {
       </Stack>
       <AuthPromptModal />
       <PremiumPromptModal />
-      <StatusBar style="light" backgroundColor="#000000" />
+      <StatusBar style="light" backgroundColor={colors.bg} />
     </SafeAreaProvider>
   );
 }

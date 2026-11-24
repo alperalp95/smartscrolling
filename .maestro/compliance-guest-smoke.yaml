@@ -3,19 +3,35 @@ appId: com.smartscrolling.mobile
 # Misafir akisi: giris yapilmamisken profil ekraninda giris cagrisi gorunur,
 # hesap silme girisi gorunmez.
 - launchApp
-- tapOn: Profil
+- tapOn:
+    id: tab-profile
 - extendedWaitUntil:
     visible:
       id: profile-screen
     timeout: 10000
-- assertVisible: Hesabını bağla
-- assertVisible: Google ile Devam Et
 - assertVisible:
     id: auth-email-toggle
+- assertVisible: (?i)Google ile devam et
+# Ayarlar: misafirde hesap baglama satiri gorunur, hesap silme girisi yok.
+- tapOn:
+    id: profile-settings-button
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+- assertVisible:
+    id: settings-connect-account
 - assertNotVisible:
     id: account-delete-entry
+- tapOn:
+    id: settings-connect-account
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 10000
 # Misafir Karta Sor: giris isteme metni gorunur, kapatilir.
-- tapOn: Akış
+- tapOn:
+    id: tab-index
 - extendedWaitUntil:
     visible:
       id: card-ask-button
@@ -23,6 +39,6 @@ appId: com.smartscrolling.mobile
 - tapOn:
     id: card-ask-button
 - extendedWaitUntil:
-    visible: "Giriş gerekli"
+    visible: "(?i)Giriş gerekli"
     timeout: 10000
-- tapOn: Daha Sonra
+- tapOn: (?i)Daha sonra

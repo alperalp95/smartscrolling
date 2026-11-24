@@ -115,7 +115,7 @@ async function ensureAndroidNotificationChannel(Notifications: NotificationsModu
   await Notifications.setNotificationChannelAsync(DEFAULT_NOTIFICATION_CHANNEL_ID, {
     importance: Notifications.AndroidImportance.DEFAULT,
     lightColor: '#8b5cf6',
-    name: 'Gunluk hatirlaticilar',
+    name: 'Günlük hatırlatıcılar',
     vibrationPattern: [0, 250, 250, 250],
   });
 }
@@ -497,23 +497,23 @@ function getReminderCopy(input: DailyReminderScheduleInput) {
 
   if (isStreakAtRiskToday) {
     return {
-      title: 'Serin bugun riskte',
+      title: 'Serin bugün riskte',
       body: dailyGoalValue
-        ? `Bugun ${todayFactsRead}/${dailyGoalValue} karttasin. Bir kart serini korur.`
-        : 'Bugun henuz aktiflik yok. Kisa bir okuma serini korur.',
+        ? `Bugün ${todayFactsRead}/${dailyGoalValue} karttasın. Bir kart serini korur.`
+        : 'Bugün henüz aktiflik yok. Kısa bir okuma serini korur.',
     };
   }
 
   if (dailyGoalValue && todayFactsRead < dailyGoalValue) {
     return {
-      title: 'Serini korumak icin kisa bir mola',
-      body: `Bugun ${todayFactsRead}/${dailyGoalValue} karttasin. Bir kart daha iyi gelir.`,
+      title: 'Serini korumak için kısa bir mola',
+      body: `Bugün ${todayFactsRead}/${dailyGoalValue} karttasın. Bir kart daha iyi gelir.`,
     };
   }
 
   return {
-    title: 'Bugunku kartlarin hazir',
-    body: 'Kisa bir bilgi molasi icin yeni kartlar seni bekliyor.',
+    title: 'Bugünkü kartların hazır',
+    body: 'Kısa bir bilgi molası için yeni kartlar seni bekliyor.',
   };
 }
 

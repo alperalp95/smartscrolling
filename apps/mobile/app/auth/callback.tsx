@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { finalizeSocialAuthFromUrl } from '../../src/lib/socialAuth';
 import { useAuthStore } from '../../src/store/authStore';
+import { colors, type } from '../../src/theme';
 
 export default function AuthCallbackScreen() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function AuthCallbackScreen() {
 
   return (
     <View style={s.container}>
-      <ActivityIndicator color="#a78bfa" size="large" />
+      <ActivityIndicator color={colors.brandGradient[2]} size="large" />
       <Text style={s.title}>
         {errorMessage ? 'Google girişinde bir sorun oldu' : 'Giriş tamamlanıyor'}
       </Text>
@@ -68,21 +69,20 @@ export default function AuthCallbackScreen() {
 const s = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
     gap: 14,
   },
   title: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '800',
+    color: colors.text,
+    ...type.cardTitle,
     textAlign: 'center',
   },
   message: {
-    color: '#cbd5e1',
-    fontSize: 14,
+    color: colors.textSecondary,
+    ...type.body,
     lineHeight: 22,
     textAlign: 'center',
   },

@@ -12,8 +12,8 @@ type AuthPromptState = {
 
 export const useAuthPromptStore = create<AuthPromptState>()((set, get) => ({
   isVisible: false,
-  title: 'Giris Gerekli',
-  message: 'Bu ozelligi kullanmak icin once giris yapman gerekiyor.',
+  title: 'Giriş Gerekli',
+  message: 'Bu özelliği kullanmak için önce giriş yapman gerekiyor.',
   onConfirm: null,
   openPrompt: (options) =>
     set({

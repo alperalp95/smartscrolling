@@ -6,7 +6,8 @@ tags:
 # Kimlik bilgisi dosyaya yazilmaz; calistirma:
 #   maestro test -e MAESTRO_TEST_EMAIL=... -e MAESTRO_TEST_PASSWORD=... .maestro/card-ask-account.yaml
 - launchApp
-- tapOn: Profil
+- tapOn:
+    id: tab-profile
 - extendedWaitUntil:
     visible:
       id: profile-screen
@@ -22,11 +23,20 @@ tags:
 - hideKeyboard
 - tapOn:
     id: auth-submit-button
+- tapOn:
+    id: profile-settings-button
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
 - scrollUntilVisible:
     element:
       id: account-delete-entry
     timeout: 30000
-- tapOn: Akış
+# Ayarlar'dan profile don, sonra Akis sekmesine gec.
+- back
+- tapOn:
+    id: tab-index
 - extendedWaitUntil:
     visible:
       id: feed-screen
