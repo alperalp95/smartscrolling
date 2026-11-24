@@ -37,7 +37,7 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     ...Ionicons.font,
     Inter_400Regular,
     Inter_500Medium,
@@ -45,12 +45,14 @@ export default function RootLayout() {
     Inter_700Bold,
     Inter_800ExtraBold,
   });
+  // Font yüklenemezse sistem fontuyla açılır; açılış ekranında takılı kalmaz.
+  const fontsReady = fontsLoaded || fontError != null;
 
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsReady) {
       void SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded]);
+  }, [fontsReady]);
   const finishInitializing = useAuthStore((state) => state.finishInitializing);
   const setHasPremium = useAuthStore((state) => state.setHasPremium);
   const setSession = useAuthStore((state) => state.setSession);
@@ -156,7 +158,7 @@ export default function RootLayout() {
     syncSavedFacts,
   ]);
 
-  if (!fontsLoaded) {
+  if (!fontsReady) {
     return null;
   }
 
