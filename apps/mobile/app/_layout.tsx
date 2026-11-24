@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppDialog } from '../components/app-dialog';
 import { AuthPromptModal } from '../components/auth-prompt-modal';
 import { PremiumPromptModal } from '../components/premium-prompt-modal';
 import { initializeGoogleMobileAdsForDemoSmoke } from '../src/lib/adMob';
@@ -174,6 +175,7 @@ export default function RootLayout() {
         <Stack.Screen name="settings" options={{ presentation: 'card' }} />
       </Stack>
       <AuthPromptModal />
+      <AppDialog />
       <PremiumPromptModal />
       <StatusBar style="light" backgroundColor={colors.bg} />
     </SafeAreaProvider>

@@ -1,6 +1,6 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import SettingsScreen from '../../app/settings';
+import * as dialogModule from '../lib/dialog';
 
 let mockUser: { id: string } | null = null;
 
@@ -64,12 +64,12 @@ describe('SettingsScreen', () => {
   it('çıkış başarılı olunca router.back çağrılır', async () => {
     mockUser = { id: 'u1' };
     mockBack.mockClear();
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((title, _msg, buttons) => {
-      if (title === 'Çıkış yapılsın mı?') buttons?.[1]?.onPress?.();
+    const dialogSpy = jest.spyOn(dialogModule, 'showDialog').mockImplementation((opts) => {
+      if (opts.title === 'Çıkış yapılsın mı?') opts.actions?.[1]?.onPress?.();
     });
     const { getByTestId } = render(<SettingsScreen />);
     fireEvent.press(getByTestId('settings-sign-out'));
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
-    alertSpy.mockRestore();
+    dialogSpy.mockRestore();
   });
 });

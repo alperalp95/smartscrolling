@@ -2,12 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { Button } from '../components/ui/button';
 import { GradientButton } from '../components/ui/gradient';
 import { IconButton } from '../components/ui/icon-button';
 import { Screen } from '../components/ui/screen';
+import { showDialog } from '../src/lib/dialog';
 import {
   getCurrentOfferingSafe,
   getPremiumEntitlementStatus,
@@ -87,7 +88,10 @@ export default function PremiumScreen() {
       setHasPremium(true);
       router.back();
     } else {
-      Alert.alert('Satın alma', 'İşlem tamamlanamadı. Tekrar dene veya geri yüklemeyi dene.');
+      showDialog({
+        title: 'Satın alma',
+        message: 'İşlem tamamlanamadı. Tekrar dene veya geri yüklemeyi dene.',
+      });
     }
 
     setIsSubmitting(false);
@@ -103,7 +107,7 @@ export default function PremiumScreen() {
     if (hasPremium) {
       router.back();
     } else {
-      Alert.alert('Geri yükleme', 'Aktif bir satın alma bulunamadı.');
+      showDialog({ title: 'Geri yükleme', message: 'Aktif bir satın alma bulunamadı.' });
     }
 
     setIsSubmitting(false);

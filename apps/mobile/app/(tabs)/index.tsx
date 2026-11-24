@@ -4,7 +4,6 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   AppState,
   Modal,
   Platform,
@@ -33,6 +32,7 @@ import {
   insertFeedAdSlots,
 } from '../../src/lib/ads';
 import { promptForAuth } from '../../src/lib/authPrompt';
+import { showDialog } from '../../src/lib/dialog';
 import { isBadFactMediaUrl } from '../../src/lib/factVisuals';
 import { reconcileDailyLocalReminder } from '../../src/lib/notifications';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
@@ -473,7 +473,7 @@ export default function FeedScreen() {
       }));
 
     if (exportedReviews.length === 0) {
-      Alert.alert('Review yok', 'Dışa aktarılacak en az bir review işaretle.');
+      showDialog({ title: 'Review yok', message: 'Dışa aktarılacak en az bir review işaretle.' });
       return;
     }
 
