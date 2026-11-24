@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { contentHash } from '../../../dedup/index.js';
 import { createMemoryStepsRepo } from '../../db/steps-repo.js';
 import { cardText } from '../dedup-card.js';
-import { attributionText, buildFactRow, runEnqueue } from '../enqueue.js';
+import { attributionText, buildFactRow, contextText, runEnqueue } from '../enqueue.js';
 import { GOOD_CARD, baseCandidate, deps } from './helpers.js';
 
 const VERIFICATION = { rounds: [{ verdict: 'supported', claims: [] }], result: 'supported' };
@@ -43,6 +43,7 @@ test('buildFactRow: facts satırı alanları', () => {
     wow_score: 8.6,
     verification: VERIFICATION,
     attribution: 'Kaynak: Wikipedia (CC BY-SA 4.0) — https://en.wikipedia.org/wiki/Octopus',
+    context_text: 'p',
   });
 });
 
@@ -94,4 +95,17 @@ test('runEnqueue: aynı içerikli ikinci kart content_hash çakışmasıyla redd
   assert.equal(repo.get('q1').status, 'queued');
   assert.equal(repo.get('q2').reject_reason, 'duplicate_insert');
   assert.equal(repo.facts().length, 1);
+});
+
+test('contextText: boş → null, kısa → normalize, uzun → 2000 içinde kelime sınırı', () => {
+  assert.equal(contextText({ support_paragraph: null }), null);
+  assert.equal(contextText({ support_paragraph: '  \n ' }), null);
+  assert.equal(contextText({ support_paragraph: ' Kısa   metin\n burada ' }), 'Kısa metin burada');
+  const long = contextText({ support_paragraph: 'kelime '.repeat(400) });
+  assert.ok(long.length <= 2000);
+  assert.ok(long.endsWith('kelime'));
+  const mid = contextText({ support_paragraph: `${'a'.repeat(1995)} bbbbbbbb ccc` });
+  assert.equal(mid, 'a'.repeat(1995));
+  const noSpace = contextText({ support_paragraph: 'a'.repeat(2500) });
+  assert.equal(noSpace.length, 2000);
 });
