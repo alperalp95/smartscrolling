@@ -9,7 +9,7 @@ type PromptOptions = {
 export function promptForAuth(options: PromptOptions) {
   useAuthPromptStore.getState().openPrompt({
     onConfirm: options.onConfirm,
-    title: options.title ?? 'Giris Gerekli',
-    message: options.message ?? 'Bu ozelligi kullanmak icin once giris yapman gerekiyor.',
+    title: options.title ?? 'Giriş Gerekli',
+    message: options.message ?? 'Bu özelliği kullanmak için önce giriş yapman gerekiyor.',
   });
 }

@@ -1,6 +1,14 @@
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from '@expo-google-fonts/inter';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
@@ -21,13 +29,31 @@ import { fetchUserPreferences } from '../src/lib/userPreferences';
 import { useAuthStore } from '../src/store/authStore';
 import { useFeedStore } from '../src/store/feedStore';
 import { useOnboardingStore } from '../src/store/onboardingStore';
+import { colors } from '../src/theme';
+
+void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts(Ionicons.font);
+  const [fontsLoaded, fontError] = useFonts({
+    ...Ionicons.font,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+  // Font yüklenemezse sistem fontuyla açılır; açılış ekranında takılı kalmaz.
+  const fontsReady = fontsLoaded || fontError != null;
+
+  useEffect(() => {
+    if (fontsReady) {
+      void SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsReady]);
   const finishInitializing = useAuthStore((state) => state.finishInitializing);
   const setHasPremium = useAuthStore((state) => state.setHasPremium);
   const setSession = useAuthStore((state) => state.setSession);
@@ -133,7 +159,7 @@ export default function RootLayout() {
     syncSavedFacts,
   ]);
 
-  if (!fontsLoaded) {
+  if (!fontsReady) {
     return null;
   }
 
@@ -143,11 +169,13 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="auth/callback" options={{ presentation: 'card' }} />
         <Stack.Screen name="fact/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="saved" options={{ presentation: 'card' }} />
         <Stack.Screen name="saved-facts" options={{ presentation: 'card' }} />
+        <Stack.Screen name="settings" options={{ presentation: 'card' }} />
       </Stack>
       <AuthPromptModal />
       <PremiumPromptModal />
-      <StatusBar style="light" backgroundColor="#000000" />
+      <StatusBar style="light" backgroundColor={colors.bg} />
     </SafeAreaProvider>
   );
 }

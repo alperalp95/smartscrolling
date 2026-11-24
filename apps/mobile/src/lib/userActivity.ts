@@ -290,3 +290,23 @@ export async function incrementDailyActivity(input: DailyActivityIncrement) {
 
   return { synced: true as const };
 }
+
+export async function fetchLifetimeFactsRead(): Promise<number> {
+  const userId = await getCurrentUserId();
+
+  if (!userId) {
+    return 0;
+  }
+
+  const { data, error } = await supabase
+    .from('user_activity')
+    .select('facts_read')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('[Dev] lifetime facts read fetch failed:', error.message);
+    return 0;
+  }
+
+  return (data ?? []).reduce((sum, row) => sum + Math.max(0, row?.facts_read ?? 0), 0);
+}

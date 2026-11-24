@@ -7,10 +7,17 @@ appId: com.smartscrolling.mobile
     timeout: 15000
 - assertVisible:
     id: feed-screen
-- tapOn: Profil
+- tapOn:
+    id: tab-profile
 - extendedWaitUntil:
     visible:
       id: profile-screen
     timeout: 10000
 - assertVisible:
     id: profile-screen
+- tapOn:
+    id: tab-index
+- extendedWaitUntil:
+    visible:
+      id: feed-screen
+    timeout: 10000

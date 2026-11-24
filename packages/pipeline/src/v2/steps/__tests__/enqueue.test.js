@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { contentHash } from '../../../dedup/index.js';
+import { deriveFactVisualKey } from '../../../lib/fact-visual-key.js';
 import { createMemoryStepsRepo } from '../../db/steps-repo.js';
 import { cardText } from '../dedup-card.js';
 import { attributionText, buildFactRow, contextText, runEnqueue } from '../enqueue.js';
@@ -44,7 +45,30 @@ test('buildFactRow: facts satırı alanları', () => {
     verification: VERIFICATION,
     attribution: 'Kaynak: Wikipedia (CC BY-SA 4.0) — https://en.wikipedia.org/wiki/Octopus',
     context_text: 'p',
+    visual_key: deriveFactVisualKey({
+      sourceLabel: 'Wikipedia',
+      category: '🔬 BİLİM',
+      title: GOOD_CARD.title,
+      tags: GOOD_CARD.tags,
+      content: GOOD_CARD.content,
+    }),
   });
+});
+
+test('buildFactRow: TARİH kategorisinde visual_key dolu', () => {
+  const cand = verifiedCand();
+  cand.scores.category = '📜 TARİH';
+  const k = buildFactRow(cand).visual_key;
+  assert.equal(typeof k, 'string');
+  assert.ok(k.length > 0);
+});
+
+test('buildFactRow: bilinmeyen kategoride varsayılan visual_key', () => {
+  const cand = verifiedCand();
+  cand.scores.category = 'zzz';
+  const k = buildFactRow(cand).visual_key;
+  assert.equal(typeof k, 'string');
+  assert.ok(k.length > 0);
 });
 
 test('attribution: TR kaynakta "Vikipedi"', () => {
