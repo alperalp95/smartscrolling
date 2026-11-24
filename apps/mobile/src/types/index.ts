@@ -2,7 +2,6 @@ import type { Database as SupabaseDatabase } from './supabase';
 
 export type Database = SupabaseDatabase;
 export type FactRow = Database['public']['Tables']['facts']['Row'];
-export type BookHighlightRow = Database['public']['Tables']['book_highlights']['Row'];
 export type UserRow = Database['public']['Tables']['users']['Row'];
 
 export type FactType = {
@@ -30,16 +29,4 @@ export type UserType = {
   email: string;
   streakDays: number;
   avatarUrl?: string;
-};
-
-export type BookSectionType = {
-  id: string;
-  book_id: string;
-  section_order: number;
-  title?: string | null;
-  plain_text: string;
-  summary?: string | null;
-  word_count?: number | null;
-  estimated_pages?: number | null;
-  created_at?: string;
 };
