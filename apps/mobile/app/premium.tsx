@@ -27,23 +27,18 @@ const BENEFITS: {
 }[] = [
   {
     icon: 'ban-outline',
-    title: 'Reklamsiz Deneyim',
-    body: 'Okuma akisini bozan hicbir reklam yok. Sadece sen ve icerik.',
-  },
-  {
-    icon: 'library-outline',
-    title: 'Tum Kutuphane Erisimi',
-    body: 'Sinirli icerik kalmaz. Kutuphanedeki her kitap ve koleksiyon sana acik.',
+    title: 'Reklamsız deneyim',
+    body: 'Akışta reklam görmeden oku.',
   },
   {
     icon: 'sparkles-outline',
-    title: 'Sinirsiz AI Sorulari',
-    body: 'Okudugun her konu hakkinda istedigin kadar soru sor, derinlesmek senin elinde.',
+    title: 'Günde 30 Karta Sor',
+    body: 'Her kart hakkında yapay zekâya soru sor; ücretsiz planda günde 3.',
   },
   {
-    icon: 'chatbubbles-outline',
-    title: 'AI Sohbet Gecmisi',
-    body: 'Onceki AI konusmalarini tekrar ac. Dusunce zincirini kaybetme.',
+    icon: 'create-outline',
+    title: 'Kendi sorunu yaz',
+    body: 'Hazır soruların ötesine geç, merak ettiğini kendin sor.',
   },
 ];
 
@@ -132,7 +127,7 @@ export default function PremiumScreen() {
           </View>
           <Text style={s.heroTitle}>Tam deneyimin kilidini ac</Text>
           <Text style={s.heroSubtitle}>
-            Tek seferlik odeme ile reklamsiz okuma, tum kutuphane ve sinirsiz AI erisimi.
+            Tek seferlik ödeme ile reklamsız okuma ve kartlar için yapay zekâya soru hakkı.
           </Text>
         </View>
 
