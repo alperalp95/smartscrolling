@@ -60,7 +60,6 @@ const EXPAND_DURATION_MS = 320;
 // "devamı" açılınca görsel kaybolmaz, kapalı yüksekliğinin bu oranına kadar küçülür.
 const MEDIA_EXPANDED_RATIO = 0.35;
 const MEDIA_UNBOUNDED = 100000;
-const CLOSE_ROW_HEIGHT = 32;
 
 function getReadQualificationProgress(durationMs: number) {
   const qualifiedMs = Math.min(
@@ -219,10 +218,6 @@ export function FactPost({
             [mediaHeight.value, mediaHeight.value * MEDIA_EXPANDED_RATIO],
           ),
   }));
-  const closeRowAnimatedStyle = useAnimatedStyle(() => ({
-    height: expand.value * CLOSE_ROW_HEIGHT,
-    opacity: expand.value,
-  }));
 
   const onMediaLayout = (e: LayoutChangeEvent) => {
     const h = e.nativeEvent.layout.height;
@@ -307,20 +302,6 @@ export function FactPost({
       onTouchCancel={() => setIsPressing(false)}
     >
       <Reanimated.View
-        style={[s.closeRow, !isAnimating && s.hidden, closeRowAnimatedStyle]}
-        pointerEvents={isExpanded ? 'auto' : 'none'}
-      >
-        {isAnimating ? (
-          <IconButton
-            name="chevron-down"
-            onPress={collapsePost}
-            accessibilityLabel="Kapat"
-            testID="feed-collapse-button"
-          />
-        ) : null}
-        {isAnimating ? <Text style={s.closeLabel}>Kapat</Text> : null}
-      </Reanimated.View>
-      <Reanimated.View
         style={[
           s.media,
           { minHeight: isAnimating ? 0 : height * MEDIA_MIN_RATIO },
@@ -343,6 +324,16 @@ export function FactPost({
           />
         </View>
         <View style={s.progressTrack}>{progressFill}</View>
+        {/* Açıkken görsele dokunmak kartı eski haline döndürür (Kapat butonu yok). */}
+        {isExpanded ? (
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={collapsePost}
+            accessibilityRole="button"
+            accessibilityLabel="Kapat"
+            testID="feed-collapse-area"
+          />
+        ) : null}
       </Reanimated.View>
 
       <View style={s.actions}>
@@ -388,7 +379,7 @@ export function FactPost({
           onMoveShouldSetResponder={() => isExpanded}
           onStartShouldSetResponder={() => isExpanded}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={s.expandedContent}
+          contentContainerStyle={[s.expandedContent, isExpanded && s.expandedContentFill]}
         >
           <Text style={s.title} numberOfLines={isAnimating ? undefined : 3}>
             {item.title}
@@ -414,6 +405,16 @@ export function FactPost({
             {hasMore && !isAnimating ? <Text style={s.more}>devamı</Text> : null}
           </Pressable>
           {source}
+          {/* Metnin altındaki boş alana dokunmak da kartı kapatır. */}
+          {isExpanded ? (
+            <Pressable
+              style={s.collapseFiller}
+              onPress={collapsePost}
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+              testID="feed-collapse-filler"
+            />
+          ) : null}
         </ScrollView>
       </View>
     </View>
@@ -455,16 +456,10 @@ const s = StyleSheet.create({
   measure: { position: 'absolute', left: 0, right: 0, opacity: 0 },
   more: { ...type.body, color: colors.textSecondary },
   source: { ...type.caption, color: colors.textSecondary },
-  closeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingHorizontal: space.screen,
-    overflow: 'hidden',
-  },
-  closeLabel: { ...type.button, color: colors.textSecondary },
   expandedScroll: { flex: 1 },
   expandedContent: { gap: space.md, paddingBottom: space.xxl },
+  expandedContentFill: { flexGrow: 1 },
+  collapseFiller: { flexGrow: 1, minHeight: space.xxxl },
   reviewRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   reviewVerdict: { ...type.chip, color: colors.textSecondary },
   verdictGood: { color: colors.success },

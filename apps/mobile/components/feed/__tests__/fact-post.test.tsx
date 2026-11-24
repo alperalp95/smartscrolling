@@ -86,7 +86,7 @@ describe('FactPost', () => {
     expect(props.onExpandedChange).toHaveBeenCalledWith(true);
   });
 
-  it('shows the collapse button after expanding and collapses on press', () => {
+  it('collapses when the shrunken image is tapped (no close button)', () => {
     const content = 'a'.repeat(600);
     const { getByText, queryByTestId, getByTestId, UNSAFE_getAllByProps, props } = renderPost(
       makeFact({ content }),
@@ -98,9 +98,28 @@ describe('FactPost', () => {
     act(() => {
       measure?.props.onTextLayout({ nativeEvent: { lines: new Array(9).fill({}) } });
     });
-    expect(queryByTestId('feed-collapse-button')).toBeNull();
+    expect(queryByTestId('feed-collapse-area')).toBeNull();
     fireEvent.press(getByText('devamı'));
-    fireEvent.press(getByTestId('feed-collapse-button'));
+    // Kapat butonu yok; görsele dokunmak kapatır.
+    expect(queryByTestId('feed-collapse-button')).toBeNull();
+    fireEvent.press(getByTestId('feed-collapse-area'));
+    expect(props.onExpandedChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('collapses when the empty area below the text is tapped', () => {
+    const content = 'b'.repeat(600);
+    const { getByText, getByTestId, UNSAFE_getAllByProps, props } = renderPost(
+      makeFact({ content }),
+      { isActive: true },
+    );
+    const measure = UNSAFE_getAllByProps({ children: content }).find(
+      (n) => typeof n.props.onTextLayout === 'function',
+    );
+    act(() => {
+      measure?.props.onTextLayout({ nativeEvent: { lines: new Array(9).fill({}) } });
+    });
+    fireEvent.press(getByText('devamı'));
+    fireEvent.press(getByTestId('feed-collapse-filler'));
     expect(props.onExpandedChange).toHaveBeenLastCalledWith(false);
   });
 
