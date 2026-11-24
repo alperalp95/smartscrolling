@@ -640,7 +640,7 @@ export default function FeedScreen() {
       </View>
 
       {shouldShowFeedUpsell ? (
-        <View style={[s.feedUpsellWrap, { bottom: tabBarHeight + Math.max(insets.bottom, 16) }]}>
+        <View style={[s.feedUpsellWrap, { bottom: space.lg }]}>
           <PremiumUpsellCard
             eyebrow="Reklamsız deneyim"
             title="Akışı reklamsız ve daha derin kullan"

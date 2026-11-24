@@ -82,7 +82,13 @@ const s = StyleSheet.create({
     paddingHorizontal: space.screen,
   },
   title: { ...type.screenTitle, color: colors.text },
-  streak: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  streak: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    minHeight: space.xxxl + space.sm,
+    paddingHorizontal: space.xs,
+  },
   streakCount: { ...type.button, color: colors.text },
   stats: {
     flexDirection: 'row',
