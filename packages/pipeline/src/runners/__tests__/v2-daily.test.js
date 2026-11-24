@@ -46,6 +46,8 @@ function harness({
   processThrows = null,
   insertThrows = null,
   modelEvents = [],
+  recentRuns = [],
+  recentThrows = null,
 } = {}) {
   const calls = [];
   const client = { from: () => assert.fail('orkestratör client.from çağırmamalı (repo enjekte)') };
@@ -67,6 +69,12 @@ function harness({
       assert.equal(c, client);
       if (insertThrows) throw insertThrows;
       return { id: 'run-1' };
+    },
+    fetchRecentRuns: async (c, n) => {
+      calls.push(['fetchRecentRuns', n]);
+      assert.equal(c, client);
+      if (recentThrows) throw recentThrows;
+      return recentRuns;
     },
     createStepsRepo: (c) => {
       calls.push(['createStepsRepo']);
@@ -235,6 +243,7 @@ test('apply: adım sırası collect → process → publish, argümanlar, pipeli
     'process',
     'createPublishRepo',
     'publish',
+    'fetchRecentRuns',
     'insertRun',
   ]);
   const collectCall = calls.find((c) => c[0] === 'collect');
@@ -365,6 +374,53 @@ test('alarm (a): 0 yeni queued', async () => {
     s.alarms.map((a) => a.code),
     ['no_new_queued'],
   );
+});
+
+const prevRun = (queued, day) => ({
+  finished_at: `2026-11-${day}T19:00:00Z`,
+  ok: true,
+  counts: { queued },
+});
+
+test('alarm no_cards_3_runs: 2 önceki run + bu run 0 kart', async () => {
+  const { deps, calls } = harness({ queued: 0, recentRuns: [prevRun(0, 20), prevRun(0, 19)] });
+  const s = await runDaily(['--mode', 'apply'], deps);
+  assert.deepEqual(
+    calls.find((c) => c[0] === 'fetchRecentRuns'),
+    ['fetchRecentRuns', 2],
+  );
+  assert.deepEqual(
+    s.alarms.map((a) => a.code),
+    ['no_new_queued', 'no_cards_3_runs'],
+  );
+  const a = s.alarms.find((x) => x.code === 'no_cards_3_runs');
+  assert.equal(a.title, 'Üst üste 3 çalışmada kart çıkmadı');
+  assert.match(a.message, /2026-11-20/);
+});
+
+test('alarm no_cards_3_runs: önceki run kart çıkardıysa yok', async () => {
+  const { deps } = harness({ queued: 0, recentRuns: [prevRun(0, 20), prevRun(4, 19)] });
+  const s = await runDaily(['--mode', 'apply'], deps);
+  assert.ok(!s.alarms.some((a) => a.code === 'no_cards_3_runs'));
+});
+
+test('alarm no_cards_3_runs: sadece 1 önceki kayıt varsa yok', async () => {
+  const { deps } = harness({ queued: 0, recentRuns: [prevRun(0, 20)] });
+  const s = await runDaily(['--mode', 'apply'], deps);
+  assert.ok(!s.alarms.some((a) => a.code === 'no_cards_3_runs'));
+});
+
+test('alarm no_cards_3_runs: dry-run fetchRecentRuns çağırmaz', async () => {
+  const { deps, calls } = harness({ queued: 0, recentRuns: [prevRun(0, 20), prevRun(0, 19)] });
+  await runDaily(['--mode', 'dry-run'], deps);
+  assert.ok(!names(calls).includes('fetchRecentRuns'));
+});
+
+test('alarm no_cards_3_runs: fetchRecentRuns hata verirse run biter, alarm yok', async () => {
+  const { deps } = harness({ queued: 0, recentThrows: new Error('db down') });
+  const s = await runDaily(['--mode', 'apply'], deps);
+  assert.equal(s.ok, true);
+  assert.ok(!s.alarms.some((a) => a.code === 'no_cards_3_runs'));
 });
 
 test('alarm (b): stok < 3 gün (publish stockStatus.alarm)', async () => {

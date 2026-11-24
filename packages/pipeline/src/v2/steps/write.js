@@ -340,15 +340,36 @@ export function normalizeTitle(raw, { hook } = {}) {
 }
 
 /**
+ * Okura seslenen tepki cümlelerini ("Aa, bunu bilmiyordum!", "Vay be!") kodla siler.
+ * Olgusal cümleler (ör. "Bilim insanları bunu bilmiyordu.") korunur: yalnızca ünlem/tepki
+ * kalıbıyla başlayan ya da 1./2. kişi "bilmiyordum/bilmiyordun/bilmiyorduk" içeren cümle gider.
+ */
+export function stripReaderReaction(content) {
+  const text = String(content ?? '').trim();
+  if (!text) return text;
+  const sentences = text.split(/(?<=[.!?…]["'”’»)\]]*)\s+/u);
+  const lead = /^(aa+|vay( be| canına)?)[,!. ]/iu;
+  const kept = sentences.filter((s) => {
+    const t = `${s.trim()} `;
+    if (lead.test(t.replace(/^["'“‘«(]+/u, ''))) return false;
+    if (/bilmiyordu(m|n|k)(?![\p{L}])/iu.test(t)) return false;
+    return true;
+  });
+  return kept.join(' ').trim();
+}
+
+/**
  * Model çıktısını kart taslağına çevirir (başlık, etiket ve okuma süresi normalize edilir).
  * @param {object} json
  * @param {{ hook?: string }} [opts]  kanca: başlık büyük harf kenar durumları için
  */
 export function normalizeDraft(json, { hook } = {}) {
   const title = normalizeTitle(json?.title, { hook });
-  const content = String(json?.content ?? '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const content = stripReaderReaction(
+    String(json?.content ?? '')
+      .replace(/\s+/g, ' ')
+      .trim(),
+  );
   const tags = [
     ...new Set(
       (Array.isArray(json?.tags) ? json.tags : [])

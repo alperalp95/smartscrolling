@@ -36,9 +36,10 @@ Her kanca (TR ya da EN) için kısa anahtarlarla:
 - r (tr_relevance) 0-10: Türk okur anlar ve ilgilenir mi? Çok yerel/niş (küçük kasaba yöneticisi, alt lig oyuncusu) düşük.
 - d (is_definition): kanca sadece "X nedir / kimdir / nerededir / ne işe yarar" bilgisiyse 1, değilse 0.
 - c (kategori): ${CATEGORY_NAMES.join(', ')}
+  İpucu: edebiyat/film/müzik/sanat eseri ve kelime kökeni/dil → SANAT; SAĞLIK sadece tıp/hastalık/beslenme; BİYOGRAFİ sadece odak bir kişinin hayatıysa; yer/şehir/park → TARİH ya da en uygun olan.
 - w (gerekçe): SADECE s 6 ve üstüyse, en fazla 6 kelime; s 6'nın altındaysa w yazma.
-- x (hassas): odak ölüm/şiddet/trajedi ya da güncel siyasetse (siyasi figür/parti/seçim, terör, savaş, cinayet, idam/infaz, intihar, felaket ölümleri, yakın tarihli ölüm) "x":1 yaz; değilse x yazma. Tarihsel olay tek başına hassas değil.
-  Örnek: "Charlie Kirk'ün yüzü suikastinin ardından memelere yerleştirildi" → x:1 · "Saddam Hüseyin idam edildi, Libya yas ilan etti" → x:1 · "Bookland, barkodlara göre kitapların geldiği hayali ülke" → x yok
+- x (hassas): odak ölüm/şiddet/trajedi ya da güncel siyasetse (siyasi figür/parti/seçim, terör, savaş, cinayet, idam/infaz, intihar, felaket ölümleri, yakın tarihli ölüm) "x":1 yaz; değilse x yazma. Ayrıca hassas: din ve kutsal figürler etrafındaki tartışma/tasvir/sansür, ibadetle ilgili devlet politikası (ör. ezan dili); etnik/dil siyaseti, ırkçılık, antisemitizm; darbe/cunta; Türkiye siyasi figürleri (cumhurbaşkanı, başbakan, parti liderleri; ölmüş olsalar bile). Osmanlı/Bizans gibi uzak tarih tek başına hassas değil.
+  Örnek: "Charlie Kirk'ün yüzü suikastinin ardından memelere yerleştirildi" → x:1 · "Saddam Hüseyin idam edildi, Libya yas ilan etti" → x:1 · "Türkçe ezan 1932–1950 arasında okundu" → x:1 · "Bookland, barkodlara göre kitapların geldiği hayali ülke" → x yok · "Kanlı Kilise, Fatih'te camiye çevrilmeyen tek Bizans kilisesi" → x yok
 Kalibrasyon (s/r):
 ÇOK İLGİNÇ
 - "Ahtapotun üç kalbi ve mavi kanı vardır." 9/8
