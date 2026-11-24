@@ -297,7 +297,8 @@ export default function ProfileScreen() {
 
     promptForPremium({
       title: 'Premium detaylarini incele',
-      message: 'Premium ile reklamsız kullanım, kartlara günde 30 soru ve kendi sorunu yazma açılır.',
+      message:
+        'Premium ile reklamsız kullanım, kartlara günde 30 soru ve kendi sorunu yazma açılır.',
       onConfirm: () => router.push('/premium'),
     });
   }
