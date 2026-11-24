@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test \"src/**/__tests__/*.test.js\"",
-    "run:wikipedia": "node src/runners/wikipedia.js",
+    "v2:backfill-embeddings": "node src/runners/v2-backfill-embeddings.js",
+    "run:wikipedia":"node src/runners/wikipedia.js",
     "run:nasa": "node src/runners/nasa.js",
     "run:pdf-curated": "node src/runners/pdf-curated.js",
     "run:reddit": "node src/runners/reddit.js",
