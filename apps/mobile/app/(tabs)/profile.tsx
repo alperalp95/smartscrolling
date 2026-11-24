@@ -39,6 +39,7 @@ import { colors, radius, space, type } from '../../src/theme';
 import type { FactType } from '../../src/types';
 
 const MAX_PROFILE_GRID = 9;
+const APPLE_BUTTON_HEIGHT = space.xxxl + space.md;
 
 type AuthFeedback = {
   message: string;
@@ -414,7 +415,7 @@ export default function ProfileScreen() {
               </View>
               <View style={s.buttonCell}>
                 {hasPremium ? (
-                  <Button label="Premium aktif" onPress={() => {}} disabled />
+                  <Button label="Premium aktif" onPress={() => router.push('/settings')} />
                 ) : (
                   <GradientButton label="Premium" onPress={() => router.push('/premium')} />
                 )}
@@ -488,7 +489,7 @@ const s = StyleSheet.create({
   },
   authTitle: { ...type.screenTitle, color: colors.text },
   authSubtitle: { ...type.body, color: colors.textSecondary },
-  appleButton: { height: 44, width: '100%' },
+  appleButton: { height: APPLE_BUTTON_HEIGHT, width: '100%' },
   disabled: { opacity: 0.5 },
   input: {
     ...type.body,

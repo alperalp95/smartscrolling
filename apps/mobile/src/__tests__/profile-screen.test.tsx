@@ -1,6 +1,6 @@
 import { render, waitFor } from '@testing-library/react-native';
 import ProfileScreen from '../../app/(tabs)/profile';
-import { SavedGrid } from '../../components/profile/saved-grid';
+import { SavedGrid, gridCellWidth } from '../../components/profile/saved-grid';
 
 let mockUser: { id: string; email: string } | null = null;
 
@@ -81,5 +81,11 @@ describe('SavedGrid', () => {
       <SavedGrid facts={[]} onPressFact={() => {}} emptyText="Boş burası" />,
     );
     expect(getByText('Boş burası')).toBeTruthy();
+  });
+
+  it('dar genişlikte (320) 3 sütun sığar', () => {
+    const w = gridCellWidth(320);
+    expect(w * 3 + 2 * 2).toBeLessThanOrEqual(320);
+    expect(gridCellWidth(300) * 3 + 4).toBeLessThanOrEqual(300);
   });
 });

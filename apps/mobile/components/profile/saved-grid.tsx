@@ -1,6 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import {
+  type LayoutChangeEvent,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { resolveFactMedia } from '../../src/lib/factMedia';
 import { colors, space, type } from '../../src/theme';
 import type { FactType } from '../../src/types';
@@ -14,10 +22,21 @@ type SavedGridProps = {
 
 const COLUMNS = 3;
 const GRID_GAP = 2;
-// Aralıklar yüzde genişliğe dahil edilir: 3 sütun, 2 boşluk.
-const CELL_WIDTH = `${(100 - (COLUMNS - 1) * 0.6) / COLUMNS}%` as const;
+
+// Kap genişliğinden hücre genişliği: her zaman 3 sütun, aralıklar düşülür.
+export function gridCellWidth(containerWidth: number) {
+  return Math.floor((containerWidth - (COLUMNS - 1) * GRID_GAP) / COLUMNS);
+}
 
 export function SavedGrid({ facts, onPressFact, emptyText }: SavedGridProps) {
+  const windowWidth = useWindowDimensions().width;
+  const [measured, setMeasured] = useState<number | null>(null);
+  const cellWidth = gridCellWidth(measured ?? windowWidth);
+
+  function handleLayout(event: LayoutChangeEvent) {
+    setMeasured(event.nativeEvent.layout.width);
+  }
+
   if (facts.length === 0) {
     return (
       <View style={s.empty}>
@@ -28,7 +47,7 @@ export function SavedGrid({ facts, onPressFact, emptyText }: SavedGridProps) {
   }
 
   return (
-    <View style={s.grid}>
+    <View style={s.grid} onLayout={handleLayout} testID="saved-grid">
       {facts.map((fact) => {
         const media = resolveFactMedia(fact);
         return (
@@ -36,7 +55,9 @@ export function SavedGrid({ facts, onPressFact, emptyText }: SavedGridProps) {
             key={fact.id}
             activeOpacity={0.85}
             onPress={() => onPressFact(fact)}
-            style={s.cell}
+            style={[s.cell, { width: cellWidth, height: cellWidth }]}
+            accessibilityRole="button"
+            accessibilityLabel={fact.title}
             testID="saved-grid-item"
           >
             <Media
@@ -63,7 +84,7 @@ export function SavedGrid({ facts, onPressFact, emptyText }: SavedGridProps) {
 
 const s = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
-  cell: { width: CELL_WIDTH, aspectRatio: 1, overflow: 'hidden' },
+  cell: { overflow: 'hidden' },
   media: { width: '100%', height: '100%', borderRadius: 0 },
   overlay: {
     position: 'absolute',
