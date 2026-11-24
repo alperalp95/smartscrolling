@@ -13,6 +13,8 @@ export const type = {
   screenTitle: { fontFamily: fonts.bold, fontSize: 17, lineHeight: 22 },
   cardTitle: { fontFamily: fonts.extrabold, fontSize: 22, lineHeight: 26, letterSpacing: -0.3 },
   body: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 21 },
+  // Not: textTransform 'i' harfini 'İ' yapmaz. Türkçe metni büyük harfle verin
+  // (ör. 'TERCİHLER' ya da metin.toLocaleUpperCase('tr-TR')).
   meta: {
     fontFamily: fonts.semibold,
     fontSize: 11,

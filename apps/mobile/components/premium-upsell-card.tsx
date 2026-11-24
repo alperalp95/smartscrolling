@@ -23,7 +23,7 @@ export function PremiumUpsellCard({
   return (
     <View style={s.card}>
       <View style={s.header}>
-        <GradientText style={type.meta}>{eyebrow}</GradientText>
+        <GradientText style={type.meta}>{eyebrow.toLocaleUpperCase('tr-TR')}</GradientText>
         {onDismiss ? (
           <IconButton
             name="close"

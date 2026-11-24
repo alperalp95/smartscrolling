@@ -512,7 +512,7 @@ export default function SettingsScreen() {
             />
           ) : null}
 
-          <Text style={s.sectionTitle}>Tercihler</Text>
+          <Text style={s.sectionTitle}>TERCİHLER</Text>
           {isLoggedIn ? (
             <>
               <SettingsRow
@@ -552,7 +552,7 @@ export default function SettingsScreen() {
 
           {isLoggedIn ? (
             <>
-              <Text style={s.sectionTitle}>Hesap</Text>
+              <Text style={s.sectionTitle}>HESAP</Text>
               <SettingsRow
                 icon="sparkles-outline"
                 title="Premium"
