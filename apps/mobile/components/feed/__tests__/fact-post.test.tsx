@@ -1,4 +1,4 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import type { FactType } from '../../../src/types';
 import { FactPost, type FactPostProps } from '../fact-post';
 
@@ -66,14 +66,34 @@ describe('FactPost', () => {
     expect(getByTestId('media-fallback')).toBeTruthy();
   });
 
-  it('clamps long body text, shows "devamı" and expands on press', () => {
+  it('shows "devamı" only when the body really overflows, and expands on press', () => {
     const content = 'a'.repeat(600);
-    const { getByText, props } = renderPost(makeFact({ content }));
-    const body = getByText(content);
-    expect(body.props.numberOfLines).toBeGreaterThan(0);
-    expect(getByText('devamı')).toBeTruthy();
-    fireEvent.press(body);
+    const { getByText, queryByText, UNSAFE_getAllByProps, props } = renderPost(
+      makeFact({ content }),
+    );
+    expect(queryByText('devamı')).toBeNull();
+    const measure = UNSAFE_getAllByProps({ children: content }).find(
+      (n) => typeof n.props.onTextLayout === 'function',
+    );
+    if (!measure) throw new Error('measure text not found');
+    act(() => {
+      measure.props.onTextLayout({ nativeEvent: { lines: new Array(9).fill({}) } });
+    });
+    const more = getByText('devamı');
+    expect(more).toBeTruthy();
+    fireEvent.press(more);
     expect(props.onExpandedChange).toHaveBeenCalledWith(true);
+  });
+
+  it('hides "devamı" when the text fits', () => {
+    const { queryByText, UNSAFE_getAllByProps } = renderPost(makeFact({ content: 'kısa' }));
+    const measure = UNSAFE_getAllByProps({ children: 'kısa' }).find(
+      (n) => typeof n.props.onTextLayout === 'function',
+    );
+    act(() => {
+      measure?.props.onTextLayout({ nativeEvent: { lines: [{}] } });
+    });
+    expect(queryByText('devamı')).toBeNull();
   });
 
   it('wires ask and save buttons', () => {

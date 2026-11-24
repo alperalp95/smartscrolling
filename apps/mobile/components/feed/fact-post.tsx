@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Linking,
-  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -10,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { resolveFactMedia } from '../../src/lib/factMedia';
+import { failedRemoteImageUrls, resolveFactMedia } from '../../src/lib/factMedia';
 import { colors, radius, space, type } from '../../src/theme';
 import type { FactType } from '../../src/types';
 import { Button } from '../ui/button';
@@ -43,8 +42,6 @@ export type FactPostProps = {
 const READ_QUALIFICATION_RATIO = 0.35;
 const READ_QUALIFICATION_MIN_MS = 2000;
 const READ_QUALIFICATION_MAX_MS = 5000;
-// Kapalı gövdenin satır sınırını aşıp aşmadığını tahmin etmek için satır başına yaklaşık karakter.
-const CHARS_PER_LINE = 38;
 const TOP_BAR_ALLOWANCE = 56;
 const MEDIA_MIN_RATIO = 0.3;
 const MEDIA_MAX_RATIO = 0.45;
@@ -69,8 +66,6 @@ export function FactPost({
   toggleSave,
   isLiked,
   isSaved,
-  tabBarHeight,
-  bottomInset,
   topInset,
   onExpandedChange,
   isReviewMode,
@@ -83,7 +78,6 @@ export function FactPost({
   const qualifiedReadFactId = useRef<string | null>(null);
   const duration = (item.read_time_sq || 15) * 1000;
   const readQualificationProgress = getReadQualificationProgress(duration);
-  const bottomOffset = tabBarHeight + Math.max(bottomInset, Platform.OS === 'ios' ? 12 : 8);
   const isTightCard = height < 680;
   const isCompactCard = height < 760;
   const previewLineCount = isTightCard ? 3 : isCompactCard ? 4 : 5;
@@ -91,10 +85,12 @@ export function FactPost({
   const [isPressing, setIsPressing] = useState(false);
   const isPaused = isExpanded || isPressing;
 
+  const [, setMediaErrorTick] = useState(0);
+  const [fullLineCount, setFullLineCount] = useState(0);
   const media = resolveFactMedia(item);
   const minutes = Math.max(1, Math.round((item.read_time_sq || 15) / 60));
   const meta = `${item.category.toLocaleUpperCase('tr-TR')} · ${minutes} dk`;
-  const hasMore = item.content.length > previewLineCount * CHARS_PER_LINE;
+  const hasMore = fullLineCount > previewLineCount;
 
   useEffect(() => {
     const listenerId = progress.addListener(({ value }) => {
@@ -185,6 +181,22 @@ export function FactPost({
     </View>
   ) : null;
 
+  const progressLine = (trackStyle: object) => (
+    <View style={trackStyle}>
+      <Animated.View
+        style={[
+          s.progressFill,
+          {
+            width: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0%', '100%'],
+            }),
+          },
+        ]}
+      />
+    </View>
+  );
+
   return (
     <View
       testID="feed-fact-card"
@@ -193,7 +205,7 @@ export function FactPost({
         {
           height,
           paddingTop: topInset + TOP_BAR_ALLOWANCE,
-          paddingBottom: bottomOffset,
+          paddingBottom: space.lg,
         },
       ]}
       onTouchStart={() => setIsPressing(true)}
@@ -212,6 +224,7 @@ export function FactPost({
             <Text style={s.closeLabel}>Kapat</Text>
           </View>
           {reviewToolbar}
+          {progressLine(s.progressInline)}
           <ScrollView
             style={s.expandedScroll}
             nestedScrollEnabled
@@ -239,20 +252,14 @@ export function FactPost({
               localSource={media.localSource ?? undefined}
               category={item.category}
               style={s.mediaFill}
+              onError={() => {
+                if (media.uri) {
+                  failedRemoteImageUrls.add(media.uri);
+                  setMediaErrorTick((n) => n + 1);
+                }
+              }}
             />
-            <View style={s.progressTrack}>
-              <Animated.View
-                style={[
-                  s.progressFill,
-                  {
-                    width: progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0%', '100%'],
-                    }),
-                  },
-                ]}
-              />
-            </View>
+            {progressLine(s.progressTrack)}
           </View>
 
           <View style={s.actions}>
@@ -301,6 +308,14 @@ export function FactPost({
               <Text style={s.body} numberOfLines={previewLineCount}>
                 {item.content}
               </Text>
+              <Text
+                style={[s.body, s.measure]}
+                onTextLayout={(e) => setFullLineCount(e.nativeEvent.lines.length)}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
+                {item.content}
+              </Text>
               {hasMore ? <Text style={s.more}>devamı</Text> : null}
             </Pressable>
             {source}
@@ -328,6 +343,11 @@ const s = StyleSheet.create({
     height: PROGRESS_LINE_HEIGHT,
     backgroundColor: colors.scrim,
   },
+  progressInline: {
+    height: PROGRESS_LINE_HEIGHT,
+    backgroundColor: colors.scrim,
+    marginBottom: space.sm,
+  },
   progressFill: { height: PROGRESS_LINE_HEIGHT, backgroundColor: colors.text },
   actions: {
     flexDirection: 'row',
@@ -340,6 +360,7 @@ const s = StyleSheet.create({
   text: { paddingHorizontal: space.screen, gap: space.xs },
   title: { ...type.cardTitle, color: colors.text },
   body: { ...type.body, color: colors.text },
+  measure: { position: 'absolute', left: 0, right: 0, opacity: 0 },
   more: { ...type.body, color: colors.textSecondary },
   source: { ...type.caption, color: colors.textSecondary },
   expanded: { flex: 1, paddingHorizontal: space.screen },
