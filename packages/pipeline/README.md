@@ -71,7 +71,7 @@ Cloudflare'in önceki yedeği `@cf/qwen/qwen3-30b-a3b-fp8` 20.11.2026'da kapatı
 
 1. `@cf/mistralai/mistral-small-3.1-24b-instruct` (birincil): düşünme modu yok, Türkçe destekli, OpenAI ailesinden değil. Çağrı başına ≈ 32 Neuron (700 girdi + 200 çıktı token).
 2. `@cf/google/gemma-4-26b-a4b-it` + `"params": { "chat_template_kwargs": { "enable_thinking": false } }`: Gemma'nın kendi sohbet şablonundaki anahtarla düşünme kapatılmaya çalışılır. Cloudflare bu anahtarı belgelemediği için dry-run'da teyit edilmeli: log'da Gemma için `[llm] truncated` görünüyorsa kapanmamıştır.
-3. `gemini-3.1-flash-lite`: son yedek.
+3. `gemini-3.5-flash-lite`: son yedek.
 
 Gemma'da düşünme gerçekten kapanıyorsa (çağrı başına ≈ 12 Neuron) Gemma'yı birincil yapmak Neuron bütçesini üçte birine indirir.
 
@@ -120,7 +120,7 @@ Doğrulayıcıya üçüncü bir yedek eklemek için zincirin sonuna yeni bir sat
   "chain": [
     { "provider": "cloudflare", "model": "@cf/mistralai/mistral-small-3.1-24b-instruct" },
     { "provider": "cloudflare", "model": "@cf/google/gemma-4-26b-a4b-it", "params": { "chat_template_kwargs": { "enable_thinking": false } } },
-    { "provider": "gemini", "model": "gemini-3.1-flash-lite" },
+    { "provider": "gemini", "model": "gemini-3.5-flash-lite" },
     { "provider": "gemini", "model": "gemma-4-31b-it" }
   ]
 }
@@ -132,7 +132,7 @@ Doğrulayıcı zincirine yazarla aynı aileden model koymayın. Yazar OpenAI ail
 
 #### Yazar zinciri
 
-Yazar modelleri sırayla denenir: önce `groq / openai/gpt-oss-120b`, o dolarsa `groq / openai/gpt-oss-20b`, o da dolarsa `cloudflare / @cf/openai/gpt-oss-20b`. Kör testte kullanıcı 120b'nin yazdığı kartı en çok seçti (15 bilgide 8 kez), bu yüzden ilk sırada o var. 120b'nin günlük limiti (200K token) dolunca hat otomatik olarak 20b'ye geçer.
+Yazar modelleri sırayla denenir: önce `groq / openai/gpt-oss-120b`, o dolarsa `groq / openai/gpt-oss-20b`, o da dolarsa `gemini / gemini-3.5-flash-lite`. Cloudflare yazar zincirinde bilerek yoktur: bir run'da ~3.550 Neuron yakıp günlük 10.000 Neuron'luk ortak kotayı bitiriyordu; bu kota tekrar kontrolü (embedding) ve doğrulayıcı için ayrılır. Kör testte kullanıcı 120b'nin yazdığı kartı en çok seçti (15 bilgide 8 kez), bu yüzden ilk sırada o var. 120b'nin günlük limiti (200K token) dolunca hat otomatik olarak 20b'ye geçer.
 
 `params` isteğe bağlıdır; modele giden ek ayarlardır. `reasoning_effort: "low"` modelin "düşünme" kısmını kısa tutar, böylece daha az token harcanır.
 
@@ -197,7 +197,7 @@ Hat her model için son 60 saniyede harcananı sayar. Yeni istek sınırı aşac
 "perModel": { "requests": 1000, "tokens": 500000 }
 ```
 
-Gemini'nin ücretsiz sınırları Google tarafından yayınlanmıyor. Config'teki `requests: 20` temkinli bir tahmindir. AI Studio'daki "Rate limit" sayfasından gerçek değeri okuyup güncelleyin.
+Gemini'nin ücretsiz sınırları Google tarafından yayınlanmıyor. Config'teki `requests: 200` temkinli bir tahmindir. AI Studio'daki "Rate limit" sayfasından gerçek değeri okuyup güncelleyin.
 
 `neuronsPerMillionTokens` (sadece Cloudflare): Cloudflare kullanımı Neuron cinsinden ölçer, yanıtta ise token sayısı gelir. Hat token'ı bu tabloyla Neuron'a çevirerek tahmin eder. Değerler Cloudflare fiyat sayfasından alınmıştır. Tabloda olmayan model için `default` satırı (bilerek pahalı tutuldu) kullanılır. Cloudflare'de yeni bir model kullanacaksanız buraya satırını ekleyin.
 
