@@ -35,8 +35,8 @@ export function FtueModal() {
           </View>
 
           <Text style={s.body}>
-            SmartScrolling once sana degeri gosterir. Feed'de kesfet, ilginc bilgi kartlarini ac. Hazir oldugunda
-            hesabinla deneyimi buyut.
+            SmartScrolling once sana degeri gosterir. Feed'de kesfet, ilginc bilgi kartlarini ac.
+            Hazir oldugunda hesabinla deneyimi buyut.
           </Text>
 
           <View style={s.pointsBox}>

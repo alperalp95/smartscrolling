@@ -147,8 +147,7 @@ describe('card ask foundation migration', () => {
   });
 
   it('facts.context_text: null and 2000 ok, 2401 rejected', async () => {
-    const set = (v) =>
-      db.query('update public.facts set context_text = $2 where id = $1', [F1, v]);
+    const set = (v) => db.query('update public.facts set context_text = $2 where id = $1', [F1, v]);
     await set(null);
     await set('x'.repeat(2000));
     await rejects(set('x'.repeat(2401)), /facts_context_text_len_check|check constraint/);

@@ -1,11 +1,11 @@
 import '@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
+  type RevenueCatEvent,
   checkWebhookAuth,
   decidePremium,
   mergeAppMetadata,
   resolveUserId,
-  type RevenueCatEvent,
 } from './logic.ts';
 
 const headers = { 'Content-Type': 'application/json; charset=utf-8' };
