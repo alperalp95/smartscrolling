@@ -442,11 +442,7 @@ export default function ProfileScreen() {
             onPressFact={(fact) => router.push(`/fact/${fact.id}` as never)}
           />
           {hasMoreSaved ? (
-            <Button
-              variant="ghost"
-              label="Tümünü gör"
-              onPress={() => router.push('/(tabs)/saved')}
-            />
+            <Button variant="ghost" label="Tümünü gör" onPress={() => router.push('/saved')} />
           ) : null}
         </ScrollView>
       </View>

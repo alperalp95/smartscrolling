@@ -56,7 +56,6 @@ describe('Media', () => {
 describe('TabBar', () => {
   const routes = [
     { key: 'index-1', name: 'index' },
-    { key: 'saved-1', name: 'saved' },
     { key: 'profile-1', name: 'profile' },
   ];
   const navigation = { emit: () => ({ defaultPrevented: false }), navigate: () => {} };
@@ -68,10 +67,9 @@ describe('TabBar', () => {
     return render(<TabBar {...props} />);
   }
 
-  it('renders three tabs', () => {
+  it('renders two tabs', () => {
     const { getByTestId } = renderBar(routes);
     expect(getByTestId('tab-index')).toBeTruthy();
-    expect(getByTestId('tab-saved')).toBeTruthy();
     expect(getByTestId('tab-profile')).toBeTruthy();
   });
 
@@ -80,7 +78,12 @@ describe('TabBar', () => {
       ...routes,
       { key: 'explore-1', name: 'explore' },
     ]);
-    expect(getAllByTestId(/^tab-/)).toHaveLength(3);
+    expect(getAllByTestId(/^tab-/)).toHaveLength(2);
     expect(queryByTestId('tab-explore')).toBeNull();
+  });
+
+  it('does not render a saved route', () => {
+    const { queryByTestId } = renderBar([...routes, { key: 'saved-1', name: 'saved' }]);
+    expect(queryByTestId(/^tab-sav/)).toBeNull();
   });
 });

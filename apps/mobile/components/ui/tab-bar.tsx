@@ -11,7 +11,6 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
 // Rota adı -> ikonlar ve erişilebilirlik etiketi. Listede olmayan rota çizilmez.
 const TABS: Record<string, { on: IconName; off: IconName; label: string }> = {
   index: { on: 'home', off: 'home-outline', label: 'Akış' },
-  saved: { on: 'bookmark', off: 'bookmark-outline', label: 'Kaydedilenler' },
   profile: { on: 'person-circle', off: 'person-circle-outline', label: 'Profil' },
 };
 

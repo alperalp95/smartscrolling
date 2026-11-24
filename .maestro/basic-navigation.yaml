@@ -8,14 +8,6 @@ appId: com.smartscrolling.mobile
 - assertVisible:
     id: feed-screen
 - tapOn:
-    id: tab-saved
-- extendedWaitUntil:
-    visible:
-      id: saved-screen
-    timeout: 10000
-- assertVisible:
-    id: saved-screen
-- tapOn:
     id: tab-profile
 - extendedWaitUntil:
     visible:

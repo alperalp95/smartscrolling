@@ -2,15 +2,16 @@ import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SavedGrid } from '../../components/profile/saved-grid';
-import { Button } from '../../components/ui/button';
-import { Screen } from '../../components/ui/screen';
-import { TopBar } from '../../components/ui/top-bar';
-import { fetchSavedFacts } from '../../src/lib/facts';
-import { useAuthStore } from '../../src/store/authStore';
-import { useFeedStore } from '../../src/store/feedStore';
-import { colors, space, type } from '../../src/theme';
-import type { FactType } from '../../src/types';
+import { SavedGrid } from '../components/profile/saved-grid';
+import { Button } from '../components/ui/button';
+import { IconButton } from '../components/ui/icon-button';
+import { Screen } from '../components/ui/screen';
+import { TopBar } from '../components/ui/top-bar';
+import { fetchSavedFacts } from '../src/lib/facts';
+import { useAuthStore } from '../src/store/authStore';
+import { useFeedStore } from '../src/store/feedStore';
+import { colors, space, type } from '../src/theme';
+import type { FactType } from '../src/types';
 
 export default function SavedScreen() {
   const router = useRouter();
@@ -50,9 +51,19 @@ export default function SavedScreen() {
   }, [isFocused, savedIdsVersion, user?.id]);
 
   return (
-    <Screen>
+    <Screen edges={['top', 'bottom']}>
       <View style={s.root} testID="saved-screen">
-        <TopBar title="Kaydedilenler" />
+        <TopBar
+          title="Kaydedilenler"
+          left={
+            <IconButton
+              name="chevron-back"
+              onPress={() => router.back()}
+              accessibilityLabel="Geri"
+              testID="saved-back"
+            />
+          }
+        />
         {!user ? (
           <View style={s.center}>
             <Text style={s.centerText}>
