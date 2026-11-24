@@ -1,6 +1,14 @@
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from '@expo-google-fonts/inter';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
@@ -22,12 +30,27 @@ import { useAuthStore } from '../src/store/authStore';
 import { useFeedStore } from '../src/store/feedStore';
 import { useOnboardingStore } from '../src/store/onboardingStore';
 
+void SplashScreen.preventAutoHideAsync().catch(() => {});
+
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts(Ionicons.font);
+  const [fontsLoaded] = useFonts({
+    ...Ionicons.font,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      void SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded]);
   const finishInitializing = useAuthStore((state) => state.finishInitializing);
   const setHasPremium = useAuthStore((state) => state.setHasPremium);
   const setSession = useAuthStore((state) => state.setSession);
