@@ -1,9 +1,12 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import SettingsScreen from '../../app/settings';
 
 let mockUser: { id: string } | null = null;
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ back: jest.fn(), push: jest.fn() }) }));
+const mockBack = jest.fn();
+
+jest.mock('expo-router', () => ({ useRouter: () => ({ back: mockBack, push: jest.fn() }) }));
 jest.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
 jest.mock('@expo/vector-icons', () => ({ Ionicons: 'Ionicons' }));
 jest.mock('@react-native-masked-view/masked-view', () => 'MaskedView');
@@ -14,7 +17,9 @@ jest.mock('react-native-safe-area-context', () => ({
 jest.mock('../store/authStore', () => ({
   useAuthStore: (sel: (s: unknown) => unknown) => sel({ user: mockUser, hasPremium: false }),
 }));
-jest.mock('../lib/supabase', () => ({ supabase: { auth: { signOut: jest.fn() } } }));
+jest.mock('../lib/supabase', () => ({
+  supabase: { auth: { signOut: jest.fn(() => Promise.resolve({ error: null })) } },
+}));
 jest.mock('../lib/accountDeletion', () => ({ deleteCurrentAccount: jest.fn() }));
 jest.mock('../lib/notifications', () => ({
   cancelSmartScrollingScheduledNotifications: jest.fn(),
@@ -54,5 +59,17 @@ describe('SettingsScreen', () => {
     fireEvent.press(getByTestId('account-delete-entry'));
     expect(getByText('Hesap kalıcı olarak silinsin mi?')).toBeTruthy();
     expect(getByTestId('account-delete-confirm')).toBeTruthy();
+  });
+
+  it('çıkış başarılı olunca router.back çağrılır', async () => {
+    mockUser = { id: 'u1' };
+    mockBack.mockClear();
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((title, _msg, buttons) => {
+      if (title === 'Çıkış yapılsın mı?') buttons?.[1]?.onPress?.();
+    });
+    const { getByTestId } = render(<SettingsScreen />);
+    fireEvent.press(getByTestId('settings-sign-out'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    alertSpy.mockRestore();
   });
 });

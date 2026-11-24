@@ -1,5 +1,13 @@
 import type { ReactNode } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space, type } from '../../src/theme';
 
@@ -23,7 +31,7 @@ export function BottomSheet({
   const insets = useSafeAreaInsets();
   return (
     <Modal transparent animationType="slide" visible={visible} onRequestClose={onClose}>
-      <View style={s.root}>
+      <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable style={s.backdrop} onPress={onClose} accessibilityLabel="Kapat" />
         <View style={[s.panel, { paddingBottom: insets.bottom + space.lg }]} testID={testID}>
           <View style={s.handle} />
@@ -31,7 +39,7 @@ export function BottomSheet({
           {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
           {children}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

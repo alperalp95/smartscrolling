@@ -181,6 +181,7 @@ export default function SettingsScreen() {
     resetOnboarding();
     setFeedback(null);
     Alert.alert('Tamam', 'Oturum kapatıldı.');
+    router.back();
   }
 
   function handleSignOut() {
@@ -220,6 +221,7 @@ export default function SettingsScreen() {
     setDeleteConfirmationText('');
     setIsDeleteConfirmVisible(false);
     Alert.alert('Tamam', 'Hesabın ve verilerin silindi.');
+    router.back();
   }
 
   function openInterestEditor() {
