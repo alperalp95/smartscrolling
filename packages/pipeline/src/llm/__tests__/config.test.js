@@ -117,7 +117,7 @@ test('gerçek config dosyası geçerli ve beklenen değerleri içeriyor', () => 
   assert.deepEqual(cfg.roles.scorer.steps[0].members[0].params, { reasoning_effort: 'none' });
   assert.deepEqual(cfg.dedup, { duplicateThreshold: 0.92, grayZoneLow: 0.85 });
   assert.deepEqual(cfg.publish, { dailyCount: 100, minStockDays: 7 });
-  assert.deepEqual(cfg.writing, { minSentences: 3, maxSentences: 5 });
+  assert.deepEqual(cfg.writing, { minSentences: 3, maxSentences: 5, maxWrittenBacklog: 40 });
   assert.ok(!JSON.stringify(cfg).includes('_aciklama'));
 });
 

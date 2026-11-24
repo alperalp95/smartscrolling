@@ -34,6 +34,39 @@ export const DEFAULT_STEP_NAMES = Object.freeze([
   'enqueue',
 ]);
 
+/**
+ * Run başında önce eldeki yazılmış taslaklar bitirilir (dedup-card → verify → enqueue), sonra
+ * yeni iş üretilir (dedup-hook → score → support → write). write'tan sonra yeni taslaklar için
+ * boşaltma adımları (varsa kota kalmışsa) bir kez daha çalışır. Amaç: yazar kotası azken önce
+ * sıraya girecek kart üretmek; verify onarımı da `writer` rolünü kullanır.
+ */
+export const DRAIN_ORDER = Object.freeze(['dedup-card', 'verify', 'enqueue']);
+export const FILL_ORDER = Object.freeze(['dedup-hook', 'score', 'support', 'write']);
+
+/** Seçili adımlar için gerçek çalışma sırası (aynı ad iki kez geçebilir: boşaltma + son tur). */
+export function executionOrder(steps) {
+  const has = new Set(steps);
+  const drain = DRAIN_ORDER.filter((n) => has.has(n));
+  const fill = FILL_ORDER.filter((n) => has.has(n));
+  return { drain, fill, tail: has.has('write') ? drain : [] };
+}
+
+function mergeStats(a, b) {
+  const rejected = { ...a.rejected };
+  for (const [k, v] of Object.entries(b.rejected ?? {})) rejected[k] = (rejected[k] ?? 0) + v;
+  return {
+    ...a,
+    seen: a.seen + b.seen,
+    advanced: a.advanced + b.advanced,
+    rejected,
+    failed: a.failed + b.failed,
+    deferred: a.deferred + b.deferred,
+    exhaustedRole: b.exhaustedRole ?? a.exhaustedRole,
+    exhaustedReason: b.exhaustedReason ?? a.exhaustedReason,
+    errors: [...(a.errors ?? []), ...(b.errors ?? [])],
+  };
+}
+
 const ALIASES = { dedup: ['dedup-hook', 'dedup-card'] };
 
 /** "dedup,score" → ['dedup-hook','score','dedup-card'] değil, STEP_ORDER sırasıyla. */
@@ -65,8 +98,23 @@ export async function runSteps(names, deps, opts = {}) {
   const runDeps = { ...deps, runDrafts: Array.isArray(deps.runDrafts) ? deps.runDrafts : [] };
   const llmEvents = Array.isArray(deps.llm?.events) ? deps.llm.events : null;
   const firstEvent = llmEvents ? llmEvents.length : 0;
-  for (const name of steps) {
-    stats[name] = await STEPS[name](runDeps, opts);
+  const { drain, fill, tail } = executionOrder(steps);
+  const exec = async (name) => {
+    const s = await STEPS[name](runDeps, opts);
+    stats[name] = stats[name] ? mergeStats(stats[name], s) : s;
+    return s;
+  };
+  for (const name of drain) await exec(name);
+  let wrote = false;
+  for (const name of fill) {
+    const s = await exec(name);
+    if (name === 'write') wrote = s.advanced > 0;
+  }
+  if (wrote) {
+    for (const name of tail) {
+      if (stats[name]?.exhaustedRole) continue; // zincir zaten tükendi, boşuna çağrılmaz
+      await exec(name);
+    }
   }
   // Run sonunda kapanan/bulunamayan modeller (404/410 → model_unavailable). V2-08'de alarm Issue'su olur.
   const runEvents = llmEvents ? llmEvents.slice(firstEvent) : [];

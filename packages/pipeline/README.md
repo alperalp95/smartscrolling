@@ -276,6 +276,8 @@ Hat GitHub'da kendiliğinden çalışır; bilgisayarınızın açık olması ger
 | `content-v2-weekly-sample` | Her pazartesi 10:00 | Geçen hafta yayınlanan kartlardan rastgele 10 tanesini değerlendirmeniz için Issue olarak açar. |
 | `keepalive` | Her ayın 1'i | GitHub uzun süre hareketsiz kalan depolarda zamanlanmış workflow'ları kapatabilir. Bu workflow onları yeniden "etkin" yapar. Başka hiçbir şey yapmaz. |
 
+Her run'da adımlar sondan başa çalışır: önce bekleyen taslaklar doğrulanıp stoğa eklenir, sonra yeni kancalar işlenir ve yazılır. Bekleyen taslak sayısı `pipeline.config.json` içindeki `writing.maxWrittenBacklog` değerini (varsayılan 40) aşarsa o run'da yeni taslak yazılmaz; böylece günlük yazar kotası doğrulamaya kalır.
+
 Eski hat (`facts-ingest`) artık kendiliğinden çalışmaz; sadece elle çalıştırılabilir.
 
 ### Hattı açmak (bir kerelik)

@@ -159,6 +159,7 @@ function summarizeProcess(result) {
       rejected: s.rejected ?? {},
       failed: s.failed ?? 0,
       deferred: s.deferred ?? 0,
+      ...(s.skipped ? { skipped: s.skipped, backlog: s.backlog ?? null } : {}),
       ...(s.exhaustedRole
         ? { exhaustedRole: s.exhaustedRole, exhaustedReason: s.exhaustedReason ?? null }
         : {}),

@@ -143,7 +143,9 @@
   "writing": {
     "_aciklama": "Yazar kod kuralı: kart gövdesi en az / en fazla kaç cümle olabilir (1-10 arası tam sayı). Her cümle kanca ya da destek paragrafındaki bir olguya dayanmalı; yorum cümlesi yasak (yazar istemi).",
     "minSentences": 3,
-    "maxSentences": 5
+    "maxSentences": 5,
+    "_aciklamaBekleyen": "Doğrulanmayı bekleyen (yazılmış ama henüz stoğa girmemiş) taslak sayısı bu sınırın üstündeyse o run'da yeni taslak YAZILMAZ; önce eldekiler bitirilir. Böylece günlük yazar kotası doğrulama onarımlarına kalır. 0 yazarsanız yazma hiç bekleme payı tanımaz (sadece hiç bekleyen yokken yazar).",
+    "maxWrittenBacklog": 40
   },
 
   "dedup": {

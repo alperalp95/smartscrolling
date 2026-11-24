@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 // src/runners/v2-process.js
 // İçerik hattı v2 işleme adımları: dedup → score → support → write → (dedup-card) → verify → enqueue.
+// Çalışma sırası (V2-13): önce eldeki taslaklar bitirilir (dedup-card → verify → enqueue), sonra
+// dedup-hook → score → support → write, sonra yeni taslaklar için boşaltma bir kez daha.
+// Bekleyen (written) taslak > writing.maxWrittenBacklog ise write atlanır (skipped: 'backlog').
 //
 //   node src/runners/v2-process.js --input .cache/v2-collect-s1-2026-11-20.json            (dry-run, varsayılan)
 //   node src/runners/v2-process.js --steps dedup,score --limit 30 --input adaylar.json
@@ -227,6 +230,7 @@ export async function runProcess(argv, deps = {}) {
     log(
       `[v2-process] ${name}: görülen=${s.seen} ilerleyen=${s.advanced} red={${rej}} hata=${s.failed} ertelenen=${s.deferred}`,
     );
+    if (s.skipped) log(`[v2-process] ${name}: atlandı (${s.skipped}) bekleyen=${s.backlog ?? '?'}`);
     if (s.exhaustedReason) log(`[v2-process] ${name}: zincir tükenme nedeni: ${s.exhaustedReason}`);
   }
 
