@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import type { ComponentProps } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   type ImageSourcePropType,
   type ImageStyle,
@@ -56,6 +56,9 @@ type MediaProps = {
 
 export function Media({ uri, localSource, category, style }: MediaProps) {
   const [failed, setFailed] = useState(false);
+  // Liste aynı bileşeni başka kart için yeniden kullanırsa eski hata taşınmasın.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: uri değişince sıfırlanır
+  useEffect(() => setFailed(false), [uri]);
   const source = uri ? { uri } : localSource;
 
   if (!source || failed) return <MediaFallback category={category} style={style} />;

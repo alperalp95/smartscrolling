@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
-import type { ComponentProps } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { type ComponentProps, useEffect, useState } from 'react';
+import { Keyboard, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space } from '../../src/theme';
 
@@ -17,6 +17,20 @@ const TABS: Record<string, { on: IconName; off: IconName; label: string }> = {
 
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  // Klavye açıkken alt menüyü gizle (eski tabBarHideOnKeyboard davranışı).
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  if (keyboardOpen) return null;
+
   return (
     <View style={[s.bar, { paddingBottom: insets.bottom }]}>
       {state.routes.map((route, index) => {
