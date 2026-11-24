@@ -12,13 +12,13 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { CONTEXT_MAX_CHARS, contextText } from '../v2/steps/enqueue.js';
-import { fetchArticleHtml } from '../v2/steps/support.js';
 import {
   MIN_PARAGRAPH_CHARS,
   extractParagraphs,
   parseWikiUrl,
   selectSupport,
 } from '../v2/steps/support-parse.js';
+import { fetchArticleHtml } from '../v2/steps/support.js';
 
 export const DEFAULT_LIMIT = 200;
 
