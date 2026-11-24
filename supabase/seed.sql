@@ -1,31 +1,9 @@
+-- 2026-11-24: Telif nedeniyle kitap metni bu dosyadan cikarildi. Tablolar drop_book_feature migration'i ile kaldirildi.
 -- Seed Fake Data (Facts and Books) for Local MVP
 -- These UUIDs are fixed so we can easily join them if needed
 
 -- 1. Insert Books (Project Gutenberg & TR Public Domain Examples)
-INSERT INTO public.books (id, title, author, cover_url, description, category, total_pages, epub_url, is_premium)
-VALUES 
-  (
-    '11111111-1111-1111-1111-111111111111', 
-    'Kendime Düşünceler', 
-    'Marcus Aurelius', 
-    'https://images.unsplash.com/photo-1544947950-fa07a98d237f', 
-    'Stoacı imparatorun kendi kendine tuttuğu felsefi notlar. Doğaya uygun yaşamak, erdem ve ölüm üzerine.', 
-    'Felsefe', 
-    160, 
-    'https://www.gutenberg.org/files/2680/2680-h/2680-h.htm', 
-    false
-  ),
-  (
-    '22222222-2222-2222-2222-222222222222', 
-    'Kürk Mantolu Madonna', 
-    'Sabahattin Ali', 
-    'https://images.unsplash.com/photo-1589998059171-988d887df646', 
-    'Raif Efendi ve Maria Puder arasındaki modern klasik. (Telif süresi 70 yılını doldurmuştur).', 
-    'Roman', 
-    164, 
-    NULL, 
-    true
-  );
+
 
 -- 2. Insert Facts (Wikipedia Featured Articles & NASA)
 -- Map media_url to the generated image keys
@@ -82,19 +60,3 @@ VALUES
   );
 
 -- 3. Insert specific Book Highlights to simulate AI reading
-INSERT INTO public.book_highlights (book_id, word, type, context, ai_definition)
-VALUES 
-  (
-    '11111111-1111-1111-1111-111111111111', 
-    'Logos', 
-    'concept', 
-    'Doğanın logosuna uygun yaşa.', 
-    'Stoacılıkta evreni yöneten tanrısal akıl, nizam veya doğa yasasıdır. Modern anlamda "evrenin mantığı" olarak çevrilebilir.'
-  ),
-  (
-    '11111111-1111-1111-1111-111111111111', 
-    'Dikotomi', 
-    'concept', 
-    'Kontrol dikotomisi bizi özgürleştirir.', 
-    'Kontrol edebildiğimiz ve edemediğimiz şeyler arasındaki kesin ayrımdır. Stoacılığın temel ilkesidir.'
-  );
