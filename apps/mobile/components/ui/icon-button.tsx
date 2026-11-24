@@ -38,6 +38,7 @@ export function IconButton({
       hitSlop={8}
       activeOpacity={0.7}
       accessibilityRole="button"
+      accessibilityState={{ selected: !!active }}
       accessibilityLabel={accessibilityLabel}
       testID={testID}
     >

@@ -14,7 +14,7 @@ export function Chip({ label, onPress, selected, testID }: ChipProps) {
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.7}
-      accessibilityRole="button"
+      accessibilityRole={onPress ? 'button' : undefined}
       accessibilityState={{ selected: !!selected }}
       testID={testID}
       style={[s.chip, selected && s.selected]}

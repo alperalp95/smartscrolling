@@ -13,7 +13,7 @@ export function TopBar({ title, left, right }: TopBarProps) {
     <View style={s.bar}>
       {left ? <View style={s.side}>{left}</View> : null}
       {title ? (
-        <Text style={s.title} numberOfLines={1}>
+        <Text style={s.title} numberOfLines={1} accessibilityRole="header">
           {title}
         </Text>
       ) : null}
