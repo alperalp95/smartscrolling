@@ -42,3 +42,25 @@ export async function insertRun(client, row) {
   if (error) throw new Error(`${RUNS_TABLE} yazılamadı: ${error.message}`);
   return { id: data?.id ?? null };
 }
+
+/**
+ * Son n apply run'ı (finished_at azalan). Hata olursa boş dizi döner (alarm hesabı run'ı düşürmesin).
+ * @param {{ from: (table: string) => any }} client
+ * @param {number} n
+ * @returns {Promise<Array<{ finished_at: string, ok: boolean, counts: object }>>}
+ */
+export async function fetchRecentRuns(client, n) {
+  try {
+    const { data, error } = await client
+      .from(RUNS_TABLE)
+      .select('finished_at, ok, counts')
+      .eq('counts->>mode', 'apply')
+      .order('finished_at', { ascending: false })
+      .limit(n);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  } catch (err) {
+    console.warn(`[runs-repo] ${RUNS_TABLE} okunamadı: ${err?.message ?? err}`);
+    return [];
+  }
+}
