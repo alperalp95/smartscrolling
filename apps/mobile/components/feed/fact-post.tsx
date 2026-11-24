@@ -223,7 +223,11 @@ export function FactPost({
     if (!isAnimatingRef.current && h > 0) mediaHeight.value = h;
   };
 
-  const expandPost = () => setIsExpanded(true);
+  const expandPost = () => {
+    // Ölçüm gelmediyse görsel sıfıra inmesin: en az oran kadar yükseklik varsay.
+    if (mediaHeight.value <= 0) mediaHeight.value = height * MEDIA_MIN_RATIO;
+    setIsExpanded(true);
+  };
   const collapsePost = () => {
     setIsCollapsing(true);
     setIsExpanded(false);
@@ -311,7 +315,6 @@ export function FactPost({
         {isAnimating ? <Text style={s.closeLabel}>Kapat</Text> : null}
       </Reanimated.View>
       <Reanimated.View
-        onLayout={onMediaLayout}
         style={[
           s.media,
           { minHeight: height * MEDIA_MIN_RATIO },
@@ -319,18 +322,21 @@ export function FactPost({
           isAnimating && mediaAnimatedStyle,
         ]}
       >
-        <Media
-          uri={media.uri}
-          localSource={media.localSource ?? undefined}
-          category={item.category}
-          style={s.mediaFill}
-          onError={() => {
-            if (media.uri) {
-              failedRemoteImageUrls.add(media.uri);
-              setMediaErrorTick((n) => n + 1);
-            }
-          }}
-        />
+        {/* Ölçüm düz View'de: animasyonlu kapta onLayout güvenilir gelmiyor. */}
+        <View style={s.mediaFill} onLayout={onMediaLayout}>
+          <Media
+            uri={media.uri}
+            localSource={media.localSource ?? undefined}
+            category={item.category}
+            style={s.mediaFill}
+            onError={() => {
+              if (media.uri) {
+                failedRemoteImageUrls.add(media.uri);
+                setMediaErrorTick((n) => n + 1);
+              }
+            }}
+          />
+        </View>
         <View style={s.progressTrack}>{progressFill}</View>
       </Reanimated.View>
 
