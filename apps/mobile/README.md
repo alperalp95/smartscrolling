@@ -54,6 +54,16 @@ npx tsc --noEmit
 - feed store: `apps/mobile/src/store/feedStore.ts`
 - feed types: `apps/mobile/src/types/index.ts`
 
+## Maestro (uçtan uca testler)
+
+- Kurulum: Maestro `C:\Users\<kullanıcı>\.maestro` altında durur; `JAVA_HOME` Android Studio'nun `jbr` klasörünü göstermelidir.
+- Analitiği kapatmak için: `MAESTRO_CLI_NO_ANALYTICS=1`
+- Misafir akışları: `npm run test:e2e:maestro`
+- Hesap akışları (bilgiler dosyaya yazılmaz):
+  `maestro test -e MAESTRO_TEST_EMAIL=... -e MAESTRO_TEST_PASSWORD=... .maestro/card-ask-account.yaml`
+- Tüm akışlar `.maestro/subflows/launch.yaml` ile açılır; geliştirme sürümünde Expo sunucu ekranını kendisi geçer. Metro farklı portta ise: `-e DEV_SERVER_URL=http://10.0.2.2:<port>`
+- Maestro'nun yardımcı uygulaması takılırsa: `adb uninstall dev.mobile.maestro` ve `adb uninstall dev.mobile.maestro.test`
+
 ## Known Gaps
 
 - beğeni durumu hâlâ yerel; kaydetme oturum varken sunucuda tutulur

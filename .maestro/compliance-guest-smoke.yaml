@@ -2,7 +2,7 @@ appId: com.smartscrolling.mobile
 ---
 # Misafir akisi: giris yapilmamisken profil ekraninda giris cagrisi gorunur,
 # hesap silme girisi gorunmez.
-- launchApp
+- runFlow: subflows/launch.yaml
 - tapOn:
     id: tab-profile
 - extendedWaitUntil:

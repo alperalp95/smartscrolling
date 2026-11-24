@@ -5,7 +5,7 @@ tags:
 # Giris yapmis akis: e-posta ile giris yapar, hesap silme girisini gorur (silmeye BASMAZ).
 # Kimlik bilgisi dosyaya yazilmaz; calistirma:
 #   maestro test -e MAESTRO_TEST_EMAIL=... -e MAESTRO_TEST_PASSWORD=... .maestro/compliance-account-smoke.yaml
-- launchApp
+- runFlow: subflows/launch.yaml
 - tapOn:
     id: tab-profile
 - extendedWaitUntil:

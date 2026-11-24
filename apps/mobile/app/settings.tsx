@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { DangerButton } from '../components/settings/danger-button';
 import { SettingsRow } from '../components/settings/settings-row';
 import { BottomSheet } from '../components/ui/bottom-sheet';
@@ -11,6 +11,7 @@ import { IconButton } from '../components/ui/icon-button';
 import { Screen } from '../components/ui/screen';
 import { TopBar } from '../components/ui/top-bar';
 import { deleteCurrentAccount } from '../src/lib/accountDeletion';
+import { showDialog } from '../src/lib/dialog';
 import {
   cancelSmartScrollingScheduledNotifications,
   getLocalNotificationPermissionStatus,
@@ -174,21 +175,25 @@ export default function SettingsScreen() {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
-      Alert.alert('Çıkış başarısız', error.message);
+      showDialog({ title: 'Çıkış başarısız', message: error.message });
       return;
     }
 
     resetOnboarding();
     setFeedback(null);
-    Alert.alert('Tamam', 'Oturum kapatıldı.');
+    showDialog({ title: 'Tamam', message: 'Oturum kapatıldı.' });
     router.back();
   }
 
   function handleSignOut() {
-    Alert.alert('Çıkış yapılsın mı?', 'Bu cihazdaki oturum kapatılacak.', [
-      { text: 'Vazgeç', style: 'cancel' },
-      { text: 'Çıkış Yap', style: 'destructive', onPress: () => void performSignOut() },
-    ]);
+    showDialog({
+      title: 'Çıkış yapılsın mı?',
+      message: 'Bu cihazdaki oturum kapatılacak.',
+      actions: [
+        { label: 'Vazgeç', style: 'cancel' },
+        { label: 'Çıkış Yap', style: 'destructive', onPress: () => void performSignOut() },
+      ],
+    });
   }
 
   function closeDeleteConfirm() {
@@ -201,7 +206,7 @@ export default function SettingsScreen() {
 
   async function handleDeleteAccount() {
     if (deleteConfirmationText.trim() !== 'SIL') {
-      Alert.alert('Onay gerekli', 'Hesabı silmek için kutuya SIL yaz.');
+      showDialog({ title: 'Onay gerekli', message: 'Hesabı silmek için kutuya SIL yaz.' });
       return;
     }
 
@@ -212,7 +217,7 @@ export default function SettingsScreen() {
     setIsDeletingAccount(false);
 
     if (!result.ok) {
-      Alert.alert('Hesap silinemedi', result.message);
+      showDialog({ title: 'Hesap silinemedi', message: result.message });
       return;
     }
 
@@ -220,7 +225,7 @@ export default function SettingsScreen() {
     setFeedback(null);
     setDeleteConfirmationText('');
     setIsDeleteConfirmVisible(false);
-    Alert.alert('Tamam', 'Hesabın ve verilerin silindi.');
+    showDialog({ title: 'Tamam', message: 'Hesabın ve verilerin silindi.' });
     router.back();
   }
 
@@ -240,12 +245,18 @@ export default function SettingsScreen() {
 
   async function handleSaveInterests() {
     if (!user?.id) {
-      Alert.alert('Giriş gerekli', 'İlgi alanlarını kaydetmek için önce hesabını bağla.');
+      showDialog({
+        title: 'Giriş gerekli',
+        message: 'İlgi alanlarını kaydetmek için önce hesabını bağla.',
+      });
       return;
     }
 
     if (!selectedInterests.length) {
-      Alert.alert('Bir alan seç', 'Devam etmeden önce en az bir ilgi alanı seç.');
+      showDialog({
+        title: 'Bir alan seç',
+        message: 'Devam etmeden önce en az bir ilgi alanı seç.',
+      });
       return;
     }
 
@@ -255,11 +266,11 @@ export default function SettingsScreen() {
       await updateUserInterests(user.id, selectedInterests);
       completeInterestPicker();
       setIsEditingInterests(false);
-      Alert.alert('Harika', 'İlgi alanların kaydedildi.');
+      showDialog({ title: 'Harika', message: 'İlgi alanların kaydedildi.' });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'İlgi alanları kaydedilirken bir hata oluştu.';
-      Alert.alert('Kaydedilemedi', message);
+      showDialog({ title: 'Kaydedilemedi', message });
     } finally {
       setIsSavingInterests(false);
     }
@@ -302,12 +313,15 @@ export default function SettingsScreen() {
 
   async function handleSaveDailyGoal() {
     if (!user?.id) {
-      Alert.alert('Giriş gerekli', 'Günlük hedefini kaydetmek için önce hesabını bağla.');
+      showDialog({
+        title: 'Giriş gerekli',
+        message: 'Günlük hedefini kaydetmek için önce hesabını bağla.',
+      });
       return;
     }
 
     if (!dailyGoal) {
-      Alert.alert('Hedef seç', 'Devam etmeden önce bir günlük hedef seç.');
+      showDialog({ title: 'Hedef seç', message: 'Devam etmeden önce bir günlük hedef seç.' });
       return;
     }
 
@@ -320,11 +334,11 @@ export default function SettingsScreen() {
       if (notificationsEnabled) {
         await reconcileNotificationSchedule(true);
       }
-      Alert.alert('Kaydedildi', 'Günlük hedefin profile kaydedildi.');
+      showDialog({ title: 'Kaydedildi', message: 'Günlük hedefin profile kaydedildi.' });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Günlük hedef kaydedilirken bir hata oluştu.';
-      Alert.alert('Kaydedilemedi', message);
+      showDialog({ title: 'Kaydedilemedi', message });
     } finally {
       setIsSavingDailyGoal(false);
     }
@@ -352,10 +366,14 @@ export default function SettingsScreen() {
         });
 
         if (permission.status === 'blocked' || shouldUseSettingsGuidance) {
-          Alert.alert('Bildirimler sistemden kapalı', permissionMessage, [
-            { text: 'Tamam', style: 'cancel' },
-            { text: 'Ayarlar', onPress: () => void Linking.openSettings() },
-          ]);
+          showDialog({
+            title: 'Bildirimler sistemden kapalı',
+            message: permissionMessage,
+            actions: [
+              { label: 'Tamam', style: 'cancel' },
+              { label: 'Ayarlar', style: 'primary', onPress: () => void Linking.openSettings() },
+            ],
+          });
         }
         return;
       }
@@ -424,7 +442,10 @@ export default function SettingsScreen() {
     }
 
     if (!user?.id) {
-      Alert.alert('Giriş gerekli', 'Bildirim tercihini yönetmek için önce hesabını bağla.');
+      showDialog({
+        title: 'Giriş gerekli',
+        message: 'Bildirim tercihini yönetmek için önce hesabını bağla.',
+      });
       return;
     }
 
@@ -437,7 +458,10 @@ export default function SettingsScreen() {
     }
 
     if (!user?.id) {
-      Alert.alert('Giriş gerekli', 'Bildirim saatini yönetmek için önce hesabını bağla.');
+      showDialog({
+        title: 'Giriş gerekli',
+        message: 'Bildirim saatini yönetmek için önce hesabını bağla.',
+      });
       return;
     }
 

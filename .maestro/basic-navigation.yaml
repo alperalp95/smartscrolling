@@ -1,6 +1,6 @@
 appId: com.smartscrolling.mobile
 ---
-- launchApp
+- runFlow: subflows/launch.yaml
 - extendedWaitUntil:
     visible:
       id: feed-screen
