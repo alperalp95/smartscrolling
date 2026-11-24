@@ -3,12 +3,9 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useIsFocused } from '@react-navigation/native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
-  Linking,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -18,22 +15,10 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { deleteCurrentAccount } from '../../src/lib/accountDeletion';
+import { IconButton } from '../../components/ui/icon-button';
 import { promptForAuth } from '../../src/lib/authPrompt';
-import {
-  cancelSmartScrollingScheduledNotifications,
-  getLocalNotificationPermissionStatus,
-  reconcileDailyLocalReminder,
-  requestLocalNotificationPermission,
-} from '../../src/lib/notifications';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
 import { presentCustomerCenterSafe } from '../../src/lib/purchases';
-import {
-  disableCurrentExpoPushToken,
-  disableUserPushTokens,
-  refreshCurrentExpoPushTokenIfPermissionGranted,
-  upsertCurrentExpoPushToken,
-} from '../../src/lib/pushTokens';
 import {
   isAppleSignInAvailable,
   signInWithApple,
@@ -41,23 +26,10 @@ import {
 } from '../../src/lib/socialAuth';
 import { supabase } from '../../src/lib/supabase';
 import { type ActivitySummary, fetchActivitySummary } from '../../src/lib/userActivity';
-import type { DailyGoalPreference } from '../../src/lib/userPreferences';
-import {
-  updateNotificationPreference,
-  updateNotificationTimePreference,
-  updateUserDailyGoal,
-  updateUserInterests,
-} from '../../src/lib/userPreferences';
 import { useAuthStore } from '../../src/store/authStore';
 import { useOnboardingStore } from '../../src/store/onboardingStore';
 
 const WEEK_DAYS = ['Pzt', 'Sal', 'Car', 'Per', 'Cum', 'Cmt', 'Paz'];
-const INTEREST_OPTIONS = ['Bilim', 'Tarih', 'Felsefe', 'Teknoloji', 'Saglik', 'Psikoloji'];
-const DAILY_GOAL_OPTIONS: Exclude<DailyGoalPreference, null>[] = [
-  { type: 'facts', value: 3 },
-  { type: 'facts', value: 5 },
-];
-const NOTIFICATION_HOUR_OPTIONS = [18, 19, 20, 21, 22];
 
 type AuthFeedback = {
   message: string;
@@ -84,57 +56,15 @@ export default function ProfileScreen() {
   const hasPremium = useAuthStore((state) => state.hasPremium);
   const user = useAuthStore((state) => state.user);
 
-  const completeDailyGoal = useOnboardingStore((state) => state.completeDailyGoal);
-  const completeInterestPicker = useOnboardingStore((state) => state.completeInterestPicker);
   const dailyGoal = useOnboardingStore((state) => state.dailyGoal);
-  const notificationsEnabled = useOnboardingStore((state) => state.notificationsEnabled);
-  const notificationTime = useOnboardingStore((state) => state.notificationTime);
-  const resetOnboarding = useOnboardingStore((state) => state.resetOnboarding);
-  const selectedInterests = useOnboardingStore((state) => state.selectedInterests);
-  const setDailyGoal = useOnboardingStore((state) => state.setDailyGoal);
-  const setNotificationsEnabled = useOnboardingStore((state) => state.setNotificationsEnabled);
-  const setNotificationTime = useOnboardingStore((state) => state.setNotificationTime);
-  const setSelectedInterests = useOnboardingStore((state) => state.setSelectedInterests);
-  const toggleInterest = useOnboardingStore((state) => state.toggleInterest);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSavingDailyGoal, setIsSavingDailyGoal] = useState(false);
-  const [isSavingInterests, setIsSavingInterests] = useState(false);
-  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [canUseAppleSignIn, setCanUseAppleSignIn] = useState(false);
   const [authFeedback, setAuthFeedback] = useState<AuthFeedback>(null);
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
-  const [isEditingDailyGoal, setIsEditingDailyGoal] = useState(false);
-  const [isEditingInterests, setIsEditingInterests] = useState(false);
-  const [isNotificationTimePanelVisible, setIsNotificationTimePanelVisible] = useState(false);
-  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
-  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
   const [showEmailForm, setShowEmailForm] = useState(false);
-
-  const interestsBackup = useRef<string[]>([]);
-  const dailyGoalBackup = useRef<DailyGoalPreference>(null);
-  const notificationPermissionWasRevokedRef = useRef(false);
-
-  const cancelInterestEdit = useCallback(() => {
-    const backup = interestsBackup.current;
-    const current = useOnboardingStore.getState().selectedInterests;
-    if (JSON.stringify(backup) !== JSON.stringify(current)) {
-      setSelectedInterests(backup);
-    }
-    setIsEditingInterests(false);
-  }, [setSelectedInterests]);
-
-  const cancelDailyGoalEdit = useCallback(() => {
-    const backup = dailyGoalBackup.current;
-    const current = useOnboardingStore.getState().dailyGoal;
-    if (backup?.type !== current?.type || backup?.value !== current?.value) {
-      setDailyGoal(backup);
-    }
-    setIsEditingDailyGoal(false);
-  }, [setDailyGoal]);
 
   const isLoggedIn = Boolean(user);
   const userEmail = user?.email?.trim() || 'Misafir Kullanici';
@@ -149,8 +79,6 @@ export default function ProfileScreen() {
         : authProvider === 'email'
           ? 'E-posta ile bagli'
           : 'Hesap baglandi';
-  const dailyGoalSummary = dailyGoal ? `Her gun ${dailyGoal.value} kart` : 'Henuz hedef secilmedi';
-  const notificationTimeSummary = `${String(notificationTime.hour).padStart(2, '0')}:00`;
   const todayKey = getTodayKey();
   const streakDays = activitySummary?.streakDays ?? 0;
   const bestStreakDays = activitySummary?.bestStreakDays ?? 0;
@@ -159,8 +87,6 @@ export default function ProfileScreen() {
     ...(activitySummary?.week.map((activity) => activity.factsRead) ?? []),
     1,
   );
-  const shouldShowDailyGoalEditor = isEditingDailyGoal || !dailyGoal;
-  const shouldShowInterestEditor = isEditingInterests || selectedInterests.length === 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -182,71 +108,6 @@ export default function ProfileScreen() {
       cancelled = true;
     };
   }, [isFocused, user?.id]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!isFocused || !user?.id || !notificationsEnabled) {
-      return;
-    }
-
-    void (async () => {
-      const permission = await getLocalNotificationPermissionStatus();
-
-      if (cancelled) {
-        return;
-      }
-
-      if (permission.status === 'granted') {
-        notificationPermissionWasRevokedRef.current = false;
-        void refreshCurrentExpoPushTokenIfPermissionGranted(user.id);
-        return;
-      }
-
-      if (permission.status === 'unsupported' || permission.status === 'error') {
-        setAuthFeedback({
-          tone: permission.status === 'error' ? 'error' : 'info',
-          message: permission.message,
-        });
-        return;
-      }
-
-      try {
-        notificationPermissionWasRevokedRef.current = true;
-        await updateNotificationPreference(user.id, false);
-        await cancelSmartScrollingScheduledNotifications();
-        await disableUserPushTokens(user.id);
-
-        if (cancelled) {
-          return;
-        }
-
-        setNotificationsEnabled(false);
-        setIsNotificationTimePanelVisible(false);
-        setAuthFeedback({
-          tone: 'info',
-          message: `${permission.message} Bildirim tercihin kapatildi.`,
-        });
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Bildirim izin durumu eslenirken bir hata olustu.';
-        setAuthFeedback({
-          tone: 'error',
-          message,
-        });
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isFocused, notificationsEnabled, setNotificationsEnabled, user?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -369,55 +230,6 @@ export default function ProfileScreen() {
     });
   }
 
-  async function performSignOut() {
-    setIsSubmitting(true);
-    if (user?.id) {
-      await disableCurrentExpoPushToken(user.id);
-    }
-    const { error } = await supabase.auth.signOut();
-    setIsSubmitting(false);
-
-    if (error) {
-      Alert.alert('Cikis basarisiz', error.message);
-      return;
-    }
-
-    resetOnboarding();
-    setAuthFeedback(null);
-    Alert.alert('Tamam', 'Oturum kapatildi.');
-  }
-
-  function handleSignOut() {
-    Alert.alert('Cikis yapilsin mi?', 'Bu cihazdaki oturum kapatilacak.', [
-      { text: 'Vazgec', style: 'cancel' },
-      { text: 'Cikis Yap', style: 'destructive', onPress: () => void performSignOut() },
-    ]);
-  }
-
-  async function handleDeleteAccount() {
-    if (deleteConfirmationText.trim() !== 'SIL') {
-      Alert.alert('Onay gerekli', 'Hesabi silmek icin kutuya SIL yaz.');
-      return;
-    }
-
-    setIsDeletingAccount(true);
-
-    const result = await deleteCurrentAccount();
-
-    setIsDeletingAccount(false);
-
-    if (!result.ok) {
-      Alert.alert('Hesap silinemedi', result.message);
-      return;
-    }
-
-    resetOnboarding();
-    setAuthFeedback(null);
-    setDeleteConfirmationText('');
-    setIsDeleteConfirmVisible(false);
-    Alert.alert('Tamam', 'Hesabin ve verilerin silindi.');
-  }
-
   async function handleGoogleSignIn() {
     setAuthFeedback({
       tone: 'info',
@@ -472,214 +284,6 @@ export default function ProfileScreen() {
     }
   }
 
-  async function handleSaveInterests() {
-    if (!user?.id) {
-      Alert.alert('Giris gerekli', 'Ilgi alanlarini kaydetmek icin once hesabini bagla.');
-      return;
-    }
-
-    if (!selectedInterests.length) {
-      Alert.alert('Bir alan sec', 'Devam etmeden once en az bir ilgi alani sec.');
-      return;
-    }
-
-    setIsSavingInterests(true);
-
-    try {
-      await updateUserInterests(user.id, selectedInterests);
-      completeInterestPicker();
-      setIsEditingInterests(false);
-      Alert.alert('Harika', 'Ilgi alanlarin kaydedildi.');
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Ilgi alanlari kaydedilirken bir hata olustu.';
-      Alert.alert('Kaydedilemedi', message);
-    } finally {
-      setIsSavingInterests(false);
-    }
-  }
-
-  function isDailyGoalSelected(option: Exclude<DailyGoalPreference, null>) {
-    return dailyGoal?.type === option.type && dailyGoal?.value === option.value;
-  }
-
-  async function handleSaveDailyGoal() {
-    if (!user?.id) {
-      Alert.alert('Giris gerekli', 'Gunluk hedefini kaydetmek icin once hesabini bagla.');
-      return;
-    }
-
-    if (!dailyGoal) {
-      Alert.alert('Hedef sec', 'Devam etmeden once bir gunluk hedef sec.');
-      return;
-    }
-
-    setIsSavingDailyGoal(true);
-
-    try {
-      await updateUserDailyGoal(user.id, dailyGoal);
-      completeDailyGoal();
-      setIsEditingDailyGoal(false);
-      if (notificationsEnabled) {
-        await reconcileProfileNotificationSchedule(true);
-      }
-      Alert.alert('Kaydedildi', 'Gunluk hedefin profile kaydedildi.');
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Gunluk hedef kaydedilirken bir hata olustu.';
-      Alert.alert('Kaydedilemedi', message);
-    } finally {
-      setIsSavingDailyGoal(false);
-    }
-  }
-
-  async function reconcileProfileNotificationSchedule(enabled = notificationsEnabled) {
-    if (!enabled) {
-      return cancelSmartScrollingScheduledNotifications();
-    }
-
-    const summary = activitySummary ?? (user?.id ? await fetchActivitySummary() : null);
-
-    return reconcileDailyLocalReminder({
-      dailyGoalValue: dailyGoal?.value ?? null,
-      enabled,
-      hour: notificationTime.hour,
-      isStreakAtRiskToday: summary?.isStreakAtRiskToday ?? false,
-      minute: notificationTime.minute,
-      todayFactsRead: summary?.today.factsRead ?? 0,
-    });
-  }
-
-  async function handleNotificationPreferencePress() {
-    if (isSavingNotifications) {
-      return;
-    }
-
-    if (!user?.id) {
-      Alert.alert('Giris gerekli', 'Bildirim tercihini yonetmek icin once hesabini bagla.');
-      return;
-    }
-
-    if (notificationsEnabled) {
-      setIsNotificationTimePanelVisible((current) => !current);
-      return;
-    }
-
-    setIsSavingNotifications(true);
-
-    try {
-      const shouldUseSettingsGuidance = notificationPermissionWasRevokedRef.current;
-      const permission = shouldUseSettingsGuidance
-        ? await getLocalNotificationPermissionStatus()
-        : await requestLocalNotificationPermission();
-
-      if (permission.status !== 'granted') {
-        const permissionMessage = shouldUseSettingsGuidance
-          ? 'Bildirimler sistem ayarlarindan kapali. Devam etmek icin Android App Info > Notifications ayarini ac.'
-          : permission.message;
-        setNotificationsEnabled(false);
-        setIsNotificationTimePanelVisible(false);
-        setAuthFeedback({
-          tone:
-            permission.status === 'denied' || permission.status === 'blocked' ? 'error' : 'info',
-          message: permissionMessage,
-        });
-
-        if (permission.status === 'blocked' || shouldUseSettingsGuidance) {
-          Alert.alert('Bildirimler sistemden kapali', permissionMessage, [
-            { text: 'Tamam', style: 'cancel' },
-            { text: 'Ayarlar', onPress: () => void Linking.openSettings() },
-          ]);
-        }
-        return;
-      }
-
-      notificationPermissionWasRevokedRef.current = false;
-      const savedValue = await updateNotificationPreference(user.id, true);
-      setNotificationsEnabled(savedValue);
-      setIsNotificationTimePanelVisible(false);
-      const scheduleResult = await reconcileProfileNotificationSchedule(savedValue);
-      const tokenResult = await upsertCurrentExpoPushToken(user.id);
-      const tokenMessage =
-        tokenResult.status === 'saved'
-          ? tokenResult.message
-          : `Remote push: ${tokenResult.message}`;
-      setAuthFeedback({
-        tone:
-          scheduleResult.status === 'error'
-            ? 'error'
-            : tokenResult.status === 'error'
-              ? 'info'
-              : 'success',
-        message: `${notificationTimeSummary} hatirlaticisi hazir. ${scheduleResult.message} ${tokenMessage}`,
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Bildirim tercihi guncellenirken bir hata olustu.';
-      setAuthFeedback({
-        tone: 'error',
-        message,
-      });
-    } finally {
-      setIsSavingNotifications(false);
-    }
-  }
-
-  async function handleNotificationHourPress(hour: number) {
-    if (isSavingNotifications) {
-      return;
-    }
-
-    if (!user?.id) {
-      Alert.alert('Giris gerekli', 'Bildirim saatini yonetmek icin once hesabini bagla.');
-      return;
-    }
-
-    setIsSavingNotifications(true);
-
-    try {
-      if (hour === notificationTime.hour) {
-        const savedValue = await updateNotificationPreference(user.id, false);
-        setNotificationsEnabled(savedValue);
-        setIsNotificationTimePanelVisible(false);
-        const cancelResult = await cancelSmartScrollingScheduledNotifications();
-        await disableUserPushTokens(user.id);
-        setAuthFeedback({
-          tone: cancelResult.status === 'error' ? 'error' : 'success',
-          message: 'Bildirim tercihin kapatildi ve pending hatirlaticilar temizlendi.',
-        });
-        return;
-      }
-
-      const savedTime = await updateNotificationTimePreference(user.id, { hour, minute: 0 });
-      setNotificationTime(savedTime);
-      setIsNotificationTimePanelVisible(false);
-
-      const scheduleResult = await reconcileDailyLocalReminder({
-        dailyGoalValue: dailyGoal?.value ?? null,
-        enabled: notificationsEnabled,
-        hour: savedTime.hour,
-        isStreakAtRiskToday: activitySummary?.isStreakAtRiskToday ?? false,
-        minute: savedTime.minute,
-        todayFactsRead: activitySummary?.today.factsRead ?? 0,
-      });
-
-      setAuthFeedback({
-        tone: scheduleResult.status === 'error' ? 'error' : 'success',
-        message: `Bildirim saati ${String(savedTime.hour).padStart(2, '0')}:00 olarak kaydedildi. ${scheduleResult.message}`,
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Bildirim saati kaydedilirken bir hata olustu.';
-      setAuthFeedback({
-        tone: 'error',
-        message,
-      });
-    } finally {
-      setIsSavingNotifications(false);
-    }
-  }
-
   return (
     <View
       style={[s.container, Platform.OS === 'web' && !isFocused ? s.webHiddenScreen : null]}
@@ -687,6 +291,13 @@ export default function ProfileScreen() {
     >
       <View style={[s.header, { paddingTop: topPadding + 10 }]}>
         <Text style={s.title}>Profil</Text>
+        <IconButton
+          name="menu-outline"
+          accessibilityLabel="Ayarlar"
+          testID="profile-settings-button"
+          color="#fff"
+          onPress={() => router.push('/settings')}
+        />
       </View>
 
       <ScrollView
@@ -908,321 +519,21 @@ export default function ProfileScreen() {
             ) : null}
           </View>
         ) : null}
-
-        {isLoggedIn ? (
-          <View style={s.interestsSection}>
-            <Text style={s.sectionHeading}>Ilgi Alanlari</Text>
-            <View style={s.chipWrap}>
-              {shouldShowInterestEditor
-                ? INTEREST_OPTIONS.map((interest) => {
-                    const isSelected = selectedInterests.includes(interest);
-                    return (
-                      <TouchableOpacity
-                        key={interest}
-                        style={[s.chip, isSelected && s.chipSelected]}
-                        onPress={() => toggleInterest(interest)}
-                        activeOpacity={0.85}
-                      >
-                        <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
-                          {interest}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })
-                : selectedInterests.map((interest) => (
-                    <View key={interest} style={s.chip}>
-                      <Text style={s.chipText}>{interest}</Text>
-                    </View>
-                  ))}
-              {!shouldShowInterestEditor ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    interestsBackup.current = [...selectedInterests];
-                    setIsEditingInterests(true);
-                  }}
-                  style={s.editChip}
-                  activeOpacity={0.85}
-                >
-                  <Text style={s.editChipText}>Duzenle</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-            {shouldShowInterestEditor ? (
-              <View style={s.editorActions}>
-                <TouchableOpacity
-                  style={[s.editorCancelButton]}
-                  onPress={cancelInterestEdit}
-                  activeOpacity={0.85}
-                >
-                  <Text style={s.editorCancelText}>Vazgec</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    s.primaryButton,
-                    { flex: 1 },
-                    (!selectedInterests.length || isSavingInterests) && s.buttonDisabled,
-                  ]}
-                  onPress={() => void handleSaveInterests()}
-                  activeOpacity={0.85}
-                  disabled={!selectedInterests.length || isSavingInterests}
-                >
-                  <Text style={s.primaryButtonText}>
-                    {isSavingInterests ? 'Kaydediliyor...' : 'Kaydet'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-
-        {isLoggedIn && shouldShowDailyGoalEditor ? (
-          <View style={s.interestsSection}>
-            <Text style={s.sectionHeading}>Gunluk Hedef</Text>
-            <View style={s.chipWrap}>
-              {DAILY_GOAL_OPTIONS.map((option) => {
-                const label = `${option.value} kart`;
-                const isSelected = isDailyGoalSelected(option);
-                return (
-                  <TouchableOpacity
-                    key={`${option.type}-${option.value}`}
-                    style={[s.chip, isSelected && s.chipSelected]}
-                    onPress={() => setDailyGoal(option)}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={[s.chipText, isSelected && s.chipTextSelected]}>{label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            <View style={s.editorActions}>
-              <TouchableOpacity
-                style={[s.editorCancelButton]}
-                onPress={cancelDailyGoalEdit}
-                activeOpacity={0.85}
-              >
-                <Text style={s.editorCancelText}>Vazgec</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  s.primaryButton,
-                  { flex: 1 },
-                  (!dailyGoal || isSavingDailyGoal) && s.buttonDisabled,
-                ]}
-                onPress={() => void handleSaveDailyGoal()}
-                activeOpacity={0.85}
-                disabled={!dailyGoal || isSavingDailyGoal}
-              >
-                <Text style={s.primaryButtonText}>
-                  {isSavingDailyGoal ? 'Kaydediliyor...' : 'Kaydet'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : null}
-
-        <View style={s.settingsSection}>
-          <Text style={s.sectionHeading}>Ayarlar</Text>
-          <View style={s.settingsCard}>
-            <TouchableOpacity
-              style={s.settingsRow}
-              onPress={handlePremiumPress}
-              activeOpacity={0.8}
-            >
-              <View style={s.settingsIconWrap}>
-                <Ionicons name="star-outline" size={18} color="#f5b942" />
-              </View>
-              <Text style={s.settingsLabel}>Premium</Text>
-              <Text style={s.settingsValue}>
-                {hasPremium ? 'Aktif' : isLoggedIn ? 'Yukselt' : 'Kesfet'}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color="#4b5563" />
-            </TouchableOpacity>
-
-            <View style={s.settingsDivider} />
-
-            {isLoggedIn ? (
-              <>
-                <TouchableOpacity
-                  style={s.settingsRow}
-                  onPress={() => {
-                    dailyGoalBackup.current = dailyGoal;
-                    setIsEditingDailyGoal(true);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <View style={s.settingsIconWrap}>
-                    <Ionicons name="flag-outline" size={18} color="#a78bfa" />
-                  </View>
-                  <Text style={s.settingsLabel}>Gunluk Hedef</Text>
-                  <Text style={s.settingsValue}>{dailyGoalSummary}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#4b5563" />
-                </TouchableOpacity>
-
-                <View style={s.settingsDivider} />
-
-                <TouchableOpacity
-                  style={s.settingsRow}
-                  onPress={() => void handleNotificationPreferencePress()}
-                  activeOpacity={0.8}
-                  disabled={isSavingNotifications}
-                >
-                  <View style={s.settingsIconWrap}>
-                    <Ionicons name="notifications-outline" size={18} color="#a78bfa" />
-                  </View>
-                  <Text style={s.settingsLabel}>Bildirimler</Text>
-                  <Text style={s.settingsValue}>
-                    {notificationsEnabled ? notificationTimeSummary : 'Kapali'}
-                  </Text>
-                  <Ionicons
-                    name={
-                      notificationsEnabled && isNotificationTimePanelVisible
-                        ? 'chevron-down'
-                        : 'chevron-forward'
-                    }
-                    size={16}
-                    color="#4b5563"
-                  />
-                </TouchableOpacity>
-
-                {notificationsEnabled && isNotificationTimePanelVisible ? (
-                  <>
-                    <View style={s.settingsDivider} />
-                    <View style={s.notificationTimePanel}>
-                      <View style={s.notificationTimeHeader}>
-                        <Text style={s.notificationTimeTitle}>Hatirlatma saati</Text>
-                        <Text style={s.notificationTimeValue}>{notificationTimeSummary}</Text>
-                      </View>
-                      <View style={s.notificationHourChips}>
-                        {NOTIFICATION_HOUR_OPTIONS.map((hour) => {
-                          const isSelected = notificationTime.hour === hour;
-                          return (
-                            <TouchableOpacity
-                              key={hour}
-                              style={[
-                                s.notificationHourChip,
-                                isSelected && s.notificationHourChipSelected,
-                                isSavingNotifications && s.buttonDisabled,
-                              ]}
-                              onPress={() => void handleNotificationHourPress(hour)}
-                              activeOpacity={0.85}
-                              disabled={isSavingNotifications}
-                            >
-                              <Text
-                                style={[
-                                  s.notificationHourChipText,
-                                  isSelected && s.notificationHourChipTextSelected,
-                                ]}
-                              >
-                                {String(hour).padStart(2, '0')}:00
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    </View>
-                  </>
-                ) : null}
-              </>
-            ) : null}
-
-            {isLoggedIn ? (
-              <>
-                <View style={s.settingsDivider} />
-                <TouchableOpacity
-                  style={s.settingsRow}
-                  onPress={() => setIsDeleteConfirmVisible(true)}
-                  activeOpacity={0.8}
-                  disabled={isDeletingAccount}
-                  testID="account-delete-entry"
-                >
-                  <View style={s.settingsIconWrap}>
-                    <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                  </View>
-                  <Text style={s.settingsLabelDanger}>Hesabimi ve Verilerimi Sil</Text>
-                  <Ionicons name="chevron-forward" size={16} color="rgba(239,68,68,0.4)" />
-                </TouchableOpacity>
-
-                <View style={s.settingsDivider} />
-                <TouchableOpacity style={s.settingsRow} onPress={handleSignOut} activeOpacity={0.8}>
-                  <View style={s.settingsIconWrap}>
-                    <Ionicons name="log-out-outline" size={18} color="#ef4444" />
-                  </View>
-                  <Text style={s.settingsLabelDanger}>Cikis Yap</Text>
-                  <Ionicons name="chevron-forward" size={16} color="rgba(239,68,68,0.4)" />
-                </TouchableOpacity>
-              </>
-            ) : null}
-          </View>
-        </View>
       </ScrollView>
-
-      <Modal
-        animationType="fade"
-        onRequestClose={() => {
-          if (!isDeletingAccount) {
-            setDeleteConfirmationText('');
-            setIsDeleteConfirmVisible(false);
-          }
-        }}
-        transparent
-        visible={isDeleteConfirmVisible}
-      >
-        <View style={s.deleteModalBackdrop}>
-          <View style={s.deleteModalSheet}>
-            <View style={s.deleteModalIconWrap}>
-              <Ionicons name="trash-outline" size={22} color="#ef4444" />
-            </View>
-            <Text style={s.deleteModalTitle}>Hesap kalici olarak silinsin mi?</Text>
-            <Text style={s.deleteWarningText}>
-              Bu islem hesabini, okuma ilerlemeni, yer imlerini ve AI sohbetlerini kalici olarak
-              siler. Devam etmek icin SIL yaz.
-            </Text>
-            <TextInput
-              value={deleteConfirmationText}
-              onChangeText={setDeleteConfirmationText}
-              placeholder="SIL"
-              placeholderTextColor="#6b7280"
-              autoCapitalize="characters"
-              style={s.input}
-              editable={!isDeletingAccount}
-            />
-            <View style={s.deleteActions}>
-              <TouchableOpacity
-                style={s.editorCancelButton}
-                onPress={() => {
-                  setDeleteConfirmationText('');
-                  setIsDeleteConfirmVisible(false);
-                }}
-                activeOpacity={0.85}
-                disabled={isDeletingAccount}
-              >
-                <Text style={s.editorCancelText}>Vazgec</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  s.dangerButton,
-                  (deleteConfirmationText.trim() !== 'SIL' || isDeletingAccount) &&
-                    s.buttonDisabled,
-                ]}
-                onPress={() => void handleDeleteAccount()}
-                activeOpacity={0.85}
-                disabled={deleteConfirmationText.trim() !== 'SIL' || isDeletingAccount}
-              >
-                <Text style={s.dangerButtonText}>
-                  {isDeletingAccount ? 'Siliniyor...' : 'Kalici Olarak Sil'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0D0D0D' },
-  header: { paddingBottom: 12, paddingHorizontal: 20, backgroundColor: '#0D0D0D' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#0D0D0D',
+  },
   title: { color: '#fff', fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
   scroll: { paddingTop: 8 },
 
@@ -1267,7 +578,6 @@ const s = StyleSheet.create({
     letterSpacing: -0.5,
     textAlign: 'center',
   },
-  emailText: { color: '#9ca3af', fontSize: 14, textAlign: 'center' },
   planBadge: {
     alignSelf: 'center',
     flexDirection: 'row',
@@ -1459,18 +769,6 @@ const s = StyleSheet.create({
     fontWeight: '600',
   },
 
-  sectionCard: {
-    marginHorizontal: 16,
-    marginBottom: 14,
-    backgroundColor: '#1c1c1e',
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.07)',
-  },
-  sectionTitle: { color: '#fff', fontSize: 18, fontWeight: '700', marginBottom: 8 },
-  sectionText: { color: '#cbd5e1', fontSize: 13, lineHeight: 20, marginBottom: 14 },
-
   feedbackBox: {
     borderRadius: 14,
     paddingHorizontal: 12,
@@ -1493,13 +791,6 @@ const s = StyleSheet.create({
   feedbackText: { color: '#f8fafc', fontSize: 13, lineHeight: 19 },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   loadingText: { color: '#c4b5fd', fontSize: 14 },
-  dividerText: {
-    color: '#94a3b8',
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginVertical: 10,
-  },
 
   input: {
     backgroundColor: '#0b1120',
@@ -1534,247 +825,7 @@ const s = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
   },
   secondaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  dangerButton: {
-    backgroundColor: '#ef4444',
-    borderRadius: 14,
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 13,
-  },
-  dangerButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
   buttonDisabled: { opacity: 0.55 },
-
-  preferenceSection: { gap: 12 },
-  preferenceHeaderRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'space-between',
-  },
-  preferenceHeaderCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  preferenceDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    marginVertical: 16,
-  },
-  preferenceTitle: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  preferenceHelp: { color: '#94a3b8', fontSize: 12, lineHeight: 18 },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  chip: {
-    backgroundColor: '#111827',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  chipSelected: {
-    backgroundColor: 'rgba(139,92,246,0.18)',
-    borderColor: 'rgba(167,139,250,0.35)',
-  },
-  chipText: { color: '#e5e7eb', fontSize: 13, fontWeight: '600' },
-  chipTextSelected: { color: '#c4b5fd' },
-  editChip: {
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  editChipText: { color: '#9ca3af', fontSize: 13, fontWeight: '600' },
-  editorActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  editorCancelButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    borderRadius: 14,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  editorCancelText: {
-    color: '#9ca3af',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  interestsSection: {
-    marginHorizontal: 16,
-    marginBottom: 14,
-    gap: 12,
-  },
-  sectionHeading: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  inlinePreferenceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-  statusPill: {
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  statusPillOn: { backgroundColor: 'rgba(48,209,88,0.16)' },
-  statusPillOff: { backgroundColor: 'rgba(142,142,147,0.16)' },
-  statusPillText: { fontSize: 12, fontWeight: '700' },
-  statusPillTextOn: { color: '#30d158' },
-  statusPillTextOff: { color: '#8e8e93' },
-  smallEditButton: {
-    backgroundColor: '#111827',
-    borderColor: 'rgba(167,139,250,0.28)',
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  smallEditButtonText: {
-    color: '#c4b5fd',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  notificationTimePanel: {
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  notificationTimeHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  notificationTimeTitle: {
-    color: '#d1d5db',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  notificationTimeValue: {
-    color: '#c4b5fd',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  notificationHourChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  notificationHourChip: {
-    backgroundColor: '#111827',
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  notificationHourChipSelected: {
-    backgroundColor: 'rgba(139,92,246,0.18)',
-    borderColor: 'rgba(167,139,250,0.42)',
-  },
-  notificationHourChipText: {
-    color: '#e5e7eb',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  notificationHourChipTextSelected: {
-    color: '#c4b5fd',
-  },
-
-  settingsSection: {
-    marginHorizontal: 16,
-    marginBottom: 14,
-    gap: 12,
-  },
-  settingsCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  settingsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  settingsDivider: {
-    height: 0.5,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    marginLeft: 48,
-  },
-  settingsIconWrap: {
-    width: 28,
-    alignItems: 'center',
-  },
-  settingsLabel: {
-    flex: 1,
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  settingsLabelDanger: {
-    flex: 1,
-    color: 'rgba(239,68,68,0.8)',
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  settingsValue: {
-    color: '#9ca3af',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  deleteModalBackdrop: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.68)',
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  deleteModalSheet: {
-    backgroundColor: '#111827',
-    borderColor: 'rgba(239,68,68,0.26)',
-    borderRadius: 18,
-    borderWidth: 1,
-    gap: 12,
-    maxWidth: 420,
-    padding: 18,
-    width: '100%',
-  },
-  deleteModalIconWrap: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(239,68,68,0.12)',
-    borderRadius: 999,
-    height: 42,
-    justifyContent: 'center',
-    width: 42,
-  },
-  deleteModalTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  deleteWarningText: {
-    color: '#fca5a5',
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  deleteActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
 
   webHiddenScreen: { display: 'none' },
 });
