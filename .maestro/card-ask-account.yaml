@@ -1,0 +1,53 @@
+appId: com.smartscrolling.mobile
+tags:
+  - account
+---
+# Karta Sor akisi (giris yapmis): ilk kartta Sor -> panel -> hazir soru -> cevap ya da hata -> kapat.
+# Kimlik bilgisi dosyaya yazilmaz; calistirma:
+#   maestro test -e MAESTRO_TEST_EMAIL=... -e MAESTRO_TEST_PASSWORD=... .maestro/card-ask-account.yaml
+- launchApp
+- tapOn: Profil
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 10000
+- tapOn:
+    id: auth-email-toggle
+- tapOn:
+    id: auth-email-input
+- inputText: ${MAESTRO_TEST_EMAIL}
+- tapOn:
+    id: auth-password-input
+- inputText: ${MAESTRO_TEST_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: auth-submit-button
+- scrollUntilVisible:
+    element:
+      id: account-delete-entry
+    timeout: 30000
+- tapOn: Akis
+- extendedWaitUntil:
+    visible:
+      id: feed-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: card-ask-button
+    timeout: 20000
+- tapOn:
+    id: card-ask-button
+- extendedWaitUntil:
+    visible:
+      id: card-ask-sheet
+    timeout: 10000
+- tapOn:
+    id: card-ask-preset-why
+# Cevap baloncugu ("Yanlis icerigi bildir" baglantisi) ya da hata metni; ag olmayabilir.
+- extendedWaitUntil:
+    visible: "Yanlış içeriği bildir|Şu an cevap veremiyorum.*|Bugünkü.*|Yapay zekâ.*|Bu kart artık.*|Soru sormak için.*"
+    timeout: 30000
+- tapOn:
+    id: card-ask-close
+- assertNotVisible:
+    id: card-ask-sheet
