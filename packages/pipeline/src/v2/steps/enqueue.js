@@ -3,6 +3,7 @@
 // Aday `queued` olur, fact_id dolar. content_hash/source_key unique çakışması
 // → rejected:duplicate_insert.
 import { contentHash } from '../../dedup/index.js';
+import { deriveFactVisualKey } from '../../lib/fact-visual-key.js';
 import { DuplicateInsertError } from '../db/steps-repo.js';
 import { STATUS, forEachCandidate, newStats, reject, wikiLang } from './common.js';
 import { cardText } from './dedup-card.js';
@@ -38,11 +39,12 @@ export function buildFactRow(cand) {
   if (!d.title || !d.content) throw new Error('kart taslağı (scores.draft) yok');
   if (!s.category) throw new Error('kategori yok');
   if (!cand.source_url) throw new Error('source_url yok');
+  const tags = Array.isArray(d.tags) ? d.tags : [];
   return {
     title: d.title,
     content: d.content,
     category: s.category,
-    tags: Array.isArray(d.tags) ? d.tags : [],
+    tags,
     read_time_sq: d.read_time_sq,
     source_url: cand.source_url,
     source_label: sourceLabel(cand),
@@ -55,6 +57,13 @@ export function buildFactRow(cand) {
     verification: s.verification ?? null,
     attribution: attributionText(cand),
     context_text: contextText(cand),
+    visual_key: deriveFactVisualKey({
+      sourceLabel: sourceLabel(cand),
+      category: s.category,
+      title: d.title,
+      tags,
+      content: d.content,
+    }),
   };
 }
 
