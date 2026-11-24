@@ -57,7 +57,8 @@ const TOP_BAR_ALLOWANCE = 56;
 const MEDIA_MIN_RATIO = 0.3;
 const PROGRESS_LINE_HEIGHT = 2;
 const EXPAND_DURATION_MS = 320;
-const MEDIA_COLLAPSED_SCALE = 0.96;
+// "devamı" açılınca görsel kaybolmaz, kapalı yüksekliğinin bu oranına kadar küçülür.
+const MEDIA_EXPANDED_RATIO = 0.35;
 const CLOSE_ROW_HEIGHT = 32;
 
 function getReadQualificationProgress(durationMs: number) {
@@ -206,15 +207,16 @@ export function FactPost({
   }, [isActive, expand]);
 
   const mediaAnimatedStyle = useAnimatedStyle(() => ({
-    height: interpolate(expand.value, [0, 1], [mediaHeight.value, 0]),
-    opacity: 1 - expand.value,
-    transform: [{ scale: interpolate(expand.value, [0, 1], [1, MEDIA_COLLAPSED_SCALE]) }],
+    height: interpolate(
+      expand.value,
+      [0, 1],
+      [mediaHeight.value, mediaHeight.value * MEDIA_EXPANDED_RATIO],
+    ),
   }));
   const closeRowAnimatedStyle = useAnimatedStyle(() => ({
     height: expand.value * CLOSE_ROW_HEIGHT,
     opacity: expand.value,
   }));
-  const inlineProgressAnimatedStyle = useAnimatedStyle(() => ({ opacity: expand.value }));
 
   const onMediaLayout = (e: LayoutChangeEvent) => {
     const h = e.nativeEvent.layout.height;
@@ -308,11 +310,6 @@ export function FactPost({
         ) : null}
         {isAnimating ? <Text style={s.closeLabel}>Kapat</Text> : null}
       </Reanimated.View>
-      {isAnimating ? (
-        <Reanimated.View style={[s.progressInline, inlineProgressAnimatedStyle]}>
-          {progressFill}
-        </Reanimated.View>
-      ) : null}
       <Reanimated.View
         onLayout={onMediaLayout}
         style={[
@@ -433,12 +430,6 @@ const s = StyleSheet.create({
   hidden: { display: 'none' },
   textGrow: { flex: 1 },
   collapsedScroll: { flexGrow: 0 },
-  progressInline: {
-    height: PROGRESS_LINE_HEIGHT,
-    backgroundColor: colors.scrim,
-    marginHorizontal: space.screen,
-    marginBottom: space.sm,
-  },
   progressFill: { height: PROGRESS_LINE_HEIGHT, backgroundColor: colors.text },
   actions: {
     flexDirection: 'row',
