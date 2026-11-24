@@ -20,6 +20,7 @@ import { IconButton } from '../../components/ui/icon-button';
 import { Screen } from '../../components/ui/screen';
 import { StatBlock } from '../../components/ui/stat-block';
 import { TopBar } from '../../components/ui/top-bar';
+import { authErrorMessage } from '../../src/lib/authErrors';
 import { fetchSavedFacts } from '../../src/lib/facts';
 import {
   isAppleSignInAvailable,
@@ -176,10 +177,7 @@ export default function ProfileScreen() {
     setIsSubmitting(false);
 
     if (error) {
-      setAuthFeedback({
-        tone: 'error',
-        message: error.message,
-      });
+      showAuthError(error, 'Giriş yapılamadı. Lütfen tekrar dene.');
       return;
     }
 
@@ -187,6 +185,12 @@ export default function ProfileScreen() {
       tone: 'success',
       message: 'Giriş başarılı. Hesabın bağlandı.',
     });
+  }
+
+  function showAuthError(error: unknown, fallback: string) {
+    const message = authErrorMessage(error, fallback);
+    // Empty message means the user cancelled: drop the "opening..." info box.
+    setAuthFeedback(message ? { tone: 'error', message } : null);
   }
 
   async function handleSignUp() {
@@ -209,10 +213,7 @@ export default function ProfileScreen() {
     setIsSubmitting(false);
 
     if (error) {
-      setAuthFeedback({
-        tone: 'error',
-        message: error.message,
-      });
+      showAuthError(error, 'Kayıt olunamadı. Lütfen tekrar dene.');
       return;
     }
 
@@ -236,12 +237,7 @@ export default function ProfileScreen() {
         message: 'Google hesabınla devam ediyoruz...',
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Google ile giriş sırasında bir hata oluştu.';
-      setAuthFeedback({
-        tone: 'error',
-        message,
-      });
+      showAuthError(error, 'Google ile giriş sırasında bir hata oluştu.');
     } finally {
       setIsSubmitting(false);
     }
@@ -265,12 +261,7 @@ export default function ProfileScreen() {
         message: 'Apple hesabınla devam ediyoruz...',
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Apple ile giriş sırasında bir hata oluştu.';
-      setAuthFeedback({
-        tone: 'error',
-        message,
-      });
+      showAuthError(error, 'Apple ile giriş sırasında bir hata oluştu.');
     } finally {
       setIsSubmitting(false);
     }
