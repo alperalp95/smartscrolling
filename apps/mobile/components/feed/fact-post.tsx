@@ -59,6 +59,7 @@ const PROGRESS_LINE_HEIGHT = 2;
 const EXPAND_DURATION_MS = 320;
 // "devamı" açılınca görsel kaybolmaz, kapalı yüksekliğinin bu oranına kadar küçülür.
 const MEDIA_EXPANDED_RATIO = 0.35;
+const MEDIA_UNBOUNDED = 100000;
 const CLOSE_ROW_HEIGHT = 32;
 
 function getReadQualificationProgress(durationMs: number) {
@@ -206,12 +207,17 @@ export function FactPost({
     }
   }, [isActive, expand]);
 
+  // Stil her zaman bağlı (sonradan eklenen animasyonlu stil uygulanmıyor). Kapalıyken sınır yok;
+  // açılırken üst sınır ölçülen boydan oran kadarına iner, görsel esnek kalır.
   const mediaAnimatedStyle = useAnimatedStyle(() => ({
-    height: interpolate(
-      expand.value,
-      [0, 1],
-      [mediaHeight.value, mediaHeight.value * MEDIA_EXPANDED_RATIO],
-    ),
+    maxHeight:
+      expand.value === 0
+        ? MEDIA_UNBOUNDED
+        : interpolate(
+            expand.value,
+            [0, 1],
+            [mediaHeight.value, mediaHeight.value * MEDIA_EXPANDED_RATIO],
+          ),
   }));
   const closeRowAnimatedStyle = useAnimatedStyle(() => ({
     height: expand.value * CLOSE_ROW_HEIGHT,
@@ -317,9 +323,8 @@ export function FactPost({
       <Reanimated.View
         style={[
           s.media,
-          { minHeight: height * MEDIA_MIN_RATIO },
-          isAnimating && s.mediaAnimating,
-          isAnimating && mediaAnimatedStyle,
+          { minHeight: isAnimating ? 0 : height * MEDIA_MIN_RATIO },
+          mediaAnimatedStyle,
         ]}
       >
         {/* Ölçüm düz View'de: animasyonlu kapta onLayout güvenilir gelmiyor. */}
@@ -432,7 +437,6 @@ const s = StyleSheet.create({
     height: PROGRESS_LINE_HEIGHT,
     backgroundColor: colors.scrim,
   },
-  mediaAnimating: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', minHeight: 0 },
   hidden: { display: 'none' },
   textGrow: { flex: 1 },
   collapsedScroll: { flexGrow: 0 },
