@@ -1,4 +1,4 @@
-import { colors, fonts, type, space } from '..';
+import { colors, fonts, space, type } from '..';
 
 describe('theme tokens', () => {
   it('has the brand gradient', () => {
@@ -6,7 +6,7 @@ describe('theme tokens', () => {
   });
 
   it('uses multiples of 4 for spacing', () => {
-    Object.values(space).forEach((v) => expect(v % 4).toBe(0));
+    for (const v of Object.values(space)) expect(v % 4).toBe(0);
   });
 
   it('defines cardTitle size and tracking', () => {
@@ -15,9 +15,9 @@ describe('theme tokens', () => {
   });
 
   it('uses Inter families and no fontWeight', () => {
-    Object.values(type).forEach((style) => {
+    for (const style of Object.values(type)) {
       expect(Object.values(fonts)).toContain(style.fontFamily);
       expect(style).not.toHaveProperty('fontWeight');
-    });
+    }
   });
 });
