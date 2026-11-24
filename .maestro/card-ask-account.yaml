@@ -26,7 +26,7 @@ tags:
     element:
       id: account-delete-entry
     timeout: 30000
-- tapOn: Akis
+- tapOn: Akış
 - extendedWaitUntil:
     visible:
       id: feed-screen

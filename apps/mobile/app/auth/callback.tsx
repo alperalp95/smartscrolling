@@ -56,10 +56,10 @@ export default function AuthCallbackScreen() {
     <View style={s.container}>
       <ActivityIndicator color="#a78bfa" size="large" />
       <Text style={s.title}>
-        {errorMessage ? 'Google girisinde bir sorun oldu' : 'Giris tamamlanıyor'}
+        {errorMessage ? 'Google girişinde bir sorun oldu' : 'Giriş tamamlanıyor'}
       </Text>
       <Text style={s.message}>
-        {errorMessage ?? 'Hesabin dogrulaniyor, seni uygulamaya geri aliyoruz.'}
+        {errorMessage ?? 'Hesabın doğrulanıyor, seni uygulamaya geri alıyoruz.'}
       </Text>
     </View>
   );

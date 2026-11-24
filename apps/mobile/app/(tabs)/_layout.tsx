@@ -29,7 +29,6 @@ export default function TabLayout() {
       />
       <Tabs.Screen name="saved" options={{ title: 'Kaydedilenler' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
-      <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
   );
 }

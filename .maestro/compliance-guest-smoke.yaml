@@ -8,14 +8,14 @@ appId: com.smartscrolling.mobile
     visible:
       id: profile-screen
     timeout: 10000
-- assertVisible: Hesabini Bagla
+- assertVisible: Hesabını bağla
 - assertVisible: Google ile Devam Et
 - assertVisible:
     id: auth-email-toggle
 - assertNotVisible:
     id: account-delete-entry
 # Misafir Karta Sor: giris isteme metni gorunur, kapatilir.
-- tapOn: Akis
+- tapOn: Akış
 - extendedWaitUntil:
     visible:
       id: card-ask-button

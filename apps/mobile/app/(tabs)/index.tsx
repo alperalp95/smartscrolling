@@ -113,14 +113,14 @@ function isFeedAdSlot(item: FeedListItem): item is FeedAdSlot {
 }
 
 const REVIEW_TAG_OPTIONS: Array<{ value: FactReviewTag; label: string }> = [
-  { value: 'not_snackable', label: 'Hap bilgi degil' },
-  { value: 'not_interesting', label: 'Merak uyandirmiyor' },
+  { value: 'not_snackable', label: 'Hap bilgi değil' },
+  { value: 'not_interesting', label: 'Merak uyandırmıyor' },
   { value: 'too_generic', label: 'Fazla genel' },
-  { value: 'title_weak', label: 'Baslik zayif' },
-  { value: 'content_weak', label: 'Icerik zayif' },
-  { value: 'category_mismatch', label: 'Kategori yanlis' },
-  { value: 'image_irrelevant', label: 'Gorsel alakasiz' },
-  { value: 'image_low_value', label: 'Gorsel dusuk degerli' },
+  { value: 'title_weak', label: 'Başlık zayıf' },
+  { value: 'content_weak', label: 'İçerik zayıf' },
+  { value: 'category_mismatch', label: 'Kategori yanlış' },
+  { value: 'image_irrelevant', label: 'Görsel alakasız' },
+  { value: 'image_low_value', label: 'Görsel düşük değerli' },
   { value: 'language_awkward', label: 'Dil yapay' },
   { value: 'duplicate_feeling', label: 'Tekrar hissi' },
 ];
@@ -434,12 +434,12 @@ export default function FeedScreen() {
 
   const saveReviewDraft = () => {
     if (!reviewTargetFact || !reviewDraft.verdict) {
-      setReviewError('Once bir karar sec.');
+      setReviewError('Önce bir karar seç.');
       return;
     }
 
     if (reviewDraft.verdict === 'bad' && !reviewDraft.comment.trim()) {
-      setReviewError('Bad seciminde neden kotu oldugunu kisaca yaz.');
+      setReviewError('Bad seçiminde neden kötü olduğunu kısaca yaz.');
       return;
     }
 
@@ -473,7 +473,7 @@ export default function FeedScreen() {
       }));
 
     if (exportedReviews.length === 0) {
-      Alert.alert('Review yok', 'Export edilecek en az bir review isaretle.');
+      Alert.alert('Review yok', 'Dışa aktarılacak en az bir review işaretle.');
       return;
     }
 
@@ -538,7 +538,7 @@ export default function FeedScreen() {
           setPostAuthRedirectPath('/');
           router.push('/profile');
         },
-        message: 'Kaydetme ve senkronizasyon icin once hesabina giris yap.',
+        message: 'Kaydetme ve senkronizasyon için önce hesabına giriş yap.',
       });
       return;
     }
@@ -565,11 +565,11 @@ export default function FeedScreen() {
       >
         {isLoading ? (
           <View style={s.centerState} testID="feed-loading">
-            <Text style={s.centerStateText}>Bilgiler Yukleniyor...</Text>
+            <Text style={s.centerStateText}>Bilgiler Yükleniyor...</Text>
           </View>
         ) : orderedFacts.length === 0 ? (
           <View style={s.centerState}>
-            <Text style={s.centerStateText}>Icerik bulunamadi.</Text>
+            <Text style={s.centerStateText}>İçerik bulunamadı.</Text>
           </View>
         ) : (
           <FlashList
@@ -597,7 +597,7 @@ export default function FeedScreen() {
             ListFooterComponent={
               isLoadingMore ? (
                 <View style={s.loadMoreFooter}>
-                  <Text style={s.loadMoreText}>Daha fazla bilgi yukleniyor...</Text>
+                  <Text style={s.loadMoreText}>Daha fazla bilgi yükleniyor...</Text>
                 </View>
               ) : null
             }
@@ -787,7 +787,7 @@ export default function FeedScreen() {
                       setReviewError(null);
                     }
                   }}
-                  placeholder="Kotuysa neden kotu oldugunu kisaca yaz..."
+                  placeholder="Kötüyse neden kötü olduğunu kısaca yaz..."
                   placeholderTextColor="#71717a"
                   style={s.reviewCommentInput}
                   value={reviewDraft.comment}
@@ -797,7 +797,7 @@ export default function FeedScreen() {
 
                 <View style={s.reviewActionsRow}>
                   <TouchableOpacity onPress={closeReviewModal} style={s.reviewSecondaryButton}>
-                    <Text style={s.reviewSecondaryButtonText}>Vazgec</Text>
+                    <Text style={s.reviewSecondaryButtonText}>Vazgeç</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={saveReviewDraft} style={s.reviewPrimaryButton}>
                     <Text style={s.reviewPrimaryButtonText}>Kaydet</Text>
