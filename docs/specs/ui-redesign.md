@@ -117,3 +117,8 @@ Instagram profili gibi: üst bar (kullanıcı adı / e-posta öneki, sağda ≡ 
 - Emülatörde yeni dev client ile: akış, Sor paneli, profil, ayarlar, premium, kart detayı, kaydedilenler ekran görüntüleri kullanıcıya gösterilir ve onaylanır.
 - typecheck, lint, birim testler ve Maestro (misafir + hesap) yeşil; `testID`'ler korunmuş.
 - Türkçe karakter taraması temiz.
+
+### 7.9 Cihaz turu sonrası kararlar (kullanıcı, 2026-11-24)
+1. Akış kartında yazı bloğu (ikon satırı, meta, başlık, metin, kaynak) alt menüye yaslanır; görsel kalan alanı doldurur (en az ekranın %30u).
+2. Kaydedilenler sekmesi kaldırıldı: alt menü **Akış · Profil**. Kaydedilenler profildeki ızgarada; tam liste profilden açılan `/saved` sayfasında. Boşalan yere ileride "Keşfet" düşünülebilir (kapsam dışı).
+3. Karta Sor paneli açıkken akış kendiliğinden sonraki karta geçmez.
