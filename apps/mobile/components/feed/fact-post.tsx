@@ -241,12 +241,7 @@ export function FactPost({
         </View>
       ) : (
         <>
-          <View
-            style={[
-              s.media,
-              { minHeight: height * MEDIA_MIN_RATIO },
-            ]}
-          >
+          <View style={[s.media, { minHeight: height * MEDIA_MIN_RATIO }]}>
             <Media
               uri={media.uri}
               localSource={media.localSource ?? undefined}
