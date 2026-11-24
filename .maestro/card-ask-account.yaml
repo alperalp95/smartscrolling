@@ -43,9 +43,9 @@ tags:
     timeout: 10000
 - tapOn:
     id: card-ask-preset-why
-# Cevap baloncugu ("Yanlis icerigi bildir" baglantisi) ya da hata metni; ag olmayabilir.
+# Cevap baloncugu ("Yanlış mı? Bildir" bağlantısı) ya da hata metni; ag olmayabilir.
 - extendedWaitUntil:
-    visible: "Yanlış içeriği bildir|Şu an cevap veremiyorum.*|Bugünkü.*|Yapay zekâ.*|Bu kart artık.*|Soru sormak için.*"
+    visible: ".*Yanlış mı\? Bildir|Şu an cevap veremiyorum.*|Bugünkü.*|Yapay zekâ.*|Bu kart artık.*|Soru sormak için.*"
     timeout: 30000
 - tapOn:
     id: card-ask-close

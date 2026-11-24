@@ -179,7 +179,10 @@ export function CardAskSheet({ fact, hasPremium, onClose, onPremiumPress }: Card
                         onPress={() => setReportingId(message.id)}
                         testID="card-ask-report"
                       >
-                        <Text style={s.meta}>Yanlış mı? Bildir</Text>
+                        <Text style={s.meta}>
+                          {fact?.source_label ? `Kaynak: ${fact.source_label} · ` : ''}Yanlış mı?
+                          Bildir
+                        </Text>
                       </TouchableOpacity>
                     </>
                   )
