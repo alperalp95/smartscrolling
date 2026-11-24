@@ -1091,7 +1091,11 @@ function FullScreenFactCard({
                 ) : (
                   <Text style={s.cardSource}>Kaynak: {item.source_label}</Text>
                 )}
-                <TouchableOpacity onPress={() => onAsk(item)} style={s.askButton} testID="card-ask-button">
+                <TouchableOpacity
+                  onPress={() => onAsk(item)}
+                  style={s.askButton}
+                  testID="card-ask-button"
+                >
                   <Text style={s.askButtonText}>Sor</Text>
                 </TouchableOpacity>
               </View>
@@ -1124,7 +1128,9 @@ function FullScreenFactCard({
 
             <View style={s.sourceRow}>
               {item.source_url ? (
-                <TouchableOpacity onPress={() => item.source_url && Linking.openURL(item.source_url)}>
+                <TouchableOpacity
+                  onPress={() => item.source_url && Linking.openURL(item.source_url)}
+                >
                   <Text style={s.cardSource}>
                     Kaynak: {item.source_label} {'->'}
                   </Text>
@@ -1132,7 +1138,11 @@ function FullScreenFactCard({
               ) : (
                 <Text style={s.cardSource}>Kaynak: {item.source_label}</Text>
               )}
-              <TouchableOpacity onPress={() => onAsk(item)} style={s.askButton} testID="card-ask-button">
+              <TouchableOpacity
+                onPress={() => onAsk(item)}
+                style={s.askButton}
+                testID="card-ask-button"
+              >
                 <Text style={s.askButtonText}>Sor</Text>
               </TouchableOpacity>
             </View>

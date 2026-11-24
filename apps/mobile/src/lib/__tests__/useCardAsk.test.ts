@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react-native';
-import { askCard, CardAskError } from '../cardAsk';
+import { CardAskError, askCard } from '../cardAsk';
 import { useCardAsk } from '../useCardAsk';
 
 jest.mock('../userActivity', () => ({ incrementDailyActivity: jest.fn() }));
@@ -49,7 +49,11 @@ describe('useCardAsk', () => {
 
   it('ignores a second call while loading', async () => {
     let resolve: (v: unknown) => void = () => {};
-    mockedAsk.mockReturnValue(new Promise((r) => (resolve = r)));
+    mockedAsk.mockReturnValue(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
     const { result } = renderHook(() => useCardAsk({ factId: FACT, hasPremium: true }));
     await act(async () => {
       void result.current.askPreset('why');

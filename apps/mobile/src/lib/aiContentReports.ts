@@ -47,8 +47,8 @@ export async function submitAiContentReport(
 
   const userId = await getOptionalUserId();
   const bookId = input.bookId && isUuid(input.bookId) ? input.bookId : null;
- const factId = input.factId && isUuid(input.factId) ? input.factId : null;
-   const bookTitle = input.bookTitle?.trim() || null;
+  const factId = input.factId && isUuid(input.factId) ? input.factId : null;
+  const bookTitle = input.bookTitle?.trim() || null;
   const note = input.note?.trim() || null;
 
   const { error } = await supabase.from('ai_content_reports').insert({

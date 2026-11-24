@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { submitAiContentReport, type AiContentReportReason } from '../src/lib/aiContentReports';
+import { type AiContentReportReason, submitAiContentReport } from '../src/lib/aiContentReports';
 import { CARD_ASK_MAX_QUESTION, CARD_ASK_PRESETS } from '../src/lib/cardAsk';
 import { promptForPremium } from '../src/lib/premiumPrompt';
 import { useCardAsk } from '../src/lib/useCardAsk';
@@ -49,6 +49,7 @@ export function CardAskSheet({ fact, hasPremium, onClose, onPremiumPress }: Card
   });
 
   const factId = fact?.id ?? null;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: kart değişince sohbet sıfırlanmalı
   useEffect(() => {
     reset();
     setDraft('');
