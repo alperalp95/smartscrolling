@@ -311,6 +311,7 @@ export function FactPost({
               <Text
                 style={[s.body, s.measure]}
                 onTextLayout={(e) => setFullLineCount(e.nativeEvent.lines.length)}
+                pointerEvents="none"
                 accessibilityElementsHidden
                 importantForAccessibility="no-hide-descendants"
               >
