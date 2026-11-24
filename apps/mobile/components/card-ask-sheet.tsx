@@ -36,6 +36,7 @@ export function CardAskSheet({ fact, hasPremium, onClose, onPremiumPress }: Card
   const [draft, setDraft] = useState('');
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [reportedIds, setReportedIds] = useState<string[]>([]);
+  const [failedReportIds, setFailedReportIds] = useState<string[]>([]);
 
   const { messages, isLoading, remaining, askPreset, askFree, reset } = useCardAsk({
     factId: fact?.id ?? null,
@@ -55,6 +56,7 @@ export function CardAskSheet({ fact, hasPremium, onClose, onPremiumPress }: Card
     setDraft('');
     setReportingId(null);
     setReportedIds([]);
+    setFailedReportIds([]);
   }, [factId, reset]);
 
   const handleSend = () => {
@@ -72,13 +74,18 @@ export function CardAskSheet({ fact, hasPremium, onClose, onPremiumPress }: Card
     reason: AiContentReportReason,
   ) => {
     setReportingId(null);
-    setReportedIds((current) => [...current, messageId]);
+    setFailedReportIds((current) => current.filter((id) => id !== messageId));
     if (!fact) return;
-    await submitAiContentReport({
+    const result = await submitAiContentReport({
       assistantMessage: content,
       factId: fact.id,
       reason,
     });
+    if (result.reported) {
+      setReportedIds((current) => [...current, messageId]);
+    } else {
+      setFailedReportIds((current) => [...current, messageId]);
+    }
   };
 
   return (
@@ -150,12 +157,17 @@ export function CardAskSheet({ fact, hasPremium, onClose, onPremiumPress }: Card
                           ))}
                         </View>
                       ) : (
-                        <TouchableOpacity
-                          onPress={() => setReportingId(message.id)}
-                          testID="card-ask-report"
-                        >
-                          <Text style={s.reportLink}>Yanlış içeriği bildir</Text>
-                        </TouchableOpacity>
+                        <>
+                          {failedReportIds.includes(message.id) ? (
+                            <Text style={s.reportedText}>Bildirilemedi, tekrar dene</Text>
+                          ) : null}
+                          <TouchableOpacity
+                            onPress={() => setReportingId(message.id)}
+                            testID="card-ask-report"
+                          >
+                            <Text style={s.reportLink}>Yanlış içeriği bildir</Text>
+                          </TouchableOpacity>
+                        </>
                       )
                     ) : null}
                   </View>

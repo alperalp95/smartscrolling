@@ -65,4 +65,54 @@ describe('useCardAsk', () => {
     });
     expect(result.current.isLoading).toBe(false);
   });
+
+  it('ignores a response that arrives after reset and unblocks new asks', async () => {
+    let resolveFirst: (v: unknown) => void = () => {};
+    mockedAsk.mockReturnValueOnce(
+      new Promise((r) => {
+        resolveFirst = r;
+      }),
+    );
+    const { result } = renderHook(() => useCardAsk({ factId: FACT, hasPremium: true }));
+    await act(async () => {
+      void result.current.askPreset('why');
+    });
+    expect(result.current.isLoading).toBe(true);
+    act(() => {
+      result.current.reset();
+    });
+    expect(result.current.isLoading).toBe(false);
+    mockedAsk.mockResolvedValueOnce({ answer: 'yeni', presetId: 'simple', quota: {} });
+    await act(async () => {
+      await result.current.askPreset('simple');
+    });
+    await act(async () => {
+      resolveFirst({ answer: 'eski', presetId: 'why', quota: {} });
+    });
+    expect(mockedAsk).toHaveBeenCalledTimes(2);
+    expect(result.current.messages.map((m) => m.content)).not.toContain('eski');
+    expect(result.current.messages[result.current.messages.length - 1].content).toBe('yeni');
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('does not produce an error bubble or premium offer after unmount', async () => {
+    let rejectFn: (e: unknown) => void = () => {};
+    mockedAsk.mockReturnValueOnce(
+      new Promise((_, rej) => {
+        rejectFn = rej;
+      }),
+    );
+    const onOfferPremium = jest.fn();
+    const { result, unmount } = renderHook(() =>
+      useCardAsk({ factId: FACT, hasPremium: false, onOfferPremium }),
+    );
+    await act(async () => {
+      void result.current.askPreset('why');
+    });
+    unmount();
+    await act(async () => {
+      rejectFn(new CardAskError('x', { code: 'quota_exceeded' }));
+    });
+    expect(onOfferPremium).not.toHaveBeenCalled();
+  });
 });
