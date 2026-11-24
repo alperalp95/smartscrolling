@@ -119,7 +119,7 @@ describe('FactPost', () => {
       measure?.props.onTextLayout({ nativeEvent: { lines: new Array(9).fill({}) } });
     });
     fireEvent.press(getByText('devamı'));
-    fireEvent.press(getByTestId('feed-collapse-filler'));
+    fireEvent.press(getByTestId('feed-collapse-filler', { includeHiddenElements: true }));
     expect(props.onExpandedChange).toHaveBeenLastCalledWith(false);
   });
 
