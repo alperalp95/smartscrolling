@@ -616,7 +616,7 @@ export default function FeedScreen() {
               return (
                 <FactPost
                   item={item}
-                  isActive={activeFactId === item.id}
+                  isActive={activeFactId === item.id && !askTargetFact}
                   height={listHeight}
                   onFinish={() => handleFinish(index, feedItems.length)}
                   onReadQualified={handleReadQualified}
