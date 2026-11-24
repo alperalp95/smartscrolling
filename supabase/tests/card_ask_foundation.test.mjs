@@ -1,4 +1,4 @@
-// Verifies supabase/migrations/20261124090000_card_ask_foundation.sql on PGlite:
+// Verifies supabase/migrations/20261124080249_card_ask_foundation.sql on PGlite:
 // ai_usage + consume_ai_quota, facts.context_text, ai_content_reports.fact_id.
 // All earlier migrations run in order first. Run: node --test supabase/tests/*.test.mjs
 
@@ -13,7 +13,7 @@ import { vector } from '@electric-sql/pglite/vector';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migrationsDir = join(here, '..', 'migrations');
-const FOUNDATION = '20261124090000_card_ask_foundation.sql';
+const FOUNDATION = '20261124080249_card_ask_foundation.sql';
 const read = (name) => readFileSync(join(migrationsDir, name), 'utf8');
 const PRIOR_MIGRATIONS = [
   '20260409000000_schema_and_rls.sql',
