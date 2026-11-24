@@ -131,7 +131,7 @@ export default function FactDetailScreen() {
               }}
               accessibilityRole="link"
             >
-              <Text style={s.source}>Kaynak: {fact.source_label} ›</Text>
+              <Text style={s.source}>Kaynak: {fact.source_label ?? 'Kaynağa git'} ›</Text>
             </Pressable>
           ) : fact.source_label ? (
             <Text style={s.source}>Kaynak: {fact.source_label}</Text>
