@@ -1,17 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
+import { Button } from '../components/ui/button';
+import { GradientButton } from '../components/ui/gradient';
+import { IconButton } from '../components/ui/icon-button';
+import { Screen } from '../components/ui/screen';
 import {
   getCurrentOfferingSafe,
   getPremiumEntitlementStatus,
@@ -19,26 +15,22 @@ import {
   restorePurchasesSafe,
 } from '../src/lib/purchases';
 import { useAuthStore } from '../src/store/authStore';
+import { colors, radius, space, type } from '../src/theme';
+
+const LOGO_SIZE = 56;
+const BENEFIT_ICON_SIZE = 28;
 
 const BENEFITS: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
   title: string;
   body: string;
 }[] = [
-  {
-    icon: 'ban-outline',
-    title: 'Reklamsız deneyim',
-    body: 'Akışta reklam görmeden oku.',
-  },
-  {
-    icon: 'sparkles-outline',
-    title: 'Günde 30 Karta Sor',
-    body: 'Her kart hakkında yapay zekâya soru sor; ücretsiz planda günde 3.',
-  },
+  { icon: 'remove-circle-outline', title: 'Reklamsız akış', body: 'Kaydırırken reklam yok.' },
+  { icon: 'sparkles-outline', title: 'Günde 30 Karta Sor', body: 'Ücretsizde günde 3.' },
   {
     icon: 'create-outline',
     title: 'Kendi sorunu yaz',
-    body: 'Hazır soruların ötesine geç, merak ettiğini kendin sor.',
+    body: 'Hazır soruların ötesine geç.',
   },
 ];
 
@@ -91,7 +83,7 @@ export default function PremiumScreen() {
       setHasPremium(true);
       router.back();
     } else {
-      Alert.alert('Satin alma', 'Islem tamamlanamadi. Tekrar dene veya geri yuklemeyi dene.');
+      Alert.alert('Satın alma', 'İşlem tamamlanamadı. Tekrar dene veya geri yüklemeyi dene.');
     }
 
     setIsSubmitting(false);
@@ -107,276 +99,99 @@ export default function PremiumScreen() {
     if (hasPremium) {
       router.back();
     } else {
-      Alert.alert('Geri yukleme', 'Aktif bir satin alma bulunamadi.');
+      Alert.alert('Geri yükleme', 'Aktif bir satın alma bulunamadı.');
     }
 
     setIsSubmitting(false);
   };
 
+  const purchaseDisabled = isSubmitting || isLoading || !lifetimePackage;
+
   return (
-    <SafeAreaView style={s.screen}>
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <Pressable onPress={() => router.back()} style={s.backButton}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </Pressable>
-
-        <View style={s.hero}>
-          <View style={s.heroBadge}>
-            <Ionicons name="star" size={14} color="#f5b942" />
-            <Text style={s.heroBadgeText}>PREMIUM</Text>
-          </View>
-          <Text style={s.heroTitle}>Tam deneyimin kilidini ac</Text>
-          <Text style={s.heroSubtitle}>
-            Tek seferlik ödeme ile reklamsız okuma ve kartlar için yapay zekâya soru hakkı.
-          </Text>
+    <Screen>
+      <View style={s.root} testID="premium-screen">
+        <View style={s.topBar}>
+          <IconButton
+            name="close"
+            onPress={() => router.back()}
+            testID="premium-close"
+            accessibilityLabel="Kapat"
+          />
         </View>
+        <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+          <LinearGradient colors={colors.brandGradient} style={s.logo}>
+            <Ionicons name="sparkles" size={28} color={colors.text} />
+          </LinearGradient>
+          <Text style={s.title}>SmartScrolling Premium</Text>
+          <Text style={s.subtitle}>Tek seferlik ödeme, abonelik yok</Text>
+          <Text style={s.price}>{priceLabel}</Text>
 
-        <View style={s.benefitCard}>
-          {BENEFITS.map((item, index) => (
-            <View key={item.title}>
-              <View style={s.benefitRow}>
-                <View style={s.benefitIconWrap}>
-                  <Ionicons name={item.icon} size={20} color="#a78bfa" />
+          <View style={s.benefits}>
+            {BENEFITS.map((item) => (
+              <View key={item.title} style={s.benefitRow}>
+                <View style={s.benefitIcon}>
+                  <Ionicons name={item.icon} size={18} color={colors.text} />
                 </View>
-                <View style={s.benefitTextWrap}>
+                <View style={s.benefitText}>
                   <Text style={s.benefitTitle}>{item.title}</Text>
                   <Text style={s.benefitBody}>{item.body}</Text>
                 </View>
               </View>
-              {index < BENEFITS.length - 1 ? <View style={s.benefitDivider} /> : null}
-            </View>
-          ))}
-        </View>
-
-        <View style={s.priceCard}>
-          <View style={s.priceAccent} />
-          <View style={s.priceContent}>
-            <View style={s.priceLeft}>
-              <Text style={s.priceLabel}>Omur Boyu Erisim</Text>
-              <Text style={s.priceSubLabel}>Tek seferlik odeme, abonelik yok</Text>
-            </View>
-            <View style={s.priceRight}>
-              <Text style={s.priceAmount}>{priceLabel}</Text>
-              <Text style={s.priceOnce}>bir kerelik</Text>
-            </View>
+            ))}
           </View>
+        </ScrollView>
+        <View style={s.footer}>
+          <GradientButton
+            label={isSubmitting || isLoading ? 'Lütfen bekle…' : "Premium'a geç"}
+            onPress={() => void handlePurchase()}
+            disabled={purchaseDisabled}
+            testID="premium-purchase-button"
+          />
+          <Button
+            variant="ghost"
+            label="Satın alımları geri yükle"
+            onPress={() => void handleRestore()}
+            disabled={isSubmitting}
+            testID="premium-restore-button"
+          />
         </View>
-
-        <Pressable
-          disabled={isSubmitting || isLoading || !lifetimePackage}
-          onPress={() => void handlePurchase()}
-          style={[
-            s.ctaButton,
-            (isSubmitting || isLoading || !lifetimePackage) && s.ctaButtonDisabled,
-          ]}
-        >
-          {isSubmitting || isLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={s.ctaButtonText}>Premium'a Gec</Text>
-          )}
-        </Pressable>
-
-        <Pressable onPress={() => router.back()} style={s.secondaryAction}>
-          <Text style={s.secondaryActionText}>Daha sonra</Text>
-        </Pressable>
-
-        <Pressable onPress={() => void handleRestore()} style={s.secondaryAction}>
-          <Text style={s.secondaryActionText}>Satin alimlari geri yukle</Text>
-        </Pressable>
-
-        <Text style={s.footerNote}>
-          Tek seferlik odeme ile kalici erisim. Abonelik veya gizli ucret yok.
-        </Text>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#0D0D0D',
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 36,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+  root: { flex: 1 },
+  topBar: { alignItems: 'flex-end', paddingHorizontal: space.screen, paddingVertical: space.sm },
+  content: { alignItems: 'center', paddingHorizontal: space.screen, paddingTop: space.lg },
+  logo: {
+    width: LOGO_SIZE,
+    height: LOGO_SIZE,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: space.lg,
   },
-  hero: {
-    alignItems: 'center',
-    marginBottom: 24,
-    gap: 12,
-  },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(245,185,66,0.1)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(245,185,66,0.3)',
-  },
-  heroBadgeText: {
-    color: '#f5b942',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-  },
-  heroTitle: {
-    color: '#fff',
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+  title: { ...type.cardTitle, color: colors.text, textAlign: 'center' },
+  subtitle: {
+    ...type.caption,
+    color: colors.textSecondary,
     textAlign: 'center',
+    marginTop: space.xs,
   },
-  heroSubtitle: {
-    color: '#9ca3af',
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  benefitCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  benefitRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 14,
-    padding: 16,
-  },
-  benefitIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(139,92,246,0.12)',
+  price: { ...type.stat, color: colors.text, textAlign: 'center', marginTop: space.sm },
+  benefits: { alignSelf: 'stretch', gap: space.lg, marginTop: space.xxxl },
+  benefitRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  benefitIcon: {
+    width: BENEFIT_ICON_SIZE,
+    height: BENEFIT_ICON_SIZE,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
   },
-  benefitTextWrap: {
-    flex: 1,
-  },
-  benefitTitle: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 3,
-  },
-  benefitBody: {
-    color: '#9ca3af',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  benefitDivider: {
-    height: 0.5,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    marginLeft: 66,
-  },
-  priceCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    borderWidth: 0.5,
-    borderColor: 'rgba(139,92,246,0.2)',
-    overflow: 'hidden',
-    marginBottom: 24,
-  },
-  priceAccent: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 3,
-    height: '100%',
-    backgroundColor: '#8b5cf6',
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
-  },
-  priceContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 18,
-    paddingLeft: 20,
-  },
-  priceLeft: {
-    flex: 1,
-    gap: 2,
-  },
-  priceLabel: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  priceSubLabel: {
-    color: '#9ca3af',
-    fontSize: 12,
-  },
-  priceRight: {
-    alignItems: 'flex-end',
-    gap: 2,
-  },
-  priceAmount: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '800',
-  },
-  priceOnce: {
-    color: '#a78bfa',
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  ctaButton: {
-    alignItems: 'center',
-    backgroundColor: '#8b5cf6',
-    borderRadius: 14,
-    justifyContent: 'center',
-    minHeight: 52,
-    marginBottom: 14,
-    shadowColor: '#8b5cf6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  ctaButtonDisabled: {
-    opacity: 0.55,
-  },
-  ctaButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  secondaryAction: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  secondaryActionText: {
-    color: '#9ca3af',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  footerNote: {
-    color: '#6b7280',
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 12,
-    textAlign: 'center',
-  },
+  benefitText: { flex: 1 },
+  benefitTitle: { ...type.button, color: colors.text },
+  benefitBody: { ...type.caption, color: colors.textSecondary },
+  footer: { paddingHorizontal: space.screen, paddingBottom: space.lg, gap: space.sm },
 });
