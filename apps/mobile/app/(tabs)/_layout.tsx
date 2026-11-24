@@ -8,7 +8,6 @@ type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 const TAB_ICONS: Record<string, { focused: IoniconsName; unfocused: IoniconsName }> = {
   index: { focused: 'flash', unfocused: 'flash-outline' },
-  library: { focused: 'library', unfocused: 'library-outline' },
   profile: { focused: 'person-circle', unfocused: 'person-circle-outline' },
 };
 
@@ -64,8 +63,6 @@ export default function TabLayout() {
           },
         }}
       />
-      <Tabs.Screen name="library" options={{ title: 'Kutuphane' }} />
-      <Tabs.Screen name="reader" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
       <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
