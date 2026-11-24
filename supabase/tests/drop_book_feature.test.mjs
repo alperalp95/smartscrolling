@@ -1,4 +1,4 @@
-// Verifies supabase/migrations/20261124120000_drop_book_feature.sql on PGlite.
+// Verifies supabase/migrations/20261124084015_drop_book_feature.sql on PGlite.
 // Run: node --test supabase/tests/*.test.mjs
 
 import assert from 'node:assert/strict';
@@ -12,7 +12,7 @@ import { vector } from '@electric-sql/pglite/vector';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migrationsDir = join(here, '..', 'migrations');
-const MIGRATION = '20261124120000_drop_book_feature.sql';
+const MIGRATION = '20261124084015_drop_book_feature.sql';
 const read = (name) => readFileSync(join(migrationsDir, name), 'utf8');
 const PRIOR_MIGRATIONS = [
   '20260409000000_schema_and_rls.sql',
