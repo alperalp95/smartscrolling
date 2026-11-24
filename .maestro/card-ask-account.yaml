@@ -55,7 +55,8 @@ tags:
     id: card-ask-preset-why
 # Cevap baloncugu ("Yanlış mı? Bildir" bağlantısı) ya da hata metni; ag olmayabilir.
 - extendedWaitUntil:
-    visible: ".*Yanlış mı\? Bildir|Şu an cevap veremiyorum.*|Bugünkü.*|Yapay zekâ.*|Bu kart artık.*|Soru sormak için.*"
+    # Tek tırnak: çift tırnakta "\?" geçersiz YAML kaçışı olur.
+    visible: '.*Yanlış mı\? Bildir|Şu an cevap veremiyorum.*|Bugünkü.*|Yapay zekâ.*|Bu kart artık.*|Soru sormak için.*'
     timeout: 30000
 - tapOn:
     id: card-ask-close
