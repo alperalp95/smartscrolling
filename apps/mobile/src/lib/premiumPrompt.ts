@@ -14,7 +14,7 @@ export function promptForPremium(options?: PremiumPromptOptions) {
     title: options?.title ?? 'Premium ile Ac',
     message:
       options?.message ??
-      'Bu deneyim premium kutuphane katmaninda yer aliyor. Reklamsiz kullanim, tam kutuphane ve daha derin AI deneyimi premium ile acilir.',
+      'Bu deneyim premium katmanında yer alıyor. Reklamsız kullanım, kartlara günde 30 AI sorusu ve kendi sorunu yazma premium ile açılır.',
     confirmLabel: options?.confirmLabel ?? 'Premiumu Incele',
     onConfirm:
       options?.onConfirm ??

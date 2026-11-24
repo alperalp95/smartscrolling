@@ -1672,13 +1672,13 @@ export default function FeedScreen() {
           <PremiumUpsellCard
             eyebrow="Reklamsiz Deneyim"
             title="Akisi reklamsiz ve daha derin kullan"
-            body="Premium ile reklamsiz devam et, serbest AI sorulari sor ve tum kutuphaneyi ac. Bu yumusak kart ileride reklam sonrasi da ayni yerde kullanilacak."
+            body="Premium ile reklamsız devam et, kartlara günde 30 soru sor ve kendi sorunu yaz. Bu yumuşak kart ileride reklam sonrası da aynı yerde kullanılacak."
             ctaLabel="Premiumu Incele"
             onPress={() =>
               promptForPremium({
                 title: 'Reklamsiz premium deneyime gec',
                 message:
-                  'Premium ile akista reklamsiz devam edebilir, tum kutuphaneyi acabilir ve AI deneyimini derinlestirebilirsin.',
+                  'Premium ile akışta reklamsız devam edebilir, kartlara günde 30 soru sorabilir ve kendi sorunu yazabilirsin.',
                 onConfirm: () => router.push('/profile'),
               })
             }
