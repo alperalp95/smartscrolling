@@ -43,8 +43,8 @@ const READ_QUALIFICATION_RATIO = 0.35;
 const READ_QUALIFICATION_MIN_MS = 2000;
 const READ_QUALIFICATION_MAX_MS = 5000;
 const TOP_BAR_ALLOWANCE = 56;
+// Görsel kalan alanı doldurur (yazı bloğu alt menüye yaslanır); en az bu oran kadar yer kaplar.
 const MEDIA_MIN_RATIO = 0.3;
-const MEDIA_MAX_RATIO = 0.45;
 const PROGRESS_LINE_HEIGHT = 2;
 
 function getReadQualificationProgress(durationMs: number) {
@@ -244,7 +244,7 @@ export function FactPost({
           <View
             style={[
               s.media,
-              { minHeight: height * MEDIA_MIN_RATIO, maxHeight: height * MEDIA_MAX_RATIO },
+              { minHeight: height * MEDIA_MIN_RATIO },
             ]}
           >
             <Media
