@@ -13,7 +13,6 @@ import {
 } from '../lib/supabase.js';
 import { fetchMedlinePlusArticles } from '../sources/medlineplus.js';
 import { fetchNasaApod } from '../sources/nasa.js';
-import { fetchPdfCuratedArticles } from '../sources/pdf-curated.js';
 import { fetchStanfordPhilosophy } from '../sources/stanford.js';
 import { fetchWikipediaArticles } from '../sources/wikipedia.js';
 
@@ -22,7 +21,6 @@ const DEFAULT_CONFIG = {
   stanford: { count: 4 },
   medlineplus: { count: 4 },
   nasa: { count: 30 },
-  pdfCurated: { count: 0, filePath: null, offset: 0 },
   run: { targetSaved: null, maxCandidates: null, maxGroq: null },
 };
 
@@ -48,11 +46,6 @@ function parseArgs(argv) {
       continue;
     }
 
-    if (arg === '--pdf-curated-file') {
-      overrides.pdfCurated = { ...(overrides.pdfCurated ?? {}), filePath: nextValue };
-      continue;
-    }
-
     const parsed = parseNonNegativeInt(nextValue);
 
     if (parsed === null) {
@@ -75,14 +68,6 @@ function parseArgs(argv) {
       overrides.nasa = { ...(overrides.nasa ?? {}), count: parsed };
     }
 
-    if (arg === '--pdf-curated-count') {
-      overrides.pdfCurated = { ...(overrides.pdfCurated ?? {}), count: parsed };
-    }
-
-    if (arg === '--pdf-curated-offset') {
-      overrides.pdfCurated = { ...(overrides.pdfCurated ?? {}), offset: parsed };
-    }
-
     if (arg === '--target-saved') {
       overrides.run = { ...(overrides.run ?? {}), targetSaved: parsed };
     }
@@ -101,7 +86,6 @@ function parseArgs(argv) {
     stanford: { ...DEFAULT_CONFIG.stanford, ...(overrides.stanford ?? {}) },
     medlineplus: { ...DEFAULT_CONFIG.medlineplus, ...(overrides.medlineplus ?? {}) },
     nasa: { ...DEFAULT_CONFIG.nasa, ...(overrides.nasa ?? {}) },
-    pdfCurated: { ...DEFAULT_CONFIG.pdfCurated, ...(overrides.pdfCurated ?? {}) },
     run: { ...DEFAULT_CONFIG.run, ...(overrides.run ?? {}) },
   };
 }
@@ -228,7 +212,6 @@ async function main() {
   const stanfordStats = createRunStats();
   const medlinePlusStats = createRunStats();
   const nasaStats = createRunStats();
-  const pdfCuratedStats = createRunStats();
 
   console.log(
     `\nWikipedia job: count=${CONFIG.wikipedia.count} target_saved=${formatOptionalLimit(CONFIG.run.targetSaved)} max_candidates=${formatOptionalLimit(CONFIG.run.maxCandidates)} max_groq=${formatOptionalLimit(CONFIG.run.maxGroq)} lang=${CONFIG.wikipedia.lang}`,
@@ -518,70 +501,6 @@ async function main() {
 
   logSourceSummary('NASA APOD', nasaStats);
   mergeStats(totalStats, nasaStats);
-
-  if (CONFIG.pdfCurated.count > 0) {
-    console.log(`\nPDF curated kaynaktan ${CONFIG.pdfCurated.count} madde cekiliyor...`);
-    const pdfCuratedItems = await fetchPdfCuratedArticles({
-      count: CONFIG.pdfCurated.count,
-      filePath: CONFIG.pdfCurated.filePath ?? undefined,
-      offset: CONFIG.pdfCurated.offset,
-    });
-    console.log(`   ${pdfCuratedItems.length} madde alindi, Groq ile isleniyor...`);
-    const existingPdfCuratedUrls = await getExistingSourceUrls(
-      pdfCuratedItems.map((item) => item.url),
-    );
-
-    for (const item of pdfCuratedItems) {
-      pdfCuratedStats.candidates_seen += 1;
-
-      if (existingPdfCuratedUrls.has(item.url)) {
-        console.log(`[Preflight] skipped existing PDF curated source_url: "${item.title}"`);
-        pdfCuratedStats.duplicate_source_url += 1;
-        continue;
-      }
-
-      const recentTopicDuplicate = await findRecentTopicPreflight({
-        title: item.title,
-        category: item.category,
-      });
-
-      if (recentTopicDuplicate) {
-        console.log(
-          `[Preflight] skipped recent PDF curated topic: "${item.title}" -> recent="${recentTopicDuplicate.title}"`,
-        );
-        pdfCuratedStats.duplicate_recent_topic += 1;
-        continue;
-      }
-
-      pdfCuratedStats.groq_attempted += 1;
-      const fact = await convertToFact(
-        item.extract,
-        item.sourceLabel,
-        item.url,
-        item.category,
-        item.imageUrl,
-        item.title,
-      );
-
-      if (isConversionRateLimited(fact)) {
-        console.warn('[RunAll] Groq rate limit goruldu; PDF curated dongusu erken durduruluyor.');
-        pdfCuratedStats.rate_limited += 1;
-        break;
-      }
-
-      if (!fact) {
-        pdfCuratedStats.groq_failed += 1;
-        continue;
-      }
-
-      const result = await insertFact(fact);
-      applyInsertResult(pdfCuratedStats, result);
-      await sleep(200);
-    }
-
-    logSourceSummary('PDF Curated', pdfCuratedStats);
-    mergeStats(totalStats, pdfCuratedStats);
-  }
 
   console.log(`\n${'='.repeat(50)}`);
   console.log('Pipeline tamamlandi');
