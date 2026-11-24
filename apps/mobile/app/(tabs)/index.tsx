@@ -1672,7 +1672,7 @@ export default function FeedScreen() {
           <PremiumUpsellCard
             eyebrow="Reklamsiz Deneyim"
             title="Akisi reklamsiz ve daha derin kullan"
-            body="Premium ile reklamsız devam et, kartlara günde 30 soru sor ve kendi sorunu yaz. Bu yumuşak kart ileride reklam sonrası da aynı yerde kullanılacak."
+            body="Premium ile reklamsız devam et, kartlara günde 30 soru sor ve kendi sorunu yaz."
             ctaLabel="Premiumu Incele"
             onPress={() =>
               promptForPremium({
