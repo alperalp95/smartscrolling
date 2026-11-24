@@ -2,13 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ComponentProps, ReactNode } from 'react';
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  type StyleProp,
-  type TextStyle,
-} from 'react-native';
+import { type StyleProp, StyleSheet, Text, type TextStyle, TouchableOpacity } from 'react-native';
 import { colors, radius, space, type } from '../../src/theme';
 
 type GradientButtonProps = {

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { type Edge, SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../src/theme';
 
