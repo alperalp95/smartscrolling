@@ -20,7 +20,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createFileUsageStore, createLlm, loadConfig } from '../llm/index.js';
 import { createStateUsageStore } from '../llm/usage.js';
-import { buildRunRow, insertRun } from '../v2/db/runs-repo.js';
+import { buildRunRow, fetchRecentRuns, insertRun } from '../v2/db/runs-repo.js';
 import { createStepsRepo } from '../v2/db/steps-repo.js';
 import { createPublishRepo } from '../v2/publish/index.js';
 import { runCollect } from './v2-collect.js';
@@ -38,6 +38,7 @@ export const DEFAULTS = Object.freeze({
 
 export const ALARM_CODES = Object.freeze({
   NO_NEW_QUEUED: 'no_new_queued',
+  NO_CARDS_3_RUNS: 'no_cards_3_runs',
   LOW_STOCK: 'low_stock',
   MODEL_UNAVAILABLE: 'model_unavailable',
   CHAIN_EXHAUSTED: 'chain_exhausted',
@@ -260,6 +261,27 @@ export function computeAlarms(summary) {
     });
   }
 
+  const prev = summary.recentRuns;
+  if (
+    steps.process &&
+    !steps.process.skipped &&
+    (summary.queued ?? 0) === 0 &&
+    Array.isArray(prev) &&
+    prev.length >= 2 &&
+    prev.every((r) => (r.queued ?? 0) === 0)
+  ) {
+    const dates = [summary.finished_at, ...prev.map((r) => r.finished_at)]
+      .filter(Boolean)
+      .join(', ');
+    alarms.push({
+      code: ALARM_CODES.NO_CARDS_3_RUNS,
+      title: 'Üst üste 3 çalışmada kart çıkmadı',
+      message: `Son 3 çalışmada (${dates}) yayın stoğuna hiç yeni kart eklenmedi (bu run'da toplanan aday: ${steps.collect?.total ?? 0}).`,
+      action:
+        "Hat ~1 gündür kart üretmiyor. Bu Issue'daki diğer maddelere ve son run log'una bakın. Sık neden: ücretsiz model limitleri her gün doluyor ya da bir API anahtarı geçersiz. Yayın stoğu bitmeden çözülmeli.",
+    });
+  }
+
   const pub = steps.publish;
   if (pub && !pub.skipped && pub.alarm) {
     alarms.push({
@@ -449,6 +471,7 @@ export function createMemoryPublishRepo(queued = []) {
  * @param {Function} [deps.runPublish]   varsayılan v2-publish runPublish
  * @param {(env) => Promise<any>} [deps.createClient]  sadece apply'da çağrılır
  * @param {(client, row) => Promise<{ id }>} [deps.insertRun]  sadece apply'da
+ * @param {(client, n) => Promise<Array>} [deps.fetchRecentRuns]  sadece apply'da (son n apply run)
  * @param {(client) => any} [deps.createStepsRepo]
  * @param {(client) => any} [deps.createPublishRepo]
  * @param {(config, llmDeps) => any} [deps.createLlm]
@@ -652,6 +675,19 @@ async function finish(
   const finishedMs = now();
   summary.finished_at = new Date(finishedMs).toISOString();
   summary.duration_ms = finishedMs - startedMs;
+  if (apply && client) {
+    try {
+      const prev = await (deps.fetchRecentRuns ?? fetchRecentRuns)(client, 2);
+      summary.recentRuns = (prev ?? []).map((r) => ({
+        finished_at: r.finished_at,
+        ok: r.ok,
+        queued: r.counts?.queued ?? 0,
+      }));
+    } catch (err) {
+      log(`[v2-daily] önceki run'lar okunamadı: ${err?.message ?? err}`);
+      summary.recentRuns = [];
+    }
+  }
   summary.alarms = computeAlarms(summary);
   summary.ok = summary.errors.length === 0;
 
