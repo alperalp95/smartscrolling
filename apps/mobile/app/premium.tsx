@@ -19,6 +19,10 @@ import { colors, radius, space, type } from '../src/theme';
 
 const LOGO_SIZE = 56;
 const BENEFIT_ICON_SIZE = 28;
+const LOGO_ICON_SIZE = 28;
+const BENEFIT_GLYPH_SIZE = 18;
+const GRADIENT_START = { x: 0, y: 0 };
+const GRADIENT_END = { x: 1, y: 0 };
 
 const BENEFITS: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -119,8 +123,13 @@ export default function PremiumScreen() {
           />
         </View>
         <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-          <LinearGradient colors={colors.brandGradient} style={s.logo}>
-            <Ionicons name="sparkles" size={28} color={colors.text} />
+          <LinearGradient
+            colors={colors.brandGradient}
+            start={GRADIENT_START}
+            end={GRADIENT_END}
+            style={s.logo}
+          >
+            <Ionicons name="sparkles" size={LOGO_ICON_SIZE} color={colors.text} />
           </LinearGradient>
           <Text style={s.title}>SmartScrolling Premium</Text>
           <Text style={s.subtitle}>Tek seferlik ödeme, abonelik yok</Text>
@@ -130,7 +139,7 @@ export default function PremiumScreen() {
             {BENEFITS.map((item) => (
               <View key={item.title} style={s.benefitRow}>
                 <View style={s.benefitIcon}>
-                  <Ionicons name={item.icon} size={18} color={colors.text} />
+                  <Ionicons name={item.icon} size={BENEFIT_GLYPH_SIZE} color={colors.text} />
                 </View>
                 <View style={s.benefitText}>
                   <Text style={s.benefitTitle}>{item.title}</Text>
