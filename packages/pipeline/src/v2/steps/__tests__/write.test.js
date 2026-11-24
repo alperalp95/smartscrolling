@@ -7,6 +7,7 @@ import {
   hasTurkishChars,
   normalizeDraft,
   runWrite,
+  stripReaderReaction,
 } from '../write.js';
 import { GOOD_CARD, baseCandidate, deps, exhausted, fakeLlm, userContent } from './helpers.js';
 
@@ -186,4 +187,23 @@ test('runWrite: ilk cümle = başlık → tek yeniden yazım', async () => {
   await runWrite(deps({ llm, repo }));
   assert.equal(llm.count('writer'), 2);
   assert.equal(repo.get('w1').status, 'written');
+});
+
+test('stripReaderReaction: sondaki ve ortadaki tepki cümlesi silinir', () => {
+  assert.equal(
+    stripReaderReaction('Ahtapotun üç kalbi var. Kanı mavidir. Aa, bunu bilmiyordum!'),
+    'Ahtapotun üç kalbi var. Kanı mavidir.',
+  );
+  assert.equal(
+    stripReaderReaction(
+      'Ahtapotun üç kalbi var. Vay be! Kanı mavidir. Bunu bilmiyordun, değil mi?',
+    ),
+    'Ahtapotun üç kalbi var. Kanı mavidir.',
+  );
+});
+
+test('stripReaderReaction: olgusal "bilmiyordu" cümlesi korunur', () => {
+  const t = 'Bilim insanları bunu uzun süre bilmiyordu. Keşif 1950 yılında yapıldı.';
+  assert.equal(stripReaderReaction(t), t);
+  assert.equal(stripReaderReaction(''), '');
 });
