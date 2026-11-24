@@ -73,9 +73,10 @@ export function CardAskSheet({ fact, hasPremium, onClose, onPremiumPress }: Card
   ) => {
     setReportingId(null);
     setReportedIds((current) => [...current, messageId]);
+    if (!fact) return;
     await submitAiContentReport({
       assistantMessage: content,
-      factId: fact?.id ?? null,
+      factId: fact.id,
       reason,
     });
   };
