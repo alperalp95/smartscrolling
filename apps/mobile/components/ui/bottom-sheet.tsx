@@ -18,6 +18,7 @@ type BottomSheetProps = {
   subtitle?: string;
   children: ReactNode;
   testID?: string;
+  headerRight?: ReactNode;
 };
 
 export function BottomSheet({
@@ -27,6 +28,7 @@ export function BottomSheet({
   subtitle,
   children,
   testID,
+  headerRight,
 }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
   return (
@@ -35,6 +37,7 @@ export function BottomSheet({
         <Pressable style={s.backdrop} onPress={onClose} accessibilityLabel="Kapat" />
         <View style={[s.panel, { paddingBottom: insets.bottom + space.lg }]} testID={testID}>
           <View style={s.handle} />
+          {headerRight ? <View style={s.headerRight}>{headerRight}</View> : null}
           {title ? <Text style={s.title}>{title}</Text> : null}
           {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
           {children}
@@ -61,6 +64,12 @@ const s = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.fill,
     marginBottom: space.md,
+  },
+  headerRight: {
+    position: 'absolute',
+    top: space.sm + 4 + space.md,
+    right: space.screen,
+    zIndex: 1,
   },
   title: { ...type.screenTitle, color: colors.text, textAlign: 'center' },
   subtitle: {

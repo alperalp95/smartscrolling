@@ -39,6 +39,21 @@ describe('BottomSheet', () => {
     );
     expect(getByText('icerik')).toBeTruthy();
   });
+
+  it('renders headerRight only when given', () => {
+    const { getByText, queryByText, rerender } = render(
+      <BottomSheet visible onClose={() => {}} headerRight={<Text>sag</Text>}>
+        <Text>icerik</Text>
+      </BottomSheet>,
+    );
+    expect(getByText('sag')).toBeTruthy();
+    rerender(
+      <BottomSheet visible onClose={() => {}}>
+        <Text>icerik</Text>
+      </BottomSheet>,
+    );
+    expect(queryByText('sag')).toBeNull();
+  });
 });
 
 describe('Media', () => {
