@@ -27,8 +27,8 @@ export function Button({ label, onPress, variant = 'secondary', disabled, testID
 }
 
 const s = StyleSheet.create({
-  base: { alignItems: 'center', paddingVertical: space.sm, paddingHorizontal: space.md },
-  secondary: { backgroundColor: colors.fill, borderRadius: radius.sm },
+  base: { alignItems: 'center', paddingVertical: space.md, paddingHorizontal: space.md },
+  secondary: { backgroundColor: colors.fill, borderRadius: radius.md },
   disabled: { opacity: 0.5 },
   label: { ...type.button, color: colors.text },
   ghostLabel: { color: colors.textSecondary },
