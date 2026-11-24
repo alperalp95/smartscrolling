@@ -5,9 +5,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
-  Animated,
   AppState,
-  Easing,
   Modal,
   Platform,
   Pressable,
@@ -20,10 +18,13 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import type { LayoutChangeEvent, ViewToken } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CardAskSheet } from '../../components/card-ask-sheet';
 import { FactPost, type FactReviewVerdict } from '../../components/feed/fact-post';
+import { FEED_TOP_BAR_HEIGHT, FeedTopBar } from '../../components/feed/feed-top-bar';
 import { PremiumUpsellCard } from '../../components/premium-upsell-card';
+import { Button } from '../../components/ui/button';
+import { IconButton } from '../../components/ui/icon-button';
 import { getGoogleMobileAdsBannerComponents } from '../../src/lib/adMob';
 import {
   type FeedAdSlot,
@@ -39,6 +40,7 @@ import { fetchActivitySummary, incrementDailyActivity } from '../../src/lib/user
 import { useAuthStore } from '../../src/store/authStore';
 import { useFeedStore } from '../../src/store/feedStore';
 import { useOnboardingStore } from '../../src/store/onboardingStore';
+import { colors, radius, space, type } from '../../src/theme';
 import type { FactType } from '../../src/types';
 
 const BACK_TO_TOP_VISIBLE_INDEX = 3;
@@ -104,84 +106,6 @@ type FactReviewExportEntry = FactReviewDraft & {
   visualKey: string | null;
 };
 
-const RING_SIZE = 46;
-const RING_TICK_COUNT = 18;
-const RING_TICK_SIZE = 4;
-const RING_TICK_IDS = Array.from({ length: RING_TICK_COUNT }, (_, index) => `ring-tick-${index}`);
-
-function getRingTickPosition(index: number) {
-  const angle = (Math.PI * 2 * index) / RING_TICK_COUNT - Math.PI / 2;
-  const radius = RING_SIZE / 2 - 5;
-
-  return {
-    left: RING_SIZE / 2 + Math.cos(angle) * radius - RING_TICK_SIZE / 2,
-    top: RING_SIZE / 2 + Math.sin(angle) * radius - RING_TICK_SIZE / 2,
-  };
-}
-
-function getProgressColor(progress: number) {
-  if (progress >= 0.9) {
-    return '#22c55e';
-  }
-
-  if (progress >= 0.65) {
-    return '#65a30d';
-  }
-
-  if (progress >= 0.35) {
-    return '#84cc16';
-  }
-
-  return '#9ca3af';
-}
-
-function ActivityRing({ progress }: { progress: number }) {
-  const normalizedProgress = Math.max(0, Math.min(progress, 1));
-  const animatedProgress = useRef(new Animated.Value(0)).current;
-  const [displayedProgress, setDisplayedProgress] = useState(0);
-  const activeTicks = Math.round(displayedProgress * RING_TICK_COUNT);
-  const activeColor = getProgressColor(displayedProgress);
-
-  useEffect(() => {
-    const listenerId = animatedProgress.addListener(({ value }) => {
-      setDisplayedProgress(Math.max(0, Math.min(value, 1)));
-    });
-
-    return () => {
-      animatedProgress.removeListener(listenerId);
-    };
-  }, [animatedProgress]);
-
-  useEffect(() => {
-    animatedProgress.stopAnimation();
-
-    Animated.timing(animatedProgress, {
-      toValue: normalizedProgress,
-      duration: 460,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [animatedProgress, normalizedProgress]);
-
-  return (
-    <View style={s.activityRing}>
-      {RING_TICK_IDS.map((tickId, index) => {
-        const isActive = index < activeTicks;
-        return (
-          <View
-            key={tickId}
-            style={[
-              s.activityRingTick,
-              getRingTickPosition(index),
-              { backgroundColor: isActive ? activeColor : 'rgba(148,163,184,0.34)' },
-            ]}
-          />
-        );
-      })}
-    </View>
-  );
-}
-
 type FeedListItem = FactType | FeedAdSlot;
 
 function isFeedAdSlot(item: FeedListItem): item is FeedAdSlot {
@@ -204,17 +128,14 @@ const REVIEW_TAG_OPTIONS: Array<{ value: FactReviewTag; label: string }> = [
 function FeedAdCard({
   height,
   slot,
-  tabBarHeight,
-  bottomInset,
+  topInset,
   onNext,
 }: {
   height: number;
   slot: FeedAdSlot;
-  tabBarHeight: number;
-  bottomInset: number;
+  topInset: number;
   onNext: () => void;
 }) {
-  const cardBottomOffset = tabBarHeight + Math.max(bottomInset, Platform.OS === 'ios' ? 12 : 8);
   const isNativeSlot = slot.kind === 'inline_video';
   const [failedBannerSlotId, setFailedBannerSlotId] = useState<string | null>(null);
   const bannerLoadFailed = failedBannerSlotId === slot.id;
@@ -245,31 +166,24 @@ function FeedAdCard({
     return (
       <View style={s.adFallbackBox}>
         <Text style={s.adFallbackText}>
-          {isNativeSlot
-            ? 'Inline native reklam slotu'
-            : 'Test banner slotu - demo render bekleniyor'}
+          {isNativeSlot ? 'Video reklam alanı' : 'Reklam yüklenemedi'}
         </Text>
       </View>
     );
   };
 
   return (
-    <View style={[s.adScreen, { height, paddingBottom: cardBottomOffset + 20 }]}>
+    <View
+      style={[
+        s.adScreen,
+        { height, paddingTop: topInset + FEED_TOP_BAR_HEIGHT, paddingBottom: space.lg },
+      ]}
+    >
+      <Text style={s.adEyebrow}>Sponsorlu</Text>
       <View style={s.adCard}>
-        <Text style={s.adEyebrow}>
-          {slot.audience === 'guest' ? 'Misafir reklami' : 'Free reklam'}
-        </Text>
-        <Text style={s.adTitle}>
-          {isNativeSlot ? 'Video destekli reklam alani' : 'Sponsorlu alan'}
-        </Text>
-        <Text style={s.adBody}>
-          Premium'a geçince akıştaki reklamlar kalkar ve kartlara günde 30 soru sorabilirsin.
-        </Text>
         <View style={s.adUnitWrap}>{renderBanner()}</View>
-        <TouchableOpacity onPress={onNext} style={s.adContinueButton}>
-          <Text style={s.adContinueText}>Akisa Devam Et</Text>
-        </TouchableOpacity>
       </View>
+      <Button label="Akışa devam et" onPress={onNext} />
     </View>
   );
 }
@@ -482,10 +396,6 @@ export default function FeedScreen() {
   );
 
   const factDailyGoal = dailyGoal?.type === 'facts' ? dailyGoal.value : null;
-  const todayProgressPercent = factDailyGoal
-    ? Math.min(Math.round((todayFactsRead / factDailyGoal) * 100), 100)
-    : 0;
-  const todayProgressRatio = factDailyGoal ? todayProgressPercent / 100 : 0;
   const shouldShowFeedUpsell =
     Boolean(user) &&
     !hasPremium &&
@@ -493,9 +403,7 @@ export default function FeedScreen() {
     seenFactIds.length >= 12 &&
     !expandedCardId;
   const shouldShowBackToTop = activeFactIndex >= BACK_TO_TOP_VISIBLE_INDEX && !expandedCardId;
-  const backToTopButtonTop = !user
-    ? Math.max(insets.top + 92, Platform.OS === 'web' ? 88 : 104)
-    : insets.top + 20;
+  const backToTopButtonTop = insets.top + FEED_TOP_BAR_HEIGHT + space.md;
 
   const openReviewForFact = (fact: FactType) => {
     const existingReview = reviewsByFactId[fact.id];
@@ -699,8 +607,7 @@ export default function FeedScreen() {
                   <FeedAdCard
                     height={listHeight}
                     slot={item}
-                    tabBarHeight={tabBarHeight}
-                    bottomInset={insets.bottom}
+                    topInset={insets.top}
                     onNext={() => handleFinish(index, feedItems.length)}
                   />
                 );
@@ -734,24 +641,18 @@ export default function FeedScreen() {
 
       {shouldShowFeedUpsell ? (
         <View style={[s.feedUpsellWrap, { bottom: tabBarHeight + Math.max(insets.bottom, 16) }]}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setDismissedFeedUpsell(true)}
-            style={s.feedUpsellDismiss}
-          >
-            <Text style={s.feedUpsellDismissText}>Kapat</Text>
-          </TouchableOpacity>
           <PremiumUpsellCard
-            eyebrow="Reklamsiz Deneyim"
-            title="Akisi reklamsiz ve daha derin kullan"
+            eyebrow="Reklamsız deneyim"
+            title="Akışı reklamsız ve daha derin kullan"
             body="Premium ile reklamsız devam et, kartlara günde 30 soru sor ve kendi sorunu yaz."
-            ctaLabel="Premiumu Incele"
+            ctaLabel="Premium'u incele"
+            onDismiss={() => setDismissedFeedUpsell(true)}
             onPress={() =>
               promptForPremium({
-                title: 'Reklamsiz premium deneyime gec',
+                title: 'Reklamsız premium deneyime geç',
                 message:
                   'Premium ile akışta reklamsız devam edebilir, kartlara günde 30 soru sorabilir ve kendi sorunu yazabilirsin.',
-                onConfirm: () => router.push('/profile'),
+                onConfirm: () => router.push('/premium' as never),
               })
             }
           />
@@ -759,62 +660,39 @@ export default function FeedScreen() {
       ) : null}
 
       {shouldShowBackToTop ? (
-        <TouchableOpacity
-          accessibilityLabel="Akisin basina don ve yenile"
-          activeOpacity={0.82}
-          onPress={handleBackToTopRefresh}
-          style={[s.backToTopButton, { top: backToTopButtonTop }]}
-        >
-          <Text style={s.backToTopIcon}>↑</Text>
-        </TouchableOpacity>
+        <View style={[s.backToTopButton, { top: backToTopButtonTop }]}>
+          <IconButton
+            name="arrow-up"
+            onPress={handleBackToTopRefresh}
+            accessibilityLabel="Akışın başına dön ve yenile"
+          />
+        </View>
       ) : null}
 
       <View style={s.topOverlay} pointerEvents="box-none">
-        <SafeAreaView edges={['top']} pointerEvents="box-none">
-          <View style={s.topOverlayContent}>
-            {__DEV__ ? (
-              <Pressable
-                accessibilityLabel="Toggle feed review mode"
-                onLongPress={() => setIsReviewMode((current) => !current)}
-                style={s.reviewModeHotspot}
-              />
-            ) : null}
-            {!user && (
-              <View style={s.guestHintWrap}>
-                <Text style={s.guestHintText}>
-                  Misafir modunda kesfet. Kaydetme ve AI gecmisi icin giris yap.
-                </Text>
-                <TouchableOpacity onPress={() => router.push('/profile')} style={s.guestHintButton}>
-                  <Text style={s.guestHintButtonText}>Hesap Ac</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-            {user ? (
-              <View style={s.dailyProgressWrap}>
-                <ActivityRing progress={todayProgressRatio} />
-                <View style={s.dailyProgressCopy}>
-                  <Text style={s.dailyProgressTitle}>
-                    {factDailyGoal ? `${todayFactsRead}/${factDailyGoal} kart` : 'Hedef sec'}
-                  </Text>
-                  <Text style={s.dailyProgressMeta}>{feedStreakDays} gun seri</Text>
-                </View>
-              </View>
-            ) : null}
-            {isReviewMode ? (
-              <View style={s.reviewModeTopbar}>
-                <Text style={s.reviewModeTopbarText}>
-                  {Object.keys(reviewsByFactId).length} review hazir
-                </Text>
-                <TouchableOpacity
-                  onPress={() => void handleExportReviews()}
-                  style={s.reviewModeExportButton}
-                >
-                  <Text style={s.reviewModeExportButtonText}>JSON Export</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
+        <FeedTopBar
+          isSignedIn={Boolean(user)}
+          streakDays={feedStreakDays}
+          todayFactsRead={todayFactsRead}
+          dailyGoal={factDailyGoal}
+          onLogin={() => router.push('/profile')}
+          onChangeGoal={() => router.push('/settings')}
+        />
+        {__DEV__ ? (
+          <Pressable
+            accessibilityLabel="Toggle feed review mode"
+            onLongPress={() => setIsReviewMode((current) => !current)}
+            style={[s.reviewModeHotspot, { top: insets.top }]}
+          />
+        ) : null}
+        {isReviewMode ? (
+          <View style={s.reviewModeTopbar}>
+            <Text style={s.reviewModeTopbarText}>
+              {Object.keys(reviewsByFactId).length} review hazır
+            </Text>
+            <Button label="JSON Export" onPress={() => void handleExportReviews()} />
           </View>
-        </SafeAreaView>
+        ) : null}
       </View>
 
       <CardAskSheet
@@ -939,47 +817,27 @@ const s = StyleSheet.create({
   listWrapper: { flex: 1, overflow: 'hidden' },
   adScreen: {
     alignItems: 'center',
-    backgroundColor: '#020617',
-    justifyContent: 'center',
-    paddingHorizontal: 22,
-    width: '100%',
-  },
-  adCard: {
-    alignItems: 'center',
-    backgroundColor: '#0f172a',
-    borderColor: 'rgba(148,163,184,0.28)',
-    borderRadius: 18,
-    borderWidth: 1,
-    gap: 12,
-    maxWidth: 360,
-    padding: 18,
+    backgroundColor: colors.bg,
     width: '100%',
   },
   adEyebrow: {
-    color: '#94a3b8',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    ...type.meta,
+    color: colors.textTertiary,
+    marginBottom: space.sm,
   },
-  adTitle: {
-    color: '#f8fafc',
-    fontSize: 20,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  adBody: {
-    color: '#cbd5e1',
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: 'center',
+  adCard: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    justifyContent: 'center',
+    marginHorizontal: space.screen,
+    marginBottom: space.lg,
+    overflow: 'hidden',
+    padding: space.lg,
+    alignSelf: 'stretch',
   },
   adUnitWrap: {
     alignItems: 'center',
-    backgroundColor: '#111827',
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 10,
-    borderWidth: 1,
     justifyContent: 'center',
     minHeight: 250,
     overflow: 'hidden',
@@ -989,7 +847,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     height: 250,
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: space.lg,
     width: '100%',
   },
   adBannerBox: {
@@ -999,22 +857,9 @@ const s = StyleSheet.create({
     width: '100%',
   },
   adFallbackText: {
-    color: '#94a3b8',
-    fontSize: 13,
-    fontWeight: '700',
+    ...type.caption,
+    color: colors.textSecondary,
     textAlign: 'center',
-  },
-  adContinueButton: {
-    alignItems: 'center',
-    backgroundColor: '#8b5cf6',
-    borderRadius: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-  },
-  adContinueText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '800',
   },
   cardOuter: {
     width: '100%',
@@ -1229,156 +1074,42 @@ const s = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    paddingBottom: 16,
     zIndex: 100,
-  },
-  topOverlayContent: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 10,
   },
   reviewModeHotspot: {
     height: 44,
     left: 8,
     position: 'absolute',
-    top: 4,
     width: 44,
-  },
-  guestHintWrap: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
-    maxWidth: 360,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  guestHintText: { color: '#fff', flex: 1, fontSize: 12, fontWeight: '600' },
-  guestHintButton: {
-    backgroundColor: '#8b5cf6',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  guestHintButtonText: { color: '#fff', fontSize: 11, fontWeight: '800' },
-  dailyProgressWrap: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.62)',
-    borderColor: 'rgba(255,255,255,0.14)',
-    borderRadius: 999,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 9,
-    marginLeft: 12,
-    marginTop: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    alignSelf: 'flex-start',
-  },
-  dailyProgressCopy: {
-    gap: 2,
-    paddingRight: 3,
-  },
-  dailyProgressTitle: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  dailyProgressMeta: {
-    color: '#bbf7d0',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  activityRing: {
-    height: RING_SIZE,
-    width: RING_SIZE,
-  },
-  activityRingTick: {
-    borderRadius: 999,
-    height: RING_TICK_SIZE,
-    position: 'absolute',
-    width: RING_TICK_SIZE,
   },
   reviewModeTopbar: {
     alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: 'rgba(10,10,12,0.82)',
-    borderColor: 'rgba(167,139,250,0.3)',
-    borderRadius: 16,
-    borderWidth: 1,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radius.md,
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    gap: space.md,
+    marginTop: space.sm,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs,
   },
-  reviewModeTopbarText: {
-    color: '#f5f3ff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  reviewModeExportButton: {
-    backgroundColor: 'rgba(139,92,246,0.24)',
-    borderColor: 'rgba(196,181,253,0.4)',
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  reviewModeExportButtonText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
+  reviewModeTopbarText: { ...type.caption, color: colors.text },
   feedUpsellWrap: {
     left: 0,
     position: 'absolute',
     right: 0,
     zIndex: 20,
   },
-  feedUpsellDismiss: {
-    alignSelf: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.68)',
-    borderRadius: 999,
-    marginBottom: 8,
-    marginRight: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  feedUpsellDismissText: {
-    color: '#cbd5e1',
-    fontSize: 11,
-    fontWeight: '700',
-  },
   backToTopButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderColor: 'rgba(0,0,0,0.12)',
-    borderRadius: 999,
-    borderWidth: 1,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radius.full,
     height: 44,
     justifyContent: 'center',
     position: 'absolute',
-    right: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
+    right: space.screen,
     width: 44,
     zIndex: 80,
-  },
-  backToTopIcon: {
-    color: '#111',
-    fontSize: 24,
-    fontWeight: '900',
-    lineHeight: 28,
   },
   webHiddenScreen: {
     display: 'none',
