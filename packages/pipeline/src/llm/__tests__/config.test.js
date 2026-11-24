@@ -56,7 +56,11 @@ test('gerçek config dosyası geçerli ve beklenen değerleri içeriyor', () => 
   );
   assert.deepEqual(
     cfg.roles.writer.steps.map((s) => s.members[0].model),
-    ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', '@cf/openai/gpt-oss-20b'],
+    ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'gemini-3.5-flash-lite'],
+  );
+  assert.ok(
+    cfg.roles.writer.steps.every((s) => s.members.every((m) => m.provider !== 'cloudflare')),
+    'yazar zincirinde Cloudflare olmamalı (kota embedding/verifier için)',
   );
   assert.ok(
     cfg.roles.writer.steps.every((s) => s.members.length === 1 && s.strategy !== 'round_robin'),
@@ -66,7 +70,7 @@ test('gerçek config dosyası geçerli ve beklenen değerleri içeriyor', () => 
     [
       '@cf/mistralai/mistral-small-3.1-24b-instruct',
       '@cf/google/gemma-4-26b-a4b-it',
-      'gemini-3.1-flash-lite',
+      'gemini-3.5-flash-lite',
     ],
   );
   assert.deepEqual(cfg.roles.judge.steps, cfg.roles.scorer.steps);
@@ -128,7 +132,7 @@ test('config doğrulama: eksik rol anlaşılır hata verir', () => {
 test('config doğrulama: tanımsız sağlayıcı anlaşılır hata verir', () => {
   expectConfigError(
     (c) => Reflect.deleteProperty(c.providers, 'gemini'),
-    /roles\.verifier\.chain\[2\]\.provider.*'gemini' providers bölümünde tanımlı değil/,
+    /roles\.(writer|verifier)\.chain\[2\]\.provider.*'gemini' providers bölümünde tanımlı değil/,
   );
   expectConfigError((c) => {
     c.roles.scorer.chain[0].provider = 'openai';

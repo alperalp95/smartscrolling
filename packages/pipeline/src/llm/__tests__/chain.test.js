@@ -245,7 +245,7 @@ test('bütçe %90 -> Cloudflare Neuron (sağlayıcı geneli) dolunca doğrulayı
   const res = await llm.chat('verifier', { messages: MESSAGES });
 
   assert.equal(res.provider, 'gemini');
-  assert.equal(res.model, 'gemini-3.1-flash-lite');
+  assert.equal(res.model, 'gemini-3.5-flash-lite');
   assert.equal(fetch.calls.length, 1);
   assert.equal(
     fetch.calls[0].url,
@@ -360,7 +360,7 @@ test('writer her zaman önce gpt-oss-120b kullanır (dağıtım yok)', async () 
   assert.ok(fetch.calls.every((c) => c.body.reasoning_effort === 'low'));
 });
 
-test('writer 120b doluysa 20b’ye, ikisi de doluysa Cloudflare’e geçer', async () => {
+test('writer 120b doluysa 20b’ye, ikisi de doluysa Gemini’ye geçer (Cloudflare yok)', async () => {
   const { llm } = setup((call) => {
     if (isGroq(call) && call.body.model === 'openai/gpt-oss-120b') {
       return rateLimited({}, 'Rate limit reached on tokens per day (TPD)');
@@ -376,8 +376,8 @@ test('writer 120b doluysa 20b’ye, ikisi de doluysa Cloudflare’e geçer', asy
     isGroq(call) ? rateLimited({}, 'tokens per day (TPD)') : chatOk('kart'),
   );
   const res = await llm2.chat('writer', { messages: MESSAGES });
-  assert.equal(res.provider, 'cloudflare');
-  assert.equal(res.model, '@cf/openai/gpt-oss-20b');
+  assert.equal(res.provider, 'gemini');
+  assert.equal(res.model, 'gemini-3.5-flash-lite');
 });
 
 test('judge, scorer zincirini kullanır', async () => {
