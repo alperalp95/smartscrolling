@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Animated,
+  type LayoutChangeEvent,
   Linking,
   Pressable,
   ScrollView,
@@ -9,6 +11,14 @@ import {
   Text,
   View,
 } from 'react-native';
+import Reanimated, {
+  Easing,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { failedRemoteImageUrls, resolveFactMedia } from '../../src/lib/factMedia';
 import { colors, radius, space, type } from '../../src/theme';
 import type { FactType } from '../../src/types';
@@ -46,6 +56,9 @@ const TOP_BAR_ALLOWANCE = 56;
 // Görsel kalan alanı doldurur (yazı bloğu alt menüye yaslanır); en az bu oran kadar yer kaplar.
 const MEDIA_MIN_RATIO = 0.3;
 const PROGRESS_LINE_HEIGHT = 2;
+const EXPAND_DURATION_MS = 320;
+const MEDIA_COLLAPSED_SCALE = 0.96;
+const CLOSE_ROW_HEIGHT = 32;
 
 function getReadQualificationProgress(durationMs: number) {
   const qualifiedMs = Math.min(
@@ -82,7 +95,15 @@ export function FactPost({
   const isCompactCard = height < 760;
   const previewLineCount = isTightCard ? 3 : isCompactCard ? 4 : 5;
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isCollapsing, setIsCollapsing] = useState(false);
   const [isPressing, setIsPressing] = useState(false);
+  const isAnimating = isExpanded || isCollapsing;
+  const isAnimatingRef = useRef(false);
+  isAnimatingRef.current = isAnimating;
+  const expand = useSharedValue(0);
+  const mediaHeight = useSharedValue(0);
+  const reduceMotionRef = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
   const isPaused = isExpanded || isPressing;
 
   const [, setMediaErrorTick] = useState(0);
@@ -144,6 +165,69 @@ export function FactPost({
   }, [duration, isActive, isPaused, onExpandedChange, onFinish, progress]);
 
   useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled?.()
+      ?.then((enabled) => {
+        reduceMotionRef.current = enabled;
+      })
+      .catch(() => {});
+  }, []);
+
+  const finishCollapse = useCallback(() => {
+    setIsCollapsing(false);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, []);
+
+  const mounted = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: animasyon yalnızca isExpanded değişince başlar
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    const config = {
+      duration: reduceMotionRef.current ? 0 : EXPAND_DURATION_MS,
+      easing: Easing.out(Easing.cubic),
+    };
+    if (isExpanded) {
+      expand.value = withTiming(1, config);
+    } else {
+      expand.value = withTiming(0, config, (finished) => {
+        'worklet';
+        if (finished) runOnJS(finishCollapse)();
+      });
+    }
+  }, [isExpanded]);
+
+  useEffect(() => {
+    if (!isActive) {
+      expand.value = 0;
+      setIsCollapsing(false);
+    }
+  }, [isActive, expand]);
+
+  const mediaAnimatedStyle = useAnimatedStyle(() => ({
+    height: interpolate(expand.value, [0, 1], [mediaHeight.value, 0]),
+    opacity: 1 - expand.value,
+    transform: [{ scale: interpolate(expand.value, [0, 1], [1, MEDIA_COLLAPSED_SCALE]) }],
+  }));
+  const closeRowAnimatedStyle = useAnimatedStyle(() => ({
+    height: expand.value * CLOSE_ROW_HEIGHT,
+    opacity: expand.value,
+  }));
+  const inlineProgressAnimatedStyle = useAnimatedStyle(() => ({ opacity: expand.value }));
+
+  const onMediaLayout = (e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height;
+    if (!isAnimatingRef.current && h > 0) mediaHeight.value = h;
+  };
+
+  const expandPost = () => setIsExpanded(true);
+  const collapsePost = () => {
+    setIsCollapsing(true);
+    setIsExpanded(false);
+  };
+
+  useEffect(() => {
     onExpandedChange(isExpanded);
   }, [isExpanded, onExpandedChange]);
 
@@ -181,20 +265,18 @@ export function FactPost({
     </View>
   ) : null;
 
-  const progressLine = (trackStyle: object) => (
-    <View style={trackStyle}>
-      <Animated.View
-        style={[
-          s.progressFill,
-          {
-            width: progress.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['0%', '100%'],
-            }),
-          },
-        ]}
-      />
-    </View>
+  const progressFill = (
+    <Animated.View
+      style={[
+        s.progressFill,
+        {
+          width: progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0%', '100%'],
+          }),
+        },
+      ]}
+    />
   );
 
   return (
@@ -212,112 +294,120 @@ export function FactPost({
       onTouchEnd={() => setIsPressing(false)}
       onTouchCancel={() => setIsPressing(false)}
     >
-      {isExpanded ? (
-        <View style={s.expanded}>
-          <View style={s.closeRow}>
-            <IconButton
-              name="chevron-down"
-              onPress={() => setIsExpanded(false)}
-              accessibilityLabel="Kapat"
-              testID="feed-collapse-button"
-            />
-            <Text style={s.closeLabel}>Kapat</Text>
-          </View>
-          {reviewToolbar}
-          {progressLine(s.progressInline)}
-          <ScrollView
-            style={s.expandedScroll}
-            nestedScrollEnabled
-            onMoveShouldSetResponder={() => true}
-            onStartShouldSetResponder={() => true}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={s.expandedContent}
+      <Reanimated.View
+        style={[s.closeRow, !isAnimating && s.hidden, closeRowAnimatedStyle]}
+        pointerEvents={isExpanded ? 'auto' : 'none'}
+      >
+        {isAnimating ? (
+          <IconButton
+            name="chevron-down"
+            onPress={collapsePost}
+            accessibilityLabel="Kapat"
+            testID="feed-collapse-button"
+          />
+        ) : null}
+        {isAnimating ? <Text style={s.closeLabel}>Kapat</Text> : null}
+      </Reanimated.View>
+      {isAnimating ? (
+        <Reanimated.View style={[s.progressInline, inlineProgressAnimatedStyle]}>
+          {progressFill}
+        </Reanimated.View>
+      ) : null}
+      <Reanimated.View
+        onLayout={onMediaLayout}
+        style={[
+          s.media,
+          { minHeight: height * MEDIA_MIN_RATIO },
+          isAnimating && s.mediaAnimating,
+          isAnimating && mediaAnimatedStyle,
+        ]}
+      >
+        <Media
+          uri={media.uri}
+          localSource={media.localSource ?? undefined}
+          category={item.category}
+          style={s.mediaFill}
+          onError={() => {
+            if (media.uri) {
+              failedRemoteImageUrls.add(media.uri);
+              setMediaErrorTick((n) => n + 1);
+            }
+          }}
+        />
+        <View style={s.progressTrack}>{progressFill}</View>
+      </Reanimated.View>
+
+      <View style={s.actions}>
+        <IconButton
+          name="heart-outline"
+          active={isLiked}
+          color={isLiked ? colors.like : colors.text}
+          onPress={() => toggleLike(item.id)}
+          accessibilityLabel="Beğen"
+          testID="feed-like-button"
+        />
+        <GradientButton
+          size="pill"
+          icon="sparkles"
+          label="Sor"
+          testID="card-ask-button"
+          onPress={() => onAsk(item)}
+        />
+        <IconButton
+          name="paper-plane-outline"
+          onPress={sharePost}
+          accessibilityLabel="Paylaş"
+          testID="feed-share-button"
+        />
+        <View style={s.spacer} />
+        <IconButton
+          name="bookmark-outline"
+          active={isSaved}
+          onPress={() => toggleSave(item.id)}
+          accessibilityLabel="Kaydet"
+          testID="feed-save-button"
+        />
+      </View>
+
+      <View style={[s.text, isAnimating && s.textGrow]}>
+        <GradientText style={type.meta}>{meta}</GradientText>
+        {reviewToolbar}
+        <ScrollView
+          ref={scrollRef}
+          style={isAnimating ? s.expandedScroll : s.collapsedScroll}
+          scrollEnabled={isExpanded}
+          nestedScrollEnabled
+          onMoveShouldSetResponder={() => isExpanded}
+          onStartShouldSetResponder={() => isExpanded}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.expandedContent}
+        >
+          <Text style={s.title} numberOfLines={isAnimating ? undefined : 3}>
+            {item.title}
+          </Text>
+          <Pressable
+            onPress={expandPost}
+            disabled={isAnimating}
+            accessibilityRole="button"
+            accessibilityLabel="Devamını oku"
           >
-            <GradientText style={type.meta}>{meta}</GradientText>
-            <Text style={s.title}>{item.title}</Text>
-            <Text style={s.body}>{item.content}</Text>
-            {source}
-          </ScrollView>
-        </View>
-      ) : (
-        <>
-          <View style={[s.media, { minHeight: height * MEDIA_MIN_RATIO }]}>
-            <Media
-              uri={media.uri}
-              localSource={media.localSource ?? undefined}
-              category={item.category}
-              style={s.mediaFill}
-              onError={() => {
-                if (media.uri) {
-                  failedRemoteImageUrls.add(media.uri);
-                  setMediaErrorTick((n) => n + 1);
-                }
-              }}
-            />
-            {progressLine(s.progressTrack)}
-          </View>
-
-          <View style={s.actions}>
-            <IconButton
-              name="heart-outline"
-              active={isLiked}
-              color={isLiked ? colors.like : colors.text}
-              onPress={() => toggleLike(item.id)}
-              accessibilityLabel="Beğen"
-              testID="feed-like-button"
-            />
-            <GradientButton
-              size="pill"
-              icon="sparkles"
-              label="Sor"
-              testID="card-ask-button"
-              onPress={() => onAsk(item)}
-            />
-            <IconButton
-              name="paper-plane-outline"
-              onPress={sharePost}
-              accessibilityLabel="Paylaş"
-              testID="feed-share-button"
-            />
-            <View style={s.spacer} />
-            <IconButton
-              name="bookmark-outline"
-              active={isSaved}
-              onPress={() => toggleSave(item.id)}
-              accessibilityLabel="Kaydet"
-              testID="feed-save-button"
-            />
-          </View>
-
-          <View style={s.text}>
-            <GradientText style={type.meta}>{meta}</GradientText>
-            {reviewToolbar}
-            <Text style={s.title} numberOfLines={3}>
-              {item.title}
+            <Text style={s.body} numberOfLines={isAnimating ? undefined : previewLineCount}>
+              {item.content}
             </Text>
-            <Pressable
-              onPress={() => setIsExpanded(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Devamını oku"
+            <Text
+              style={[s.body, s.measure]}
+              onTextLayout={(e) => setFullLineCount(e.nativeEvent.lines.length)}
+              pointerEvents="none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
             >
-              <Text style={s.body} numberOfLines={previewLineCount}>
-                {item.content}
-              </Text>
-              <Text
-                style={[s.body, s.measure]}
-                onTextLayout={(e) => setFullLineCount(e.nativeEvent.lines.length)}
-                pointerEvents="none"
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-              >
-                {item.content}
-              </Text>
-              {hasMore ? <Text style={s.more}>devamı</Text> : null}
-            </Pressable>
-            {source}
-          </View>
-        </>
-      )}
+              {item.content}
+            </Text>
+            {hasMore && !isAnimating ? <Text style={s.more}>devamı</Text> : null}
+          </Pressable>
+          {source}
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -339,9 +429,14 @@ const s = StyleSheet.create({
     height: PROGRESS_LINE_HEIGHT,
     backgroundColor: colors.scrim,
   },
+  mediaAnimating: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', minHeight: 0 },
+  hidden: { display: 'none' },
+  textGrow: { flex: 1 },
+  collapsedScroll: { flexGrow: 0 },
   progressInline: {
     height: PROGRESS_LINE_HEIGHT,
     backgroundColor: colors.scrim,
+    marginHorizontal: space.screen,
     marginBottom: space.sm,
   },
   progressFill: { height: PROGRESS_LINE_HEIGHT, backgroundColor: colors.text },
@@ -359,8 +454,13 @@ const s = StyleSheet.create({
   measure: { position: 'absolute', left: 0, right: 0, opacity: 0 },
   more: { ...type.body, color: colors.textSecondary },
   source: { ...type.caption, color: colors.textSecondary },
-  expanded: { flex: 1, paddingHorizontal: space.screen },
-  closeRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingBottom: space.sm },
+  closeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.screen,
+    overflow: 'hidden',
+  },
   closeLabel: { ...type.button, color: colors.textSecondary },
   expandedScroll: { flex: 1 },
   expandedContent: { gap: space.md, paddingBottom: space.xxl },

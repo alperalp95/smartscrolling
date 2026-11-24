@@ -2,6 +2,7 @@ import { act, fireEvent, render } from '@testing-library/react-native';
 import type { FactType } from '../../../src/types';
 import { FactPost, type FactPostProps } from '../fact-post';
 
+jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
   return { LinearGradient: View };
@@ -83,6 +84,24 @@ describe('FactPost', () => {
     expect(more).toBeTruthy();
     fireEvent.press(more);
     expect(props.onExpandedChange).toHaveBeenCalledWith(true);
+  });
+
+  it('shows the collapse button after expanding and collapses on press', () => {
+    const content = 'a'.repeat(600);
+    const { getByText, queryByTestId, getByTestId, UNSAFE_getAllByProps, props } = renderPost(
+      makeFact({ content }),
+      { isActive: true },
+    );
+    const measure = UNSAFE_getAllByProps({ children: content }).find(
+      (n) => typeof n.props.onTextLayout === 'function',
+    );
+    act(() => {
+      measure?.props.onTextLayout({ nativeEvent: { lines: new Array(9).fill({}) } });
+    });
+    expect(queryByTestId('feed-collapse-button')).toBeNull();
+    fireEvent.press(getByText('devamı'));
+    fireEvent.press(getByTestId('feed-collapse-button'));
+    expect(props.onExpandedChange).toHaveBeenLastCalledWith(false);
   });
 
   it('hides "devamı" when the text fits', () => {
