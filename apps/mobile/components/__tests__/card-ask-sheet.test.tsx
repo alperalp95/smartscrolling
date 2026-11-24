@@ -45,4 +45,13 @@ describe('CardAskSheet', () => {
     fireEvent.press(getByTestId('card-ask-locked'));
     expect(onPremiumPress).toHaveBeenCalledTimes(1);
   });
+
+  it('renders the close button in the sheet header and calls onClose', () => {
+    const onClose = jest.fn();
+    const { getByTestId } = render(
+      <CardAskSheet fact={fact} hasPremium={false} onClose={onClose} onPremiumPress={() => {}} />,
+    );
+    fireEvent.press(getByTestId('card-ask-close'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

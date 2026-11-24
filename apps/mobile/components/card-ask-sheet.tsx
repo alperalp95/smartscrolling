@@ -107,28 +107,28 @@ export function CardAskSheet({ fact, hasPremium, onClose, onPremiumPress }: Card
       title="Karta sor"
       subtitle={fact?.title ?? ''}
       testID="card-ask-sheet"
+      headerRight={
+        <IconButton
+          name="close"
+          onPress={onClose}
+          accessibilityLabel="Kapat"
+          testID="card-ask-close"
+        />
+      }
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ height: windowHeight * SHEET_CONTENT_RATIO }}
       >
-        <View style={s.topRow}>
-          <View style={s.presetRow}>
-            {CARD_ASK_PRESETS.map((preset) => (
-              <Chip
-                key={preset.id}
-                label={preset.label}
-                onPress={isLoading ? undefined : () => void askPreset(preset.id)}
-                testID={`card-ask-preset-${preset.id}`}
-              />
-            ))}
-          </View>
-          <IconButton
-            name="close"
-            onPress={onClose}
-            accessibilityLabel="Kapat"
-            testID="card-ask-close"
-          />
+        <View style={s.presetRow}>
+          {CARD_ASK_PRESETS.map((preset) => (
+            <Chip
+              key={preset.id}
+              label={preset.label}
+              onPress={isLoading ? undefined : () => void askPreset(preset.id)}
+              testID={`card-ask-preset-${preset.id}`}
+            />
+          ))}
         </View>
 
         <ScrollView
@@ -246,8 +246,7 @@ export function CardAskSheet({ fact, hasPremium, onClose, onPremiumPress }: Card
 }
 
 const s = StyleSheet.create({
-  topRow: { alignItems: 'flex-start', flexDirection: 'row', gap: space.md },
-  presetRow: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  presetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   messages: { flex: 1, marginTop: space.md },
   messagesContent: { gap: space.md, paddingBottom: space.sm },
   userWrap: { alignItems: 'flex-end' },
