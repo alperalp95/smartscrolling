@@ -36,6 +36,7 @@ import { showDialog } from '../../src/lib/dialog';
 import { isBadFactMediaUrl } from '../../src/lib/factVisuals';
 import { reconcileDailyLocalReminder } from '../../src/lib/notifications';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
+import { markFactSeen } from '../../src/lib/seenFacts';
 import { fetchActivitySummary, incrementDailyActivity } from '../../src/lib/userActivity';
 import { useAuthStore } from '../../src/store/authStore';
 import { useFeedStore } from '../../src/store/feedStore';
@@ -44,40 +45,6 @@ import { colors, radius, space, type } from '../../src/theme';
 import type { FactType } from '../../src/types';
 
 const BACK_TO_TOP_VISIBLE_INDEX = 3;
-
-function rotateFacts<T>(items: T[], seed: number): T[] {
-  if (items.length <= 1) {
-    return items;
-  }
-
-  const hash = (value: string) => {
-    let result = seed || 1;
-
-    for (let index = 0; index < value.length; index += 1) {
-      result = (result * 33 + value.charCodeAt(index)) % 2147483647;
-    }
-
-    return result;
-  };
-
-  return [...items].sort((left, right) => hash(JSON.stringify(left)) - hash(JSON.stringify(right)));
-}
-
-function buildStableFeedOrder(items: FactType[], previous: FactType[], seed: number) {
-  const previousIds = new Set(previous.map((item) => item.id));
-  const nextIds = new Set(items.map((item) => item.id));
-  const nextById = new Map(items.map((item) => [item.id, item]));
-
-  const preserved = previous.map((item) => item.id).filter((id) => nextIds.has(id));
-  const fresh = rotateFacts(
-    items.filter((item) => !previousIds.has(item.id)),
-    seed,
-  ).map((item) => item.id);
-
-  return [...preserved, ...fresh]
-    .map((id) => nextById.get(id))
-    .filter((item): item is FactType => Boolean(item));
-}
 
 type FactReviewTag =
   | 'not_snackable'
@@ -203,7 +170,6 @@ export default function FeedScreen() {
   const [activeFactId, setActiveFactId] = useState<string | null>(null);
   const [activeFactIndex, setActiveFactIndex] = useState(0);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
-  const [orderedFacts, setOrderedFacts] = useState<FactType[]>([]);
   const [seenFactIds, setSeenFactIds] = useState<string[]>([]);
   const [dismissedFeedUpsell, setDismissedFeedUpsell] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
@@ -235,7 +201,6 @@ export default function FeedScreen() {
       currentHeight === nextHeight ? currentHeight : nextHeight,
     );
   }, []);
-  const orderingKeyRef = useRef<string>('');
 
   const {
     facts,
@@ -248,9 +213,9 @@ export default function FeedScreen() {
     savedIds,
     toggleLike,
     toggleSave,
-    feedRotationSeed,
     bumpFeedRotation,
   } = useFeedStore();
+  const orderedFacts = facts;
   const user = useAuthStore((state) => state.user);
   const hasPremium = useAuthStore((state) => state.hasPremium);
   const setPostAuthRedirectPath = useAuthStore((state) => state.setPostAuthRedirectPath);
@@ -331,19 +296,6 @@ export default function FeedScreen() {
   ).current;
 
   useEffect(() => {
-    const orderingKey = `single:${feedRotationSeed}`;
-
-    setOrderedFacts((previous) => {
-      if (orderingKeyRef.current !== orderingKey) {
-        orderingKeyRef.current = orderingKey;
-        return rotateFacts(facts, feedRotationSeed);
-      }
-
-      return buildStableFeedOrder(facts, previous, feedRotationSeed);
-    });
-  }, [facts, feedRotationSeed]);
-
-  useEffect(() => {
     if (!hasLoggedFirstCard.current && orderedFacts.length > 0) {
       hasLoggedFirstCard.current = true;
       console.log(
@@ -364,6 +316,8 @@ export default function FeedScreen() {
 
   const handleReadQualified = useCallback(
     (factId: string) => {
+      void markFactSeen(factId);
+
       if (activityTrackedFactIdsRef.current.has(factId)) {
         return;
       }

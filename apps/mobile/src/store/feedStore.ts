@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { deriveFactVisualKey } from '../lib/factVisuals';
+import { type FeedIndexItem, buildFeedOrder } from '../lib/feedOrder';
+import { loadSeenFactIds, resetSeenFactIds } from '../lib/seenFacts';
 import { supabase } from '../lib/supabase';
 import type { FactRow, FactType } from '../types';
 
@@ -11,6 +13,8 @@ interface FeedState {
   isLoadingMore: boolean;
   hasMore: boolean;
   feedRotationSeed: number;
+  orderIds: string[];
+  orderCursor: number;
   fetchFacts: (options?: { reset?: boolean }) => Promise<void>;
   loadMoreFacts: () => Promise<void>;
   refreshFacts: () => Promise<void>;
@@ -23,9 +27,13 @@ interface FeedState {
 
 const INITIAL_PAGE_SIZE = 6;
 const PAGE_SIZE = 12;
+const FEED_INDEX_SELECT = 'id,category,published_at,created_at';
+const FEED_INDEX_LIMIT = 5000;
 const FEED_FACT_SELECT =
   'id,title,content,category,tags,read_time_sq,source_url,source_label,verified,media_url,visual_key,published_at,created_at';
 let feedRequestCounter = 0;
+let feedResetEpoch = 0;
+let feedIndex: FeedIndexItem[] = [];
 
 async function getCurrentUserId() {
   const {
@@ -77,6 +85,52 @@ function deriveVisualKey(record: Partial<FactRow>): string {
   });
 }
 
+/** Görülenleri okuyup sırayı kurar; görülmemiş kart kalmadıysa görülenleri sıfırlar. */
+async function computeFeedOrder(
+  index: FeedIndexItem[],
+  seed: number,
+  excludeIds: ReadonlySet<string>,
+): Promise<string[]> {
+  let seenIds = new Set(await loadSeenFactIds());
+  if (index.length > 0 && !index.some((item) => !seenIds.has(item.id))) {
+    await resetSeenFactIds();
+    seenIds = new Set();
+  }
+
+  const order = buildFeedOrder(index, { seenIds, seed, now: new Date() });
+  if (excludeIds.size === 0) {
+    return order;
+  }
+
+  // Ekrandaki kartlar yeni sıranın başında tekrar etmesin; hepsi ekrandaysa tam sıra kullanılır.
+  const filtered = order.filter((id) => !excludeIds.has(id));
+  return filtered.length > 0 ? filtered : order;
+}
+
+async function fetchFactsByIds(ids: string[]): Promise<FactType[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('facts')
+    .select(FEED_FACT_SELECT)
+    .eq('status', 'published')
+    .in('id', ids);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const byId = new Map(
+    (data ?? []).map((record) => [(record as { id: string }).id, record as Partial<FactRow>]),
+  );
+  return ids
+    .map((id) => byId.get(id))
+    .filter((record): record is Partial<FactRow> => Boolean(record))
+    .map((record) => normalizeFact(record));
+}
+
 export const useFeedStore = create<FeedState>()((set, get) => ({
   facts: [],
   likedIds: [],
@@ -85,49 +139,79 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   isLoadingMore: false,
   hasMore: true,
   feedRotationSeed: Math.floor(Math.random() * 1_000_000),
+  orderIds: [],
+  orderCursor: 0,
 
   fetchFacts: async (options) => {
     const reset = options?.reset ?? false;
-    const currentFacts = get().facts;
-    const offset = reset ? 0 : currentFacts.length;
-    const pageSize = reset && offset === 0 ? INITIAL_PAGE_SIZE : PAGE_SIZE;
     const requestId = ++feedRequestCounter;
     const startedAt = Date.now();
 
+    if (!reset && get().orderIds.length === 0) {
+      await get().fetchFacts({ reset: true });
+      return;
+    }
+
+    const epoch = reset ? ++feedResetEpoch : feedResetEpoch;
+    const offset = reset ? 0 : get().facts.length;
+    const pageSize = reset ? INITIAL_PAGE_SIZE : PAGE_SIZE;
+
     if (reset) {
       set({ isLoading: true, hasMore: true });
-    } else if (offset === 0) {
-      set({ isLoading: true });
     } else {
       set({ isLoadingMore: true });
     }
 
     try {
-      const { data, error } = await supabase
-        .from('facts')
-        .select(FEED_FACT_SELECT)
-        .eq('status', 'published')
-        .order('created_at', { ascending: false })
-        .range(offset, offset + pageSize - 1);
+      let orderIds = get().orderIds;
+      let cursor = get().orderCursor;
 
+      if (reset) {
+        const { data: indexRows, error: indexError } = await supabase
+          .from('facts')
+          .select(FEED_INDEX_SELECT)
+          .eq('status', 'published')
+          .limit(FEED_INDEX_LIMIT);
+
+        if (indexError) {
+          console.error('[Dev] fetchFacts failed:', indexError.message);
+          console.log(
+            `[Perf][Feed] request=${requestId} reset=${reset} offset=${offset} failed_after_ms=${Date.now() - startedAt}`,
+          );
+          set({ isLoading: false, isLoadingMore: false });
+          return;
+        }
+
+        feedIndex = (indexRows ?? []) as FeedIndexItem[];
+        orderIds = await computeFeedOrder(feedIndex, get().feedRotationSeed, new Set());
+        cursor = 0;
+      } else if (cursor >= orderIds.length) {
+        const onScreen = new Set(get().facts.map((fact) => fact.id));
+        orderIds = await computeFeedOrder(
+          feedIndex,
+          Math.floor(Math.random() * 1_000_000),
+          onScreen,
+        );
+        cursor = 0;
+      }
+
+      const pageIds = orderIds.slice(cursor, cursor + pageSize);
+      const nextPage = await fetchFactsByIds(pageIds);
       const elapsedMs = Date.now() - startedAt;
 
-      if (error) {
-        console.error('[Dev] fetchFacts failed:', error.message);
-        console.log(
-          `[Perf][Feed] request=${requestId} reset=${reset} offset=${offset} failed_after_ms=${elapsedMs}`,
-        );
-        set({ isLoading: false, isLoadingMore: false });
+      if (epoch !== feedResetEpoch) {
+        // Bu arada yeni bir yenileme başladı; eski sonucu at.
+        set({ isLoadingMore: false });
         return;
       }
 
-      const nextPage = (data ?? []).map((record) => normalizeFact(record as Partial<FactRow>));
-
-      const facts = reset ? nextPage : [...currentFacts, ...nextPage];
+      const facts = reset ? nextPage : [...get().facts, ...nextPage];
 
       set({
         facts,
-        hasMore: nextPage.length === pageSize,
+        orderIds,
+        orderCursor: cursor + pageIds.length,
+        hasMore: orderIds.length > 0,
         isLoading: false,
         isLoadingMore: false,
       });
