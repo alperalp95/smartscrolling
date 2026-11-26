@@ -11,6 +11,10 @@ interface FeedState {
   savedIds: string[];
   isLoading: boolean;
   isLoadingMore: boolean;
+  /** Ekranda kart varken yapılan yenileme; kartlar yerinde kalır. */
+  isRefreshing: boolean;
+  /** Her başarılı reset bitişinde artar; liste buna bakıp başa döner. */
+  feedVersion: number;
   hasMore: boolean;
   feedRotationSeed: number;
   orderIds: string[];
@@ -137,6 +141,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   savedIds: [],
   isLoading: false,
   isLoadingMore: false,
+  isRefreshing: false,
+  feedVersion: 0,
   hasMore: true,
   feedRotationSeed: Math.floor(Math.random() * 1_000_000),
   orderIds: [],
@@ -157,7 +163,12 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     const pageSize = reset ? INITIAL_PAGE_SIZE : PAGE_SIZE;
 
     if (reset) {
-      set({ isLoading: true, hasMore: true });
+      // Kart varsa eski kartlar ekranda kalsın: boş ekran yerine sadece isRefreshing açılır.
+      if (get().facts.length > 0) {
+        set({ isRefreshing: true, hasMore: true });
+      } else {
+        set({ isLoading: true, hasMore: true });
+      }
     } else {
       set({ isLoadingMore: true });
     }
@@ -178,7 +189,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           console.log(
             `[Perf][Feed] request=${requestId} reset=${reset} offset=${offset} failed_after_ms=${Date.now() - startedAt}`,
           );
-          set({ isLoading: false, isLoadingMore: false });
+          set({ isLoading: false, isRefreshing: false, isLoadingMore: false });
           return;
         }
 
@@ -213,7 +224,9 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         orderCursor: cursor + pageIds.length,
         hasMore: orderIds.length > 0,
         isLoading: false,
+        isRefreshing: false,
         isLoadingMore: false,
+        ...(reset ? { feedVersion: get().feedVersion + 1 } : {}),
       });
       console.log(
         `[Perf][Feed] request=${requestId} reset=${reset} offset=${offset} rows=${nextPage.length} total=${facts.length} page_size=${pageSize} elapsed_ms=${elapsedMs}`,
@@ -229,14 +242,14 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       console.log(
         `[Perf][Feed] request=${requestId} reset=${reset} offset=${offset} exception_after_ms=${Date.now() - startedAt}`,
       );
-      set({ isLoading: false, isLoadingMore: false });
+      set({ isLoading: false, isRefreshing: false, isLoadingMore: false });
     }
   },
 
   loadMoreFacts: async () => {
-    const { hasMore, isLoading, isLoadingMore } = get();
+    const { hasMore, isLoading, isLoadingMore, isRefreshing } = get();
 
-    if (!hasMore || isLoading || isLoadingMore) {
+    if (!hasMore || isLoading || isLoadingMore || isRefreshing) {
       return;
     }
 

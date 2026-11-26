@@ -8,6 +8,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   Share,
   StyleSheet,
   Text,
@@ -206,6 +207,8 @@ export default function FeedScreen() {
     facts,
     isLoading,
     isLoadingMore,
+    isRefreshing,
+    feedVersion,
     fetchFacts,
     loadMoreFacts,
     refreshFacts,
@@ -233,6 +236,19 @@ export default function FeedScreen() {
   useEffect(() => {
     void fetchFacts({ reset: true });
   }, [fetchFacts]);
+
+  // Yenileme bitip yeni kartlar yerleştikten SONRA başa dön (veri değişmeden kaydırmak
+  // eski sırayı kaydırır ve 2. kartta kalmaya yol açar).
+  useEffect(() => {
+    if (feedVersion === 0) {
+      return;
+    }
+
+    setExpandedCardId(null);
+    setActiveFactIndex(0);
+    setActiveFactId(useFeedStore.getState().facts[0]?.id ?? null);
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [feedVersion]);
 
   useEffect(() => {
     todayFactsReadRef.current = todayFactsRead;
@@ -269,7 +285,6 @@ export default function FeedScreen() {
       if (isFocused && previousState.match(/inactive|background/) && nextState === 'active') {
         bumpFeedRotation();
         void refreshFacts();
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
       }
     });
 
@@ -451,8 +466,6 @@ export default function FeedScreen() {
 
   const handleBackToTopRefresh = () => {
     setExpandedCardId(null);
-    setActiveFactIndex(0);
-    setActiveFactId(orderedFacts[0]?.id ?? null);
     bumpFeedRotation();
     flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
     void refreshFacts();
@@ -517,7 +530,7 @@ export default function FeedScreen() {
           },
         ]}
       >
-        {isLoading ? (
+        {isLoading && orderedFacts.length === 0 ? (
           <View style={s.centerState} testID="feed-loading">
             <Text style={s.centerStateText}>Bilgiler Yükleniyor...</Text>
           </View>
@@ -531,15 +544,24 @@ export default function FeedScreen() {
             testID="feed-list"
             data={feedItems}
             keyExtractor={(item) => item.id}
-            refreshing={isLoading}
+            maintainVisibleContentPosition={{ disabled: true }}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={() => {
+                  bumpFeedRotation();
+                  void refreshFacts();
+                }}
+                tintColor={colors.text}
+                colors={[colors.text]}
+                progressBackgroundColor={colors.surfaceRaised}
+                progressViewOffset={backToTopButtonTop - space.md}
+              />
+            }
             onEndReached={() => {
               void loadMoreFacts();
             }}
             onEndReachedThreshold={0.65}
-            onRefresh={() => {
-              bumpFeedRotation();
-              void refreshFacts();
-            }}
             disableIntervalMomentum
             pagingEnabled
             snapToInterval={listHeight}
