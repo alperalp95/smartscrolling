@@ -272,7 +272,7 @@ Hat GitHub'da kendiliğinden çalışır; bilgisayarınızın açık olması ger
 
 | Workflow | Ne zaman (İstanbul saati) | Ne yapar |
 |---|---|---|
-| `content-v2` | Her gün 06:17, 14:17, 22:17 | Yeni kancaları toplar, puanlar, kartları yazar, doğrular ve yayın stoğuna ekler. 22:17 run'ı ayrıca günün kartlarını yayınlar. Bir sorun görürse GitHub Issue açar. |
+| `content-v2` | Her gün 06:17, 14:17, 22:17 | Yeni kancaları toplar, puanlar, kartları yazar, doğrular ve yayın stoğuna ekler. 22:17 run'ı, yayın anahtarı açıksa (aşağıya bakın) günün kartlarını da yayınlar. Bir sorun görürse GitHub Issue açar. |
 | `content-v2-weekly-sample` | Her pazartesi 10:00 | Geçen hafta yayınlanan kartlardan rastgele 10 tanesini değerlendirmeniz için Issue olarak açar. |
 | `keepalive` | Her ayın 1'i | GitHub uzun süre hareketsiz kalan depolarda zamanlanmış workflow'ları kapatabilir. Bu workflow onları yeniden "etkin" yapar. Başka hiçbir şey yapmaz. |
 
@@ -289,7 +289,18 @@ Workflow dosyaları `main` dalına geldikten sonra hat **kapalı** başlar. Zama
 2. Aynı sayfada **Variables** sekmesine geçin → **New repository variable**.
 3. **Name** kutusuna `CONTENT_V2_ENABLED`, **Value** kutusuna `true` yazın (küçük harf) → **Add variable**.
 
-Bu kadar. Bir sonraki planlı saatte hat çalışmaya başlar.
+Bu kadar. Bir sonraki planlı saatte hat çalışmaya başlar. Kartlar üretilir ama **yayınlanmaz**; yayın ayrı bir anahtardır.
+
+### İki anahtar
+
+| Değişken adı | Ne açar | Varsayılan |
+|---|---|---|
+| `CONTENT_V2_ENABLED` | Üretim: toplama, puanlama, yazma, doğrulama. | Kapalı (değişken yok) |
+| `CONTENT_V2_AUTO_PUBLISH` | Yayın: günün son run'ında (22:17) günlük adet (`publish.dailyCount`, şu an 10) kart yayınlanır. | Kapalı (değişken yok) |
+
+Her ikisi de aynı yerden açılır: GitHub'da depo → **Settings** → **Secrets and variables** → **Actions** → **Variables** sekmesi → **New repository variable**. **Name** kutusuna değişken adını, **Value** kutusuna `true` (küçük harf) yazıp **Add variable**'a basın. `true` dışında bir değer ya da değişkenin olmaması "kapalı" demektir.
+
+İlk günlerde yalnız `CONTENT_V2_ENABLED` açık kalsın, kartları inceleyip elle yayınlayın (Actions → `content-v2` → **Run workflow** → `publish` kutusu; elle çalıştırma bu anahtardan etkilenmez). Güvendiğinizde `CONTENT_V2_AUTO_PUBLISH` değişkenini `true` yapın. Yayını durdurmak için değişkeni silin ya da `false` yapın. Elle yayında `dailyCount` kullanılmaz.
 
 **Kapatmak için:** aynı yerde `CONTENT_V2_ENABLED` değişkenini düzenleyip değerini `false` yapın (ya da silin). Elle çalıştırma kapalıyken de çalışır.
 

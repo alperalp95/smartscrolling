@@ -60,6 +60,20 @@ test(
   },
 );
 
+test(
+  "content-v2.yml: 'Determine mode' adımı otomatik yayını CONTENT_V2_AUTO_PUBLISH anahtarına bağlar",
+  { skip },
+  () => {
+    const wf = load('content-v2.yml');
+    const step = wf.jobs.run.steps.find((s) => s.name === 'Determine mode');
+    assert.equal(step.env.AUTO_PUBLISH, '${{ vars.CONTENT_V2_AUTO_PUBLISH }}');
+    assert.match(step.run, /AUTO_PUBLISH/);
+    assert.match(step.run, /"\$AUTO_PUBLISH" == "true"/);
+    assert.match(step.run, /CONTENT_V2_AUTO_PUBLISH/);
+    assert.match(step.run, /INPUT_PUBLISH/);
+  },
+);
+
 test('content-v2-weekly-sample.yml: pazartesi 07:00 UTC, kapı, issues:write', { skip }, () => {
   const wf = load('content-v2-weekly-sample.yml');
   assert.deepEqual(wf.on.schedule, [{ cron: '0 7 * * 1' }]);
