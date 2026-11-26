@@ -73,6 +73,8 @@ describe('feedStore endless shuffled feed', () => {
       hasMore: true,
       isLoading: false,
       isLoadingMore: false,
+      isRefreshing: false,
+      feedVersion: 0,
       feedRotationSeed: 4242,
     });
   });
@@ -143,6 +145,41 @@ describe('feedStore endless shuffled feed', () => {
     await useFeedStore.getState().fetchFacts({ reset: true });
     expect(useFeedStore.getState().facts).toEqual([]);
     expect(useFeedStore.getState().hasMore).toBe(false);
+  });
+
+  it('first load with no cards uses isLoading, not isRefreshing', async () => {
+    const pending = useFeedStore.getState().fetchFacts({ reset: true });
+    expect(useFeedStore.getState().isLoading).toBe(true);
+    expect(useFeedStore.getState().isRefreshing).toBe(false);
+    await pending;
+    expect(useFeedStore.getState().isLoading).toBe(false);
+    expect(useFeedStore.getState().isRefreshing).toBe(false);
+    expect(useFeedStore.getState().feedVersion).toBe(1);
+  });
+
+  it('refresh with cards on screen uses isRefreshing and keeps isLoading false', async () => {
+    await useFeedStore.getState().fetchFacts({ reset: true });
+    const versionBefore = useFeedStore.getState().feedVersion;
+    const oldIds = ids();
+
+    const pending = useFeedStore.getState().refreshFacts();
+    expect(useFeedStore.getState().isRefreshing).toBe(true);
+    expect(useFeedStore.getState().isLoading).toBe(false);
+    expect(ids()).toEqual(oldIds);
+    await pending;
+
+    expect(useFeedStore.getState().isRefreshing).toBe(false);
+    expect(useFeedStore.getState().isLoading).toBe(false);
+    expect(useFeedStore.getState().feedVersion).toBe(versionBefore + 1);
+  });
+
+  it('refresh failure clears isRefreshing and keeps the old cards', async () => {
+    await useFeedStore.getState().fetchFacts({ reset: true });
+    const oldIds = ids();
+    mockIndexError = { message: 'boom' };
+    await useFeedStore.getState().refreshFacts();
+    expect(useFeedStore.getState().isRefreshing).toBe(false);
+    expect(ids()).toEqual(oldIds);
   });
 
   it('keeps the old facts and stops loading when the index query fails', async () => {
