@@ -441,8 +441,31 @@ export function writeInput(cand, limits = writingLimits(null)) {
  * @param {{ llm, repo, config, now?, log? }} deps
  * @param {{ limit?: number }} [opts]
  */
+export const WRITTEN_BACKLOG_DEFAULT = 40;
+
+/** config.writing.maxWrittenBacklog (≥0 tam sayı), yoksa 40. */
+export function maxWrittenBacklog(config) {
+  const v = config?.writing?.maxWrittenBacklog;
+  return Number.isInteger(v) && v >= 0 ? v : WRITTEN_BACKLOG_DEFAULT;
+}
+
+async function countWritten(repo, cap) {
+  if (typeof repo.countByStatus === 'function') return repo.countByStatus(STATUS.WRITTEN);
+  return (await repo.listByStatus(STATUS.WRITTEN, cap + 1)).length;
+}
+
 export async function runWrite(deps, { limit = 50 } = {}) {
   const stats = newStats('write');
+  const cap = maxWrittenBacklog(deps.config);
+  const backlog = await countWritten(deps.repo, cap);
+  if (backlog > cap) {
+    stats.skipped = 'backlog';
+    stats.backlog = backlog;
+    deps.log?.(
+      `[write] atlandı (backlog): bekleyen taslak ${backlog} > sınır ${cap}; yazar kotası doğrulamaya kalsın`,
+    );
+    return stats;
+  }
   const cands = await deps.repo.listByStatus(STATUS.SCORED, limit, { hasSupport: true });
   const maxTokens = roleMaxTokens(deps.config, 'writer', WRITE_MAX_TOKENS);
   const limits = writingLimits(deps.config);

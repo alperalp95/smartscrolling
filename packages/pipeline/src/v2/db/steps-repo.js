@@ -82,6 +82,15 @@ export function createStepsRepo(client) {
       return (data ?? []).map(parseRowVectors);
     },
 
+    async countByStatus(status) {
+      const { count, error } = await client
+        .from('fact_candidates')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', status);
+      if (error) throw fail('countByStatus', error);
+      return count ?? 0;
+    },
+
     async updateCandidate(id, patch) {
       const { error } = await client.from('fact_candidates').update(patch).eq('id', id);
       if (error) throw fail('updateCandidate', error);
@@ -160,6 +169,10 @@ export function createMemoryStepsRepo({ candidates = [], facts = [] } = {}) {
         .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
         .slice(0, limit)
         .map(clone);
+    },
+
+    async countByStatus(status) {
+      return cands.filter((c) => c.status === status).length;
     },
 
     async updateCandidate(id, patch) {

@@ -222,7 +222,8 @@ function validateProvider(name, p) {
 export const SENTENCE_LIMIT_MAX = 10;
 
 /**
- * İsteğe bağlı 'writing' bölümü: minSentences / maxSentences (1-10 arası tam sayı, min ≤ max).
+ * İsteğe bağlı 'writing' bölümü: minSentences / maxSentences (1-10 arası tam sayı, min ≤ max),
+ * maxWrittenBacklog (≥0 tam sayı; bekleyen taslak bu sayıdan çoksa yeni yazma durur).
  * Bölüm yoksa undefined döner; adımlar varsayılanı (2-4) kullanır.
  */
 function validateWriting(writing) {
@@ -240,6 +241,13 @@ function validateWriting(writing) {
         },
       );
     }
+  }
+  const backlog = writing.maxWrittenBacklog;
+  if (backlog !== undefined && (!Number.isInteger(backlog) || backlog < 0)) {
+    throw new LlmConfigError(
+      `'maxWrittenBacklog' 0 ya da daha büyük bir tam sayı olmalı (şu an: ${JSON.stringify(backlog)})`,
+      { path: 'writing.maxWrittenBacklog' },
+    );
   }
   if (
     writing.minSentences !== undefined &&
