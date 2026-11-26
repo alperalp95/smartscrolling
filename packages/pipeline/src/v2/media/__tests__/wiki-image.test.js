@@ -5,16 +5,27 @@ import { pickCommonsImage, resolveWikiImage } from '../wiki-image.js';
 const COMMONS =
   'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Octopus.jpg/330px-Octopus.jpg';
 
-test('pickCommonsImage: commons thumbnail 640px olur', () => {
+test('pickCommonsImage: commons thumbnail 960px olur (640 Wikimedia tarafından reddediliyor)', () => {
   assert.equal(
     pickCommonsImage({ thumbnail: { source: COMMONS } }),
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Octopus.jpg/640px-Octopus.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Octopus.jpg/960px-Octopus.jpg',
+  );
+});
+
+test('pickCommonsImage: yeni thumb.wikimedia.org adresi kabul edilir', () => {
+  const src =
+    'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Flag.svg/langtr-330px-Flag.svg.png?utm_source=tr.wikipedia.org';
+  assert.equal(
+    pickCommonsImage({ thumbnail: { source: src } }),
+    'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Flag.svg/langtr-960px-Flag.svg.png?utm_source=tr.wikipedia.org',
   );
 });
 
 test('pickCommonsImage: yerel (tr) dosya null', () => {
   const src = 'https://upload.wikimedia.org/wikipedia/tr/thumb/a/ab/Logo.png/330px-Logo.png';
   assert.equal(pickCommonsImage({ thumbnail: { source: src } }), null);
+  const thumbLocal = 'https://thumb.wikimedia.org/wikipedia/tr/thumb/1/15/Logo.jpg/330px-Logo.jpg';
+  assert.equal(pickCommonsImage({ thumbnail: { source: thumbLocal } }), null);
 });
 
 test('pickCommonsImage: tif null', () => {
@@ -55,7 +66,7 @@ test('resolveWikiImage: tr URL doğru summary adresi + User-Agent', async () => 
   const out = await resolveWikiImage('https://tr.wikipedia.org/wiki/Ahtapot', {
     fetchImpl: f,
   });
-  assert.match(out, /640px-Octopus\.jpg$/);
+  assert.match(out, /960px-Octopus\.jpg$/);
   assert.equal(f.calls[0].url, 'https://tr.wikipedia.org/api/rest_v1/page/summary/Ahtapot');
   assert.match(f.calls[0].init.headers['User-Agent'], /SmartScrolling/);
 });

@@ -1,7 +1,13 @@
 // src/v2/media/wiki-image.js
 // Vikipedi sayfasının kapak görseli (Wikimedia Commons). Ağ hatası kartı asla engellemez.
 const USER_AGENT = 'SmartScrolling-Pipeline/1.0 (contact@smartscrolling.app)';
-const COMMONS_PREFIX = 'https://upload.wikimedia.org/wikipedia/commons/';
+// Wikimedia küçük resimleri artık thumb.wikimedia.org'dan da veriyor (2026-11 gözlemi).
+const COMMONS_PREFIXES = [
+  'https://upload.wikimedia.org/wikipedia/commons/',
+  'https://thumb.wikimedia.org/wikipedia/commons/',
+];
+// Wikimedia sadece belirli genişlikleri üretir (330, 500, 960 çalışıyor; 640 → 400 hatası).
+const TARGET_WIDTH = '960px-';
 const BAD_EXTENSIONS = /\.(tiff?|bmp|psd|raw)(\?|$)/i;
 const SENSITIVE_NAME_PARTS = [
   'casualt',
@@ -24,7 +30,9 @@ const TIMEOUT_MS = 8000;
 /** Özet JSON'undan güvenli Commons görseli (saf); uygun değilse null. */
 export function pickCommonsImage(summaryJson) {
   const url = summaryJson?.thumbnail?.source ?? summaryJson?.originalimage?.source ?? null;
-  if (typeof url !== 'string' || !url.startsWith(COMMONS_PREFIX)) return null;
+  if (typeof url !== 'string' || !COMMONS_PREFIXES.some((prefix) => url.startsWith(prefix))) {
+    return null;
+  }
   if (BAD_EXTENSIONS.test(url)) return null;
   let name = url;
   try {
@@ -34,7 +42,7 @@ export function pickCommonsImage(summaryJson) {
   }
   const lower = name.toLowerCase();
   if (SENSITIVE_NAME_PARTS.some((part) => lower.includes(part))) return null;
-  return url.replace('/330px-', '/640px-');
+  return url.replace('330px-', TARGET_WIDTH);
 }
 
 function parseWikiPage(sourceUrl) {
