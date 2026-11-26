@@ -151,5 +151,7 @@ export const GOOD_CARD = Object.freeze({
 });
 
 export function deps(extra = {}) {
-  return { config: TEST_CONFIG, now: FIXED_NOW, log: () => {}, ...extra };
+  // fetchImpl: testlerde gerçek ağa çıkılmasın (görsel çözümü her zaman 404).
+  const fetchImpl = async () => ({ ok: false, status: 404 });
+  return { config: TEST_CONFIG, now: FIXED_NOW, log: () => {}, fetchImpl, ...extra };
 }

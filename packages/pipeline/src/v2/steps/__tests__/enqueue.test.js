@@ -133,3 +133,44 @@ test('contextText: boş → null, kısa → normalize, uzun → 2000 içinde kel
   const noSpace = contextText({ support_paragraph: 'a'.repeat(2500) });
   assert.equal(noSpace.length, 2000);
 });
+
+test('runEnqueue: görsel bulunursa satırda media_url, sayaç found', async () => {
+  const repo = createMemoryStepsRepo({ candidates: [verifiedCand()] });
+  const seen = [];
+  const stats = await runEnqueue(
+    deps({
+      repo,
+      resolveImage: async (url) => {
+        seen.push(url);
+        return 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Octopus.jpg';
+      },
+    }),
+  );
+  assert.deepEqual(seen, ['https://en.wikipedia.org/wiki/Octopus']);
+  assert.equal(
+    repo.facts()[0].media_url,
+    'https://upload.wikimedia.org/wikipedia/commons/a/ab/Octopus.jpg',
+  );
+  assert.deepEqual(stats.media, { found: 1, missing: 0 });
+});
+
+test('runEnqueue: görsel yoksa kart yine eklenir, media_url null, sayaç missing', async () => {
+  const repo = createMemoryStepsRepo({ candidates: [verifiedCand()] });
+  const stats = await runEnqueue(deps({ repo, resolveImage: async () => null }));
+  assert.equal(repo.facts().length, 1);
+  assert.equal(repo.facts()[0].media_url, null);
+  assert.equal(repo.get('q1').status, 'queued');
+  assert.deepEqual(stats.media, { found: 0, missing: 1 });
+});
+
+test('runEnqueue: fetchImpl enjekte edilir (özet adresi çağrılır)', async () => {
+  const repo = createMemoryStepsRepo({ candidates: [verifiedCand()] });
+  const urls = [];
+  const fetchImpl = async (url) => {
+    urls.push(url);
+    return { ok: false, status: 404 };
+  };
+  await runEnqueue(deps({ repo, fetchImpl }));
+  assert.deepEqual(urls, ['https://en.wikipedia.org/api/rest_v1/page/summary/Octopus']);
+  assert.equal(repo.facts().length, 1);
+});

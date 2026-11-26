@@ -266,6 +266,20 @@ Testler (gerçek API çağrısı yapmaz):
 node --test "packages/pipeline/src/llm/**/*.test.js"
 ```
 
+## Kart görselleri (Vikipedi / Commons)
+
+Yeni v2 kartları kuyruğa alınırken kaynak Vikipedi sayfasının kapak görseli aranır ve karta `media_url` olarak yazılır. Sadece Wikimedia Commons görselleri kullanılır; yerel/telifli dosyalar, `tif/bmp/psd/raw` uzantıları ve şiddet içeren dosya adları (ör. "casualties", "massacre") atlanır. Görsel bulunamazsa kart yine eklenir; adım özetinde `media: { found, missing }` sayılır.
+
+Eski kartlar için bir kerelik doldurma (sadece `source_key` dolu, görseli boş, `published`/`queued` kartlar):
+
+```
+cd packages/pipeline
+npm run backfill:v2-media                      # deneme: yazmaz, her kart için "başlık → url | yok" basar
+npm run backfill:v2-media -- --apply --limit 100   # gerçekten yazar
+```
+
+Her istek arasında 300 ms beklenir; `--limit` varsayılanı 100'dür. Kartın `media_url`'i zaten doluysa dokunulmaz.
+
 ## Otomatik çalışma (GitHub Actions)
 
 Hat GitHub'da kendiliğinden çalışır; bilgisayarınızın açık olması gerekmez. Üç workflow var:
