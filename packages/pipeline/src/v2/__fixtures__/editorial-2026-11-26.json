@@ -1,0 +1,386 @@
+[
+  {
+    "n": 1,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "dinî konu, ölüm figürü, ek hatası"
+  },
+  {
+    "n": 2,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yanlış bilgi (Fatih), zaman karışık"
+  },
+  {
+    "n": 3,
+    "id8": null,
+    "verdict": "D",
+    "reason": "kategori Teknoloji yerine Sanat, başlık yanlış"
+  },
+  {
+    "n": 4,
+    "id8": null,
+    "verdict": "D",
+    "reason": "başlık bozuk"
+  },
+  {
+    "n": 5,
+    "id8": null,
+    "verdict": "K",
+    "reason": "Pap test -> Pap testi"
+  },
+  {
+    "n": 6,
+    "id8": null,
+    "verdict": "D",
+    "reason": "Atatürk yeren/yenen hatası, şair adı yok"
+  },
+  {
+    "n": 7,
+    "id8": null,
+    "verdict": "K",
+    "reason": "Kâbıl -> Kâbil"
+  },
+  {
+    "n": 8,
+    "id8": null,
+    "verdict": "D",
+    "reason": "konu dışı cümleler, Budacı->Budist"
+  },
+  {
+    "n": 9,
+    "id8": null,
+    "verdict": "K",
+    "reason": "tekrar"
+  },
+  {
+    "n": 10,
+    "id8": null,
+    "verdict": "D",
+    "reason": "Joan of Arc -> Jeanne d'Arc, çeviri kokusu"
+  },
+  {
+    "n": 11,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "etnik şiddet, ölü/yaralı sayıları"
+  },
+  {
+    "n": 12,
+    "id8": null,
+    "verdict": "D",
+    "reason": "Tonga cümlesi karışık, görsel"
+  },
+  {
+    "n": 13,
+    "id8": null,
+    "verdict": "D",
+    "reason": "tac/taht hatası"
+  },
+  {
+    "n": 14,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 15,
+    "id8": null,
+    "verdict": "Y",
+    "reason": "temiz"
+  },
+  {
+    "n": 16,
+    "id8": null,
+    "verdict": "K",
+    "reason": "son cümle dolgu"
+  },
+  {
+    "n": 17,
+    "id8": null,
+    "verdict": "Y",
+    "reason": "temiz"
+  },
+  {
+    "n": 18,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 19,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 20,
+    "id8": null,
+    "verdict": "K",
+    "reason": "son cümle değişir"
+  },
+  {
+    "n": 21,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 22,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "dinî metin kökeni, varsayım kesin sunulmuş"
+  },
+  {
+    "n": 23,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 24,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "Atlas kararı bekliyor (LGBT tek başına sebep değil)"
+  },
+  {
+    "n": 25,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 26,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "aşırı teknik, merak yok"
+  },
+  {
+    "n": 27,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 28,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "ölüm odaklı, işçi ölümleri"
+  },
+  {
+    "n": 29,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 30,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "şiddet + siyaset, başlık bozuk"
+  },
+  {
+    "n": 31,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 32,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 33,
+    "id8": null,
+    "verdict": "K",
+    "reason": "yazım, son cümle kısalt"
+  },
+  {
+    "n": 34,
+    "id8": null,
+    "verdict": "K",
+    "reason": "amlem -> amblem, görsel"
+  },
+  {
+    "n": 35,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 36,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 37,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "yaşayan gazeteye siyasi itham"
+  },
+  {
+    "n": 38,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "başlık anlamsız, merak düşük"
+  },
+  {
+    "n": 39,
+    "id8": null,
+    "verdict": "K",
+    "reason": "kere -> kez"
+  },
+  {
+    "n": 40,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 41,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "silah + ABD siyaseti"
+  },
+  {
+    "n": 42,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 43,
+    "id8": null,
+    "verdict": "K",
+    "reason": "tekrar çıkar"
+  },
+  {
+    "n": 44,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 45,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "Arap-İsrail savaşı, güncel siyaset"
+  },
+  {
+    "n": 46,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "583 ölü, ölüm odaklı"
+  },
+  {
+    "n": 47,
+    "id8": null,
+    "verdict": "K",
+    "reason": "başlık düzelt"
+  },
+  {
+    "n": 48,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım"
+  },
+  {
+    "n": 49,
+    "id8": null,
+    "verdict": "D",
+    "reason": "yeniden yazım (orman tavuğu)"
+  },
+  {
+    "n": 50,
+    "id8": null,
+    "verdict": "D",
+    "reason": "tarih yanlış (1966), incriminate çevrilmemiş"
+  },
+  {
+    "n": 51,
+    "id8": null,
+    "verdict": "Y",
+    "reason": "temiz"
+  },
+  {
+    "n": 52,
+    "id8": null,
+    "verdict": "D",
+    "reason": "başlık metinle çelişiyor, imparator adı yok"
+  },
+  {
+    "n": 53,
+    "id8": null,
+    "verdict": "K",
+    "reason": "son iki cümle kısalt"
+  },
+  {
+    "n": 54,
+    "id8": null,
+    "verdict": "K",
+    "reason": "Leicester'da"
+  },
+  {
+    "n": 55,
+    "id8": null,
+    "verdict": "D",
+    "reason": "çok uzun, akademik tartışma"
+  },
+  {
+    "n": 56,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "çocuk yaşta evlilik"
+  },
+  {
+    "n": 57,
+    "id8": null,
+    "verdict": "D",
+    "reason": "uzun"
+  },
+  {
+    "n": 58,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "ölüm odaklı, kategori yanlış (Sağlık)"
+  },
+  {
+    "n": 59,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "kürtaj davası, siyasi"
+  },
+  {
+    "n": 60,
+    "id8": null,
+    "verdict": "K",
+    "reason": "başlık düzelt"
+  },
+  {
+    "n": 61,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "etnik/İsrail göçü, merak düşük"
+  },
+  {
+    "n": 62,
+    "id8": null,
+    "verdict": "D",
+    "reason": "kemiğiyle sabitleyip bozuk"
+  },
+  {
+    "n": 63,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "dinî inanç, yazım hatası"
+  },
+  {
+    "n": 64,
+    "id8": null,
+    "verdict": "Ç",
+    "reason": "davranış tarifi, merak düşük"
+  }
+]

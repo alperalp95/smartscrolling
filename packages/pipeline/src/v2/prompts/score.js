@@ -5,8 +5,9 @@
 //   w = gerekçe, SADECE s ≥ 6 olanlarda, en fazla 6 kelime.
 //   x = hassas (V2-05f): SADECE hassassa "x":1 yazılır; değilse alan yok (çıktı token'ı artmaz).
 //       Hassas = odak ölüm/şiddet/trajedi ya da güncel siyaset (siyasi figür/parti/seçim, terör, savaş,
-//       cinayet, intihar, felaket ölümleri, yakın tarihli ölüm) → rejected:sensitive. Tarihsel olay
-//       tek başına hassas değil. İstem ≈ +90 token.
+//       cinayet, intihar, felaket ölümleri, yakın tarihli ölüm) → rejected:sensitive. V2-15: bazı
+//       konular tarihten bağımsız hassas (istem metnine bak); hayvan ölümü/uzak tarih değil.
+//       İstem ≈ +90 token, V2-15 ile ≈ +110 daha.
 // Neden: Groq qwen3.8-27b'nin dakikalık çıktı sınırı (OTPM) 1000 token. Eski uzun anahtarlı çıktı
 // 15 kancada ≈ 1.180 token yazdı (dry-run 3) ve ikinci batch 429 ile düştü.
 // Tahmini token (batch = 10 kanca): sistem ~560, kanca başına ~30 girdi → ≈ 860 girdi.
@@ -36,9 +37,9 @@ Her kanca (TR ya da EN) için kısa anahtarlarla:
 - r (tr_relevance) 0-10: Türk okur anlar ve ilgilenir mi? Çok yerel/niş (küçük kasaba yöneticisi, alt lig oyuncusu) düşük.
 - d (is_definition): kanca sadece "X nedir / kimdir / nerededir / ne işe yarar" bilgisiyse 1, değilse 0.
 - c (kategori): ${CATEGORY_NAMES.join(', ')}
-  İpucu: edebiyat/film/müzik/sanat eseri ve kelime kökeni/dil → SANAT; SAĞLIK sadece tıp/hastalık/beslenme; BİYOGRAFİ sadece odak bir kişinin hayatıysa; yer/şehir/park → TARİH ya da en uygun olan.
+  İpucu: dizi/TV/film/roman/öykü/şiir/opera → SANAT; edebiyat/müzik/sanat eseri ve kelime kökeni/dil → SANAT; hayvan/bitki → BİLİM; matematik → BİLİM; hava olayı/afet → BİLİM ya da TARİH, asla SAĞLIK; sporcu hakkındaki kart → SPOR; SAĞLIK sadece tıp/hastalık/beslenme; BİYOGRAFİ sadece odak bir kişinin hayatıysa; yer/şehir/park → TARİH ya da en uygun olan.
 - w (gerekçe): SADECE s 6 ve üstüyse, en fazla 6 kelime; s 6'nın altındaysa w yazma.
-- x (hassas): odak ölüm/şiddet/trajedi ya da güncel siyasetse (siyasi figür/parti/seçim, terör, savaş, cinayet, idam/infaz, intihar, felaket ölümleri, yakın tarihli ölüm) "x":1 yaz; değilse x yazma. Ayrıca hassas: din ve kutsal figürler etrafındaki tartışma/tasvir/sansür, ibadetle ilgili devlet politikası (ör. ezan dili); etnik/dil siyaseti, ırkçılık, antisemitizm; darbe/cunta; Türkiye siyasi figürleri (cumhurbaşkanı, başbakan, parti liderleri; ölmüş olsalar bile). Osmanlı/Bizans gibi uzak tarih tek başına hassas değil.
+- x (hassas): odak ölüm/şiddet/trajedi ya da güncel siyasetse (siyasi figür/parti/seçim, terör, savaş, cinayet, idam/infaz, intihar, felaket ölümleri, yakın tarihli ölüm) "x":1 yaz; değilse x yazma. Ayrıca hassas: din ve kutsal figürler etrafındaki tartışma/tasvir/sansür, ibadetle ilgili devlet politikası (ör. ezan dili); etnik/dil siyaseti, ırkçılık, antisemitizm; darbe/cunta; Türkiye siyasi figürleri (cumhurbaşkanı, başbakan, parti liderleri; ölmüş olsalar bile). Tarihten bağımsız hassas (x:1): çok ölümlü kaza/felaket/afet · Etnik/dinî gruba yönelik şiddet, pogrom, katliam · kişiye yönelik şiddet ve öldürme anlatısı · insan ölümlerinin konunun merkezinde olduğu doğa olayları · Dinî metinlerin kökeni/doğruluğu iddiaları, ölüm kültleri, inanç pratikleri · Silahlar, kürtaj, güncel ABD/İsrail-Filistin siyaseti · Çocuk yaşta evlilik · yaşayan kurum/gazeteye ya da tarihî Türk figürüne siyasi itham. Hayvan ölümü ve uzak tarih (Bizans, Osmanlı) tek başına hassas değil.
   Örnek: "Charlie Kirk'ün yüzü suikastinin ardından memelere yerleştirildi" → x:1 · "Saddam Hüseyin idam edildi, Libya yas ilan etti" → x:1 · "Türkçe ezan 1932–1950 arasında okundu" → x:1 · "Bookland, barkodlara göre kitapların geldiği hayali ülke" → x yok · "Kanlı Kilise, Fatih'te camiye çevrilmeyen tek Bizans kilisesi" → x yok
 Kalibrasyon (s/r):
 ÇOK İLGİNÇ
