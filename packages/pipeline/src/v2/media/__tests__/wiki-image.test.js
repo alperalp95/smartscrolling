@@ -63,10 +63,7 @@ test('resolveWikiImage: tr URL doğru summary adresi + User-Agent', async () => 
 test('resolveWikiImage: başlıktaki yüzde kodlaması çift kodlanmaz', async () => {
   const f = fakeFetch(async () => ({ ok: true, json: async () => ({}) }));
   await resolveWikiImage('https://tr.wikipedia.org/wiki/%C4%B0stanbul', { fetchImpl: f });
-  assert.equal(
-    f.calls[0].url,
-    'https://tr.wikipedia.org/api/rest_v1/page/summary/%C4%B0stanbul',
-  );
+  assert.equal(f.calls[0].url, 'https://tr.wikipedia.org/api/rest_v1/page/summary/%C4%B0stanbul');
 });
 
 test('resolveWikiImage: en URL', async () => {

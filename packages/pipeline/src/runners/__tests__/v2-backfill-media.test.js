@@ -46,6 +46,7 @@ function fakeClient(rows) {
           q.limit = n;
           return builder;
         },
+        // biome-ignore lint/suspicious/noThenProperty: Supabase sorgu oluşturucusu await edilebilir (thenable); sahte de öyle olmalı.
         then(resolve) {
           if (q.mode === 'select') {
             log.selects.push(q);
@@ -70,7 +71,11 @@ const resolveImage = async (url) => (url.includes('Ahtapot') ? IMG : null);
 
 test('parseArgs: varsayılan dry-run, limit 100', () => {
   assert.deepEqual(parseArgs([]), { apply: false, dryRun: true, limit: 100 });
-  assert.deepEqual(parseArgs(['--apply', '--limit', '5']), { apply: true, dryRun: false, limit: 5 });
+  assert.deepEqual(parseArgs(['--apply', '--limit', '5']), {
+    apply: true,
+    dryRun: false,
+    limit: 5,
+  });
   assert.throws(() => parseArgs(['--limit', '0']));
 });
 
