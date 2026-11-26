@@ -44,4 +44,4 @@ jobs:
         run: npm ci --workspace @smartscrolling/pipeline
 
       - name: Open weekly sample issue
-        run: node packages/pipeline/src/runners/v2-weekly-sample.js --create-issue --count 10 --days 7
+        run: node packages/pipeline/src/runners/v2-weekly-sample.js --create-issue --count 70 --days 7

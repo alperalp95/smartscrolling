@@ -287,7 +287,7 @@ Hat GitHub'da kendiliğinden çalışır; bilgisayarınızın açık olması ger
 | Workflow | Ne zaman (İstanbul saati) | Ne yapar |
 |---|---|---|
 | `content-v2` | Her gün 06:17, 14:17, 22:17 | Yeni kancaları toplar, puanlar, kartları yazar, doğrular ve yayın stoğuna ekler. 22:17 run'ı, yayın anahtarı açıksa (aşağıya bakın) günün kartlarını da yayınlar. Bir sorun görürse GitHub Issue açar. |
-| `content-v2-weekly-sample` | Her pazartesi 10:00 | Geçen hafta yayınlanan kartlardan rastgele 10 tanesini değerlendirmeniz için Issue olarak açar. |
+| `content-v2-weekly-sample` | Her pazartesi 10:00 | Geçen hafta yayınlanan kartların tümünü (en fazla 70 = günlük 10 × 7) değerlendirmeniz için Issue olarak açar. |
 | `keepalive` | Her ayın 1'i | GitHub uzun süre hareketsiz kalan depolarda zamanlanmış workflow'ları kapatabilir. Bu workflow onları yeniden "etkin" yapar. Başka hiçbir şey yapmaz. |
 
 Her run'da adımlar sondan başa çalışır: önce bekleyen taslaklar doğrulanıp stoğa eklenir, sonra yeni kancalar işlenir ve yazılır. Bekleyen taslak sayısı `pipeline.config.json` içindeki `writing.maxWrittenBacklog` değerini (varsayılan 40) aşarsa o run'da yeni taslak yazılmaz; böylece günlük yazar kotası doğrulamaya kalır.
@@ -352,14 +352,14 @@ Her gerçek run'ın sayıları (kaç aday, kaç kart, red nedenleri, model kulla
 
 ### Haftalık örnek nasıl değerlendirilir?
 
-Her pazartesi `weekly-sample` etiketli bir Issue gelir: 10 kart, her birinin başında bir kutu, başlığı, metni ve kaynak linki.
+Her pazartesi `weekly-sample` etiketli bir Issue gelir: o haftanın kartları (en fazla 70), her birinin başında bir kutu, başlığı, metni ve kaynak linki.
 
 1. Kartları okuyun. Şüphelendiğiniz bilgiyi kaynak linkinden kontrol edebilirsiniz.
 2. **Kötü** bulduğunuz kartın kutusunu işaretleyin. Kötü kart: yanlış bilgi, sıkıcı ya da "X nedir" tarzı, bozuk Türkçe, başlığı metinle uyuşmuyor.
 3. Nedenini kısaca Issue'ya yorum olarak yazın (ör. "3: tarih yanlış", "7: sıkıcı").
 4. Bitince Issue'yu kapatın.
 
-Hedef: 10 karttan en az 8'i iyi ve **hiç yanlış bilgi yok**. İşaretlenen kartlar yazar istemini ve puan eşiklerini ayarlamak için kullanılır.
+Hedef: kartların en az %90'ı iyi ve **hiç yanlış bilgi yok**. İşaretlenen kartlar yazar istemini ve puan eşiklerini ayarlamak için kullanılır.
 
 ### Komut satırından (geliştiriciler)
 
