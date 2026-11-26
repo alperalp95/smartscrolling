@@ -113,20 +113,24 @@ export function buildFeedOrder(items: FeedIndexItem[], opts: FeedOrderOptions): 
   const seen = unique.filter((i) => opts.seenIds.has(i.id));
 
   const cutoff = opts.now.getTime() - freshDays * DAY_MS;
-  const fresh = unseen
-    .filter((i) => {
-      const t = itemTime(i);
-      return !Number.isNaN(t) && t >= cutoff;
-    })
-    .sort((a, b) => itemTime(b) - itemTime(a));
-  const lead = fresh.slice(0, freshLead);
+  const fresh = unseen.filter((i) => {
+    const t = itemTime(i);
+    return !Number.isNaN(t) && t >= cutoff;
+  });
+  // Kartlar toplu yayınlandığından aynı saati taşır; "en yeni" herkese aynı kartları verirdi.
+  // Bu yüzden öne alınan taze kartlar tazeler arasından rastgele seçilir.
+  const lead = shuffle(fresh, random).slice(0, freshLead);
   const leadIds = new Set(lead.map((i) => i.id));
   const rest = shuffle(
     unseen.filter((i) => !leadIds.has(i.id)),
     random,
   );
 
-  const head = spreadCategories([...lead, ...rest], undefined);
+  // Öne alınan taze kartlar yerinde kalır; kategori dağıtımı sadece onlardan sonrasına uygulanır.
+  const head = [
+    ...lead,
+    ...spreadCategories(rest, lead.length ? lead[lead.length - 1].category : undefined),
+  ];
   const tail = spreadCategories(
     shuffle(seen, random),
     head.length ? head[head.length - 1].category : undefined,

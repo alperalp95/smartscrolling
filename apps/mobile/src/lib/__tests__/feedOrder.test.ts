@@ -80,7 +80,7 @@ describe('buildFeedOrder', () => {
     expect([...order].sort()).toEqual(items.map((i) => i.id).sort());
   });
 
-  it('leads with the newest fresh cards, and 8-day-old is not fresh', () => {
+  it('leads with random fresh cards (not always the same), and 8-day-old is not fresh', () => {
     const items: FeedIndexItem[] = [
       item('old8', 'A', 8),
       item('fresh5', 'B', 5),
@@ -91,9 +91,27 @@ describe('buildFeedOrder', () => {
       item('x1', 'G', 40),
       item('x2', 'H', 50),
     ];
-    for (const seed of [1, 2, 3, 4, 5]) {
-      const order = buildFeedOrder(items, { seenIds, seed, now: NOW });
-      expect(order.slice(0, 3)).toEqual(['fresh0', 'fresh1', 'fresh3']);
+    const leads = new Set<string>();
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const lead = buildFeedOrder(items, { seenIds, seed, now: NOW }).slice(0, 3);
+      for (const id of lead) expect(id.startsWith('fresh')).toBe(true);
+      leads.add(lead.join(','));
+    }
+    expect(leads.size).toBeGreaterThan(1);
+  });
+
+  it('keeps fresh lead cards on top even when they share a category', () => {
+    const items: FeedIndexItem[] = [
+      item('f1', 'A', 1),
+      item('f2', 'A', 1),
+      item('f3', 'A', 1),
+      item('x1', 'B', 40),
+      item('x2', 'C', 50),
+      item('x3', 'A', 60),
+    ];
+    for (const seed of [1, 2, 3]) {
+      const lead = buildFeedOrder(items, { seenIds, seed, now: NOW }).slice(0, 3);
+      expect([...lead].sort()).toEqual(['f1', 'f2', 'f3']);
     }
   });
 
