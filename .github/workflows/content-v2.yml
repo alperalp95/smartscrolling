@@ -55,16 +55,23 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_MODE: ${{ inputs.mode }}
           INPUT_PUBLISH: ${{ inputs.publish }}
+          AUTO_PUBLISH: ${{ vars.CONTENT_V2_AUTO_PUBLISH }}
         run: |
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             mode="$INPUT_MODE"
             publish="$INPUT_PUBLISH"
           else
             mode="apply"
+            # Otomatik yayın ayrı bir anahtara bağlı: CONTENT_V2_AUTO_PUBLISH == true olmalı.
             # Yayın sadece günün son run'ında (19:17 UTC). GitHub zamanlanmış run'ları gecikmeli
             # başlatabildiği için 19:00-02:59 UTC arası "son run" sayılır.
-            hour="$(date -u +%H)"
-            if [[ "$hour" -ge 19 || "$hour" -lt 3 ]]; then publish="true"; else publish="false"; fi
+            publish="false"
+            if [[ "$AUTO_PUBLISH" == "true" ]]; then
+              hour="$(date -u +%H)"
+              if [[ "$hour" -ge 19 || "$hour" -lt 3 ]]; then publish="true"; fi
+            else
+              echo "Otomatik yayın kapalı (CONTENT_V2_AUTO_PUBLISH != true)"
+            fi
           fi
           if [[ "$mode" != "apply" && "$mode" != "dry-run" ]]; then
             echo "Geçersiz mod: $mode" >&2

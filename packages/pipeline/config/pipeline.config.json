@@ -155,8 +155,8 @@
   },
 
   "publish": {
-    "_aciklama": "Yayın: günde kaç kart yayınlanır, stokta en az kaç günlük kart beklesin.",
-    "dailyCount": 100,
+    "_aciklama": "Yayın: günde kaç kart yayınlanır, stokta en az kaç günlük kart beklesin. Elle yayında bu sayı kullanılmaz; günlük otomatik yayın açıkken geçerlidir.",
+    "dailyCount": 10,
     "minStockDays": 7
   }
 }
