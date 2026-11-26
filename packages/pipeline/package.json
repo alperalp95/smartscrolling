@@ -8,6 +8,7 @@
     "test": "node --test \"src/**/__tests__/*.test.js\"",
     "v2:backfill-embeddings": "node src/runners/v2-backfill-embeddings.js",
     "v2:backfill-context": "node src/runners/v2-backfill-context.js",
+    "backfill:v2-media": "node src/runners/v2-backfill-media.js",
     "run:wikipedia": "node src/runners/wikipedia.js",
     "run:nasa": "node src/runners/nasa.js",
     "run:reddit": "node src/runners/reddit.js",

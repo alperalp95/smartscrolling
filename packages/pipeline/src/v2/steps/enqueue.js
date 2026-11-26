@@ -5,6 +5,7 @@
 import { contentHash } from '../../dedup/index.js';
 import { deriveFactVisualKey } from '../../lib/fact-visual-key.js';
 import { DuplicateInsertError } from '../db/steps-repo.js';
+import { resolveWikiImage } from '../media/wiki-image.js';
 import { STATUS, forEachCandidate, newStats, reject, wikiLang } from './common.js';
 import { cardText } from './dedup-card.js';
 
@@ -73,10 +74,21 @@ export function buildFactRow(cand) {
  */
 export async function runEnqueue(deps, { limit = 50 } = {}) {
   const stats = newStats('enqueue');
+  stats.media = { found: 0, missing: 0 };
   const cands = await deps.repo.listByStatus(STATUS.VERIFIED, limit);
+  const resolveImage =
+    deps.resolveImage ?? ((url) => resolveWikiImage(url, { fetchImpl: deps.fetchImpl }));
 
   await forEachCandidate(deps, cands, stats, async (cand) => {
     const row = buildFactRow(cand);
+    // Görsel bulunamaması kartı asla engellemez (resolveWikiImage fırlatmaz; yine de sar).
+    let mediaUrl = null;
+    try {
+      mediaUrl = (await resolveImage(cand.source_url)) ?? null;
+    } catch {
+      mediaUrl = null;
+    }
+    row.media_url = mediaUrl;
     let inserted;
     try {
       inserted = await deps.repo.insertQueuedFact(row);
@@ -89,6 +101,8 @@ export async function runEnqueue(deps, { limit = 50 } = {}) {
     }
     await deps.repo.updateCandidate(cand.id, { status: STATUS.QUEUED, fact_id: inserted.id });
     stats.advanced += 1;
+    if (mediaUrl) stats.media.found += 1;
+    else stats.media.missing += 1;
   });
   return stats;
 }
