@@ -6,8 +6,24 @@ export function normalizeText(value) {
     .toLowerCase();
 }
 
+const wordPatternCache = new Map();
+
+// Anahtar kelime, metinde kelime başında geçmeli. 4+ harfli kökler Türkçe ek
+// alabilir ("yemekler", "metaller"); kısa anahtarlar ("et", "tuz") ise tam kelime
+// olmalı, böylece "cetvel" ya da "etti" gibi kelime içi eşleşmeler sayılmaz.
+function wordPatternRegex(pattern) {
+  let regex = wordPatternCache.get(pattern);
+  if (!regex) {
+    const escaped = pattern.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const ending = pattern.length >= 4 ? '\\p{L}*' : '(?![\\p{L}\\p{N}])';
+    regex = new RegExp(`(?<![\\p{L}\\p{N}])${escaped}${ending}`, 'u');
+    wordPatternCache.set(pattern, regex);
+  }
+  return regex;
+}
+
 function includesAny(text, patterns) {
-  return patterns.some((pattern) => text.includes(pattern));
+  return patterns.some((pattern) => wordPatternRegex(pattern).test(text));
 }
 
 function buildTopicText({ title, tags, sourceTitle, content }) {
