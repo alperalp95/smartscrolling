@@ -332,6 +332,7 @@ export function createLlm(config, deps = {}) {
   function addUsage(total, u, neurons) {
     total.inputTokens += u.inputTokens ?? 0;
     total.outputTokens += u.outputTokens ?? 0;
+    total.cachedTokens = (total.cachedTokens ?? 0) + (u.cachedTokens ?? 0);
     if (neurons !== undefined) total.neurons = (total.neurons ?? 0) + neurons;
   }
 

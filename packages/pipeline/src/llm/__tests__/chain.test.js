@@ -40,7 +40,7 @@ test('birincil başarılı -> doğru provider/model/usage döner', async () => {
   assert.equal(res.provider, 'groq');
   assert.equal(res.model, 'qwen/qwen3.8-27b');
   assert.deepEqual(res.json, { score: 7 });
-  assert.deepEqual(res.usage, { inputTokens: 120, outputTokens: 30 });
+  assert.deepEqual(res.usage, { inputTokens: 120, outputTokens: 30, cachedTokens: 0 });
   assert.equal(fetch.calls.length, 1);
   const call = fetch.calls[0];
   assert.equal(call.url, 'https://api.groq.com/openai/v1/chat/completions');

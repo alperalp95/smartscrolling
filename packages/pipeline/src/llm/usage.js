@@ -158,6 +158,7 @@ export function createUsageTracker({ providers, store, now = () => Date.now() })
         requests: 0,
         inputTokens: 0,
         outputTokens: 0,
+        cachedInputTokens: 0,
         tokens: 0,
         neurons: 0,
         exhausted: false,
@@ -219,7 +220,7 @@ export function createUsageTracker({ providers, store, now = () => Date.now() })
     async record(
       provider,
       model,
-      { requests = 1, inputTokens = 0, outputTokens = 0, neurons } = {},
+      { requests = 1, inputTokens = 0, outputTokens = 0, cachedTokens = 0, neurons } = {},
     ) {
       const d = await current();
       const p = providerBucket(d, provider);
@@ -233,6 +234,8 @@ export function createUsageTracker({ providers, store, now = () => Date.now() })
       }
       m.inputTokens += inputTokens;
       m.outputTokens += outputTokens;
+      // Eski kayıtlarda alan yok: 0 kabul edilir. Bütçe (tokens/requests) bu alandan etkilenmez.
+      m.cachedInputTokens = (m.cachedInputTokens ?? 0) + cachedTokens;
       await persist();
       return n;
     },
