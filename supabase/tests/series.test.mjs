@@ -1,4 +1,4 @@
-// Verifies supabase/migrations/20261127120000_series.sql on PGlite:
+// Verifies supabase/migrations/20261127204810_series.sql on PGlite:
 // series / series_cards / series_progress tables, RLS premium preview, replace_series_cards.
 // Run: node --test supabase/tests/series.test.mjs
 
@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const MIGRATION = join(here, '..', 'migrations', '20261127120000_series.sql');
+const MIGRATION = join(here, '..', 'migrations', '20261127204810_series.sql');
 
 const SUPABASE_STUBS = `
   set timezone = 'UTC';
