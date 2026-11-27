@@ -21,7 +21,7 @@ const normalizeText = (t) => t.replace(/\s+/g, ' ').trim();
 
 /**
  * `== Başlık ==` / `=== Alt ===` işaretli metni bölümlere ayırır.
- * İlk bölümün başlığı `title`; boş bölümler atılır. `level`: giriş 1, `==` 2, `===` 3…
+ * İlk bölümün başlığı `title`; boş bölümler de döner (filterSections atar). `level`: giriş 1, `==` 2, `===` 3…
  * @returns {Array<{ heading: string, text: string, level: number }>}
  */
 export function parseWikiExtract(text, title) {
@@ -29,7 +29,7 @@ export function parseWikiExtract(text, title) {
   let current = { heading: title, level: 1, lines: [] };
   const flush = () => {
     const body = normalizeText(current.lines.join(' '));
-    if (body) sections.push({ heading: current.heading, text: body, level: current.level });
+    sections.push({ heading: current.heading, text: body, level: current.level });
   };
   for (const line of String(text ?? '').split(/\r?\n/)) {
     const m = HEADING_RE.exec(line.trim());
@@ -65,5 +65,5 @@ export function filterSections(sections, wanted = null) {
     if (wantedSet && wantLevel === null) continue;
     out.push(s);
   }
-  return out;
+  return out.filter((s) => s.text);
 }
