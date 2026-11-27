@@ -62,6 +62,17 @@ export function createSampleRepo(client) {
       if (error) throw new Error(`facts okunamadı: ${error.message}`);
       return data ?? [];
     },
+    /** Hassas kelime yüzünden yayına girmeyip incelemede bekleyen kartlar (eskiden yeniye). */
+    async listInReview() {
+      const { data, error } = await client
+        .from('facts')
+        .select('id,title,content,category,source_url,verification,created_at')
+        .eq('status', 'review')
+        .order('created_at', { ascending: true })
+        .limit(MAX_ROWS);
+      if (error) throw new Error(`facts okunamadı: ${error.message}`);
+      return data ?? [];
+    },
   };
 }
 
@@ -100,10 +111,12 @@ function clip(text, max) {
  */
 export function formatSampleIssue(
   cards,
-  { now, days = DEFAULT_DAYS, totalPublished = cards.length },
+  { now, days = DEFAULT_DAYS, totalPublished = cards.length, inReview = [] },
 ) {
   const day = now.toISOString().slice(0, 10);
-  const title = `Haftalık kart örneği (${day}): ${cards.length} kart`;
+  const title = `Haftalık kart örneği (${day}): ${cards.length} kart${
+    inReview.length > 0 ? ` · ${inReview.length} incelemede` : ''
+  }`;
   const lines = [
     `Son ${days} günde yayınlanan ${totalPublished} karttan rastgele seçilen ${cards.length} kart.`,
     '',
@@ -128,6 +141,29 @@ export function formatSampleIssue(
     lines.push(`  Kaynak: ${card.source_url ? `<${card.source_url}>` : '(link yok)'}`);
     lines.push('');
   });
+  if (inReview.length > 0) {
+    lines.push(
+      `## İncelemede bekleyen kartlar (${inReview.length})`,
+      '',
+      'Bu kartlarda hassas olabilecek bir kelime geçtiği için otomatik yayına girmediler. ' +
+        'Yayına uygun olanların kutusunu işaretleyin; Atlas işaretlenenleri yayına alır, ' +
+        'işaretlenmeyenler arşivlenir.',
+      '',
+    );
+    inReview.forEach((card, i) => {
+      const category = card.category ? ` · ${oneLine(card.category)}` : '';
+      const terms = card.verification?.review?.terms;
+      const termText =
+        Array.isArray(terms) && terms.length > 0 ? terms.join(', ') : '(belirtilmemiş)';
+      lines.push(
+        `- [ ] **R${i + 1}. ${oneLine(card.title) || '(başlıksız)'}**${category} · kelime: ${termText}`,
+        `  ${clip(card.content, BODY_MAX_CHARS) || '(metin yok)'}`,
+        `  Kaynak: ${card.source_url ? `<${card.source_url}>` : '(link yok)'}`,
+        `  id: ${card.id}`,
+        '',
+      );
+    });
+  }
   lines.push(
     "<sub>Bu Issue `content-v2-weekly-sample` workflow'u tarafından otomatik açıldı. Değerlendirince kapatabilirsiniz.</sub>",
   );
@@ -185,9 +221,15 @@ export async function runWeeklySample(argv, deps) {
   const since = new Date(now.getTime() - opts.days * 24 * 60 * 60 * 1000).toISOString();
   const rows = await deps.repo.listPublishedSince(since);
   const cards = pickRandom(rows, opts.count, deps.random ?? Math.random);
-  const issue = formatSampleIssue(cards, { now, days: opts.days, totalPublished: rows.length });
+  const inReview = deps.repo.listInReview ? await deps.repo.listInReview() : [];
+  const issue = formatSampleIssue(cards, {
+    now,
+    days: opts.days,
+    totalPublished: rows.length,
+    inReview,
+  });
   log(
-    `[v2-weekly-sample] son ${opts.days} gün: ${rows.length} yayınlanmış kart, örnek ${cards.length}`,
+    `[v2-weekly-sample] son ${opts.days} gün: ${rows.length} yayınlanmış kart, örnek ${cards.length} · incelemede ${inReview.length}`,
   );
   if (!opts.createIssue) {
     stdout(`# ${issue.title}\n\n${issue.body}`);

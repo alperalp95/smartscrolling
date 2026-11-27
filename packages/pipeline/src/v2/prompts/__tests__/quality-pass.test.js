@@ -70,6 +70,25 @@ test('write istemi: başlık tutarlılık kuralı, ad kuralı, sayı ve ek yazı
   assert.match(WRITE_SYSTEM_PROMPT, /Santa Muerte'ye/);
 });
 
+test('write istemi: yazar sözlüğü, yabancı kelime kuralı ve birim kuralı', () => {
+  for (const s of [
+    'garter yılanı (kertenkele değil)',
+    'ayna (mercek değil)',
+    'çok yıllık',
+    'nota defteri',
+    'dikroik',
+  ]) {
+    assert.ok(WRITE_SYSTEM_PROMPT.includes(s), `eksik: ${s}`);
+  }
+  assert.match(WRITE_SYSTEM_PROMPT, /yabancı kelimeleri metinde bırakma/);
+  assert.match(WRITE_SYSTEM_PROMPT, /birim çevirme/);
+});
+
+test('score istemi: şirket/mağaza tarihi → TARİH ipucu', () => {
+  assert.match(SCORE_SYSTEM_PROMPT, /şirket\/marka\/mağaza\/ürün tarihi → TARİH/);
+  assert.match(SCORE_SYSTEM_PROMPT, /TEKNOLOJİ sadece bilişim/);
+});
+
 test('write istemi: yeni kural başlığın "yüklemli" kuralıyla çelişmez (isim öbeği izinli)', () => {
   assert.doesNotMatch(WRITE_SYSTEM_PROMPT, /sadece isim tamlaması değil/);
 });
