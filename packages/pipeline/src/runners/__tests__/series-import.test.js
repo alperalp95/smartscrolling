@@ -297,3 +297,148 @@ test('series-candidates: üyeleri listeler, Commons kapak ve kart sayısını ç
   assert.equal(items.find((i) => i.title === 'İbn Haldun').hasCommonsCover, false);
   assert.ok(fs.existsSync(path.join(d.cacheDir, 'series-candidates.json')));
 });
+
+// --- cover (elle kapak seçimi) ---
+
+const THUMB =
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Galata.jpg/960px-Galata.jpg';
+
+function commonsBody({ thumburl = THUMB, nonFree = false, missing = false, noInfo = false } = {}) {
+  if (missing) return { query: { pages: { '-1': { title: 'File:X.jpg', missing: '' } } } };
+  const page = { title: 'File:Galata Tower.jpg' };
+  if (!noInfo) {
+    page.imageinfo = [
+      {
+        thumburl,
+        extmetadata: {
+          LicenseShortName: { value: 'CC BY-SA 4.0' },
+          ...(nonFree ? { NonFree: { value: 'true' } } : {}),
+        },
+      },
+    ];
+  }
+  return { query: { pages: { 123: page } } };
+}
+
+/** tr.wikipedia isteklerini maddeye, commons isteklerini verilen gövdeye yönlendirir. */
+function routedFetch(commons) {
+  const wiki = fakeFetch({
+    'Galata Kulesi': apiPage({ title: 'Galata Kulesi', thumb: COMMONS }),
+  });
+  const calls = [];
+  const impl = async (url, opts) => {
+    calls.push(url);
+    if (new URL(url).host === 'commons.wikimedia.org') {
+      return { ok: true, json: async () => commons };
+    }
+    return wiki(url, opts);
+  };
+  impl.calls = calls;
+  return impl;
+}
+
+const coverOf = async (cover, commons) => {
+  const d = deps({
+    client: fakeClient(),
+    config: baseConfig(cover === undefined ? {} : { cover }),
+    fetchImpl: routedFetch(commons ?? commonsBody()),
+  });
+  const out = await run(['--apply'], d);
+  return { out, d };
+};
+
+test('cover: alan yoksa eski davranış (maddenin Commons görseli), Commons çağrısı yok', async () => {
+  const { out, d } = await coverOf(undefined);
+  assert.equal(out.exitCode, 0);
+  assert.equal(d.client.log.inserts[0].cover_url, COMMONS);
+  assert.ok(!d.fetchImpl.calls.some((u) => u.includes('commons.wikimedia.org')));
+});
+
+test('cover: null eski davranışla aynı', async () => {
+  const { d } = await coverOf(null);
+  assert.equal(d.client.log.inserts[0].cover_url, COMMONS);
+});
+
+test('cover: "none" → cover_url null, Commons çağrısı yok', async () => {
+  const { out, d } = await coverOf('none');
+  assert.equal(out.exitCode, 0);
+  assert.equal(d.client.log.inserts[0].cover_url, null);
+  assert.ok(!d.fetchImpl.calls.some((u) => u.includes('commons.wikimedia.org')));
+});
+
+for (const name of ['File:Galata Tower.jpg', 'Dosya:Galata Tower.jpg', 'Galata Tower.jpg']) {
+  test(`cover: dosya adı "${name}" → 960px küçük resim URL'si`, async () => {
+    const { out, d } = await coverOf(name);
+    assert.equal(out.exitCode, 0);
+    assert.equal(d.client.log.inserts[0].cover_url, THUMB);
+    const call = d.fetchImpl.calls.find((u) => u.includes('commons.wikimedia.org'));
+    const q = new URL(call).searchParams;
+    assert.equal(q.get('titles'), 'File:Galata Tower.jpg');
+    assert.equal(q.get('prop'), 'imageinfo');
+    assert.equal(q.get('iiprop'), 'url|extmetadata');
+    assert.equal(q.get('iiurlwidth'), '960');
+  });
+}
+
+test('cover: NonFree dosya reddedilir, satır hata verir', async () => {
+  const { out, d } = await coverOf('File:Galata Tower.jpg', commonsBody({ nonFree: true }));
+  assert.equal(out.exitCode, 1);
+  assert.equal(out.result.errors, 1);
+  assert.equal(d.client.log.inserts.length, 0);
+});
+
+test('cover: bulunamayan dosya satır hatası; diğer satırlar devam eder', async () => {
+  const wiki = fakeFetch({
+    'Galata Kulesi': apiPage({ title: 'Galata Kulesi', thumb: COMMONS }),
+    'Sabahattin Ali': apiPage({ title: 'Sabahattin Ali', thumb: COMMONS }),
+  });
+  const impl = async (url, opts) =>
+    new URL(url).host === 'commons.wikimedia.org'
+      ? { ok: true, json: async () => commonsBody({ missing: true }) }
+      : wiki(url, opts);
+  const d = deps({
+    client: fakeClient(),
+    config: {
+      series: [
+        { title: 'Galata Kulesi', free: true, category: '📜 TARİH', cover: 'Yok.jpg' },
+        { title: 'Sabahattin Ali', free: true, category: '📜 TARİH' },
+      ],
+    },
+    fetchImpl: impl,
+  });
+  const { exitCode, result } = await run(['--apply'], d);
+  assert.equal(exitCode, 1);
+  assert.equal(result.errors, 1);
+  assert.equal(result.written, 1);
+  assert.equal(d.client.log.inserts[0].slug, 'sabahattin-ali');
+});
+
+test('cover: imageinfo yoksa hata', async () => {
+  const { out } = await coverOf('Galata Tower.jpg', commonsBody({ noInfo: true }));
+  assert.equal(out.exitCode, 1);
+});
+
+test('cover: doğrudan URL config doğrulamasında açık hata verir', () => {
+  const r = validateSeriesConfig(baseConfig({ cover: 'https://example.com/a.jpg' }));
+  assert.equal(r.errors.length, 1);
+  assert.match(r.errors[0], /cover/);
+  assert.match(r.errors[0], /Commons dosya adı/);
+});
+
+test('cover: metin olmayan değer hata verir; "none" ve dosya adı kabul edilir', () => {
+  assert.equal(validateSeriesConfig(baseConfig({ cover: 5 })).errors.length, 1);
+  assert.equal(validateSeriesConfig(baseConfig({ cover: '  ' })).errors.length, 1);
+  assert.deepEqual(validateSeriesConfig(baseConfig({ cover: 'none' })).errors, []);
+  assert.deepEqual(validateSeriesConfig(baseConfig({ cover: 'Dosya:A b.jpg' })).errors, []);
+});
+
+test("cover: mevcut seri yeniden içe aktarılırken cover değişikliği cover_url'e yansır", async () => {
+  const d = deps({
+    client: fakeClient({ existing: { 'galata-kulesi': { id: 'old', status: 'published' } } }),
+    config: baseConfig({ cover: 'none' }),
+    fetchImpl: routedFetch(commonsBody()),
+  });
+  const { exitCode } = await run(['--apply'], d);
+  assert.equal(exitCode, 0);
+  assert.equal(d.client.log.updates[0].cover_url, null);
+});
