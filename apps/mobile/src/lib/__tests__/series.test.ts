@@ -164,8 +164,24 @@ describe('misafir ilerleme', () => {
   it('pozisyon 0..cardCount aralığına kırpılır', async () => {
     await saveProgress('s1', 99, 31, null);
     expect((await getProgress('s1', null))?.lastPosition).toBe(31);
-    await saveProgress('s1', -3, 31, null);
-    expect((await getProgress('s1', null))?.lastPosition).toBe(0);
+    await saveProgress('s2', -3, 31, null);
+    expect((await getProgress('s2', null))?.lastPosition).toBe(0);
+  });
+
+  it('eski 20, yeni 1 -> 20 kalır; eski 5, yeni 12 -> 12', async () => {
+    await saveProgress('s1', 20, 31, null);
+    await saveProgress('s1', 1, 31, null);
+    expect((await getProgress('s1', null))?.lastPosition).toBe(20);
+    await saveProgress('s2', 5, 31, null);
+    await saveProgress('s2', 12, 31, null);
+    expect((await getProgress('s2', null))?.lastPosition).toBe(12);
+  });
+
+  it('tamamlanmış seri yeniden açılınca completed korunur, pozisyon geri gitmez', async () => {
+    await saveProgress('s1', 31, 31, null);
+    const done = await getProgress('s1', null);
+    await saveProgress('s1', 1, 31, null);
+    expect(await getProgress('s1', null)).toEqual(done);
   });
 
   it('bozuk depolama verisi → null', async () => {
@@ -185,6 +201,33 @@ describe('girişli ilerleme', () => {
     await saveProgress('s1', 31, 31, 'u1');
     const second = callsOf('series_progress', 'upsert')[1];
     expect((second.args[0] as Record<string, unknown>).completed_at).toEqual(expect.any(String));
+  });
+
+  it('sunucuda eski 20, yeni 1 -> 20 kalır; eski 5, yeni 12 -> 12', async () => {
+    mockResults.series_progress = {
+      data: { series_id: 's1', last_position: 20, completed_at: null },
+      error: null,
+    };
+    await saveProgress('s1', 1, 31, 'u1');
+    expect(callsOf('series_progress', 'upsert')[0].args[0]).toMatchObject({ last_position: 20 });
+
+    mockResults.series_progress = {
+      data: { series_id: 's1', last_position: 5, completed_at: null },
+      error: null,
+    };
+    await saveProgress('s1', 12, 31, 'u1');
+    expect(callsOf('series_progress', 'upsert')[1].args[0]).toMatchObject({ last_position: 12 });
+  });
+
+  it('sunucuda tamamlanmış seri yeniden açılınca completed_at ezilmez', async () => {
+    mockResults.series_progress = {
+      data: { series_id: 's1', last_position: 31, completed_at: '2026-11-01T00:00:00Z' },
+      error: null,
+    };
+    await saveProgress('s1', 1, 31, 'u1');
+    const payload = callsOf('series_progress', 'upsert')[0].args[0] as Record<string, unknown>;
+    expect(payload.last_position).toBe(31);
+    expect(payload.completed_at).toBeUndefined();
   });
 
   it('getProgress sunucu satırını eşler', async () => {
@@ -227,6 +270,18 @@ describe('mergeGuestProgress (odak 4)', () => {
     await mergeGuestProgress('u1');
     expect(callsOf('series_progress', 'upsert')).toHaveLength(0);
     expect(await AsyncStorage.getItem(GUEST_PROGRESS_KEY)).toBeNull();
+  });
+
+  it('sunucuda pozisyon büyük ama completed_at yok -> misafirin completedAt aktarılır', async () => {
+    await saveProgress('s1', 40, 40, null);
+    mockResults.series_progress = {
+      data: [{ series_id: 's1', last_position: 40, completed_at: null }],
+      error: null,
+    };
+    await mergeGuestProgress('u1');
+    const ups = callsOf('series_progress', 'upsert');
+    expect(ups).toHaveLength(1);
+    expect(ups[0].args[0]).toMatchObject({ last_position: 40, completed_at: expect.any(String) });
   });
 
   it('sunucuda satır yoksa cihazdaki yazılır', async () => {

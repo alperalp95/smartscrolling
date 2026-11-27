@@ -192,28 +192,33 @@ export async function saveProgress(
   cardCount: number,
   userId: string | null,
 ): Promise<void> {
-  const lastPosition = Math.max(0, Math.min(Math.floor(position), cardCount));
-  const finished = cardCount > 0 && lastPosition >= cardCount;
+  const requested = Math.max(0, Math.min(Math.floor(position), cardCount));
+  const now = new Date().toISOString();
 
+  // İlerleme asla geriye gitmez: eski ve yeni pozisyonun büyüğü saklanır.
   if (!userId) {
     const map = await readGuest();
-    const prevDone = map[seriesId]?.completedAt ?? null;
+    const prev = map[seriesId];
+    const lastPosition = Math.max(prev?.lastPosition ?? 0, requested);
+    const finished = cardCount > 0 && lastPosition >= cardCount;
     map[seriesId] = {
       lastPosition,
-      completedAt: prevDone ?? (finished ? new Date().toISOString() : null),
+      completedAt: prev?.completedAt ?? (finished ? now : null),
     };
     await writeGuest(map);
     return;
   }
 
-  const now = new Date().toISOString();
+  const prev = await getProgress(seriesId, userId);
+  const lastPosition = Math.max(prev?.lastPosition ?? 0, requested);
+  const finished = cardCount > 0 && lastPosition >= cardCount;
   const payload: Record<string, unknown> = {
     user_id: userId,
     series_id: seriesId,
     last_position: lastPosition,
     updated_at: now,
   };
-  if (finished) payload.completed_at = now;
+  if (finished && !prev?.completedAt) payload.completed_at = now;
   const { error } = await supabase
     .from('series_progress')
     .upsert(payload, { onConflict: 'user_id,series_id' });
@@ -237,14 +242,17 @@ export async function mergeGuestProgress(userId: string): Promise<void> {
   for (const id of ids) {
     const g = guest[id];
     const s = server.get(id);
-    if (s && (s.last_position ?? 0) >= g.lastPosition) continue;
+    const serverPos = s?.last_position ?? 0;
+    const needsPosition = !s || serverPos < g.lastPosition;
+    const needsCompleted = !!g.completedAt && !s?.completed_at;
+    if (!needsPosition && !needsCompleted) continue;
     const payload: Record<string, unknown> = {
       user_id: userId,
       series_id: id,
-      last_position: g.lastPosition,
+      last_position: Math.max(serverPos, g.lastPosition),
       updated_at: now,
     };
-    if (g.completedAt) payload.completed_at = g.completedAt;
+    if (needsCompleted) payload.completed_at = g.completedAt;
     const res = await supabase
       .from('series_progress')
       .upsert(payload, { onConflict: 'user_id,series_id' });
