@@ -1,4 +1,4 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { configure, fireEvent, render } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import type { FactType } from '../../../src/types';
 import { ShareCard } from '../share-card';
@@ -35,7 +35,17 @@ function makeFact(overrides: Partial<FactType> = {}): FactType {
   } as unknown as FactType;
 }
 
+// Kart erişilebilirlik ağacından gizli; testler yine de içeriğini sorgular.
+configure({ defaultIncludeHiddenElements: true });
+
 describe('ShareCard', () => {
+  it('hides the off-screen card from accessibility', () => {
+    const { getByTestId } = render(<ShareCard fact={makeFact()} variant="text" photoUri={null} />);
+    const root = getByTestId('share-card');
+    expect(root.props.importantForAccessibility).toBe('no-hide-descendants');
+    expect(root.props.accessibilityElementsHidden).toBe(true);
+  });
+
   it('shows the photo only in the photo variant', () => {
     const photo = render(
       <ShareCard fact={makeFact()} variant="photo" photoUri="https://example.com/a.jpg" />,

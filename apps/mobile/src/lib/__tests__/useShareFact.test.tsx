@@ -37,8 +37,8 @@ function setup() {
     result.current = useShareFact();
     return result.current.shareHost;
   }
-  render(<Harness />);
-  return { result };
+  const { unmount } = render(<Harness />);
+  return { result, unmount };
 }
 
 const flush = () => act(async () => jest.advanceTimersByTimeAsync(100));
@@ -166,6 +166,32 @@ describe('useShareFact', () => {
     await flush();
     expect(result.current.isSharing).toBe(false);
     expect(result.current.shareHost).toBeNull();
+  });
+
+  it('ends silently when unmounted while waiting for the photo', async () => {
+    const warn = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { result, unmount } = setup();
+    await act(async () => {
+      void result.current.shareFact(PHOTO_FACT);
+    });
+    unmount();
+    await act(async () => jest.advanceTimersByTimeAsync(4000));
+    expect(captureRef).not.toHaveBeenCalled();
+    expect(open).not.toHaveBeenCalled();
+    expect(rnShare).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('allows only one share across hook instances', async () => {
+    const a = setup();
+    const b = setup();
+    await act(async () => {
+      void a.result.current.shareFact(TEXT_FACT);
+      void b.result.current.shareFact(TEXT_FACT);
+    });
+    await flush();
+    expect(open).toHaveBeenCalledTimes(1);
   });
 
   it('falls back to RN Share when native modules are missing (old build)', async () => {

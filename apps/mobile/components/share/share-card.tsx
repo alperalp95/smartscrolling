@@ -28,7 +28,14 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
 ) {
   const isPhoto = variant === 'photo';
   return (
-    <View ref={ref} collapsable={false} style={s.root} testID="share-card">
+    <View
+      ref={ref}
+      collapsable={false}
+      style={s.root}
+      testID="share-card"
+      importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
+    >
       <LinearGradient
         colors={colors.brandGradient}
         start={glowStart}

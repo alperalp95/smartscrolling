@@ -1,7 +1,7 @@
 // Paylaşım akışı: kartı ekran dışında çiz -> fotoğrafı bekle -> PNG'ye çevir -> linki kopyala -> paylaş.
 // Yerel kütüphaneler eski uygulama derlemesinde olmayabilir; bu yüzden fonksiyon içinde yüklenir
 // ve her hata metin paylaşımına düşer (vazgeçme hata değildir).
-import { type ReactElement, useCallback, useRef, useState } from 'react';
+import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Share as RNShare, ToastAndroid, View } from 'react-native';
 import { ShareCard } from '../../components/share/share-card';
 import { SHARE_CONFIG } from '../config/share';
@@ -30,6 +30,9 @@ type HostState = { fact: FactType; variant: ShareVariant; photoUri: string | nul
 
 const FRAME_WAIT_MS = 50;
 const TOAST_TEXT = 'Link kopyalandı';
+
+// Tek paylaşım kilidi: farklı kartlardan art arda basış da tek akış başlatır.
+let shareInFlight = false;
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -61,16 +64,24 @@ export function useShareFact(): {
 } {
   const [host, setHost] = useState<HostState | null>(null);
   const [isSharing, setIsSharing] = useState(false);
-  const busy = useRef(false);
+  const mountedRef = useRef(true);
   const cardRef = useRef<View>(null);
   const photoDone = useRef<(() => void) | null>(null);
   const photoLoadedRef = useRef(false);
 
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      photoDone.current?.();
+    };
+  }, []);
+
   const settlePhoto = useCallback(() => photoDone.current?.(), []);
 
   const shareFact = useCallback(async (fact: FactType) => {
-    if (busy.current) return;
-    busy.current = true;
+    if (shareInFlight) return;
+    shareInFlight = true;
     setIsSharing(true);
     const link = buildFactShareLink(fact.id);
     const message = buildShareMessage(fact.title, link);
@@ -92,18 +103,22 @@ export function useShareFact(): {
       setHost({ fact, variant: picked.variant, photoUri: picked.photoUri });
       if (photoReady) {
         await photoReady;
+        if (!mountedRef.current) return;
         if (!photoLoadedRef.current) setHost({ fact, variant: 'text', photoUri: null });
       }
       await wait(FRAME_WAIT_MS);
+      if (!mountedRef.current || !cardRef.current) return;
       const uri = await captureRef(cardRef.current, {
         format: 'png',
         width: 1080,
         height: 1920,
         result: 'tmpfile',
       });
+      if (!mountedRef.current) return;
       copied = await copyLink(link);
       await open({ url: uri, type: 'image/png', message, failOnCancel: false });
     } catch {
+      if (!mountedRef.current) return;
       if (!copied) await copyLink(link);
       try {
         await RNShare.share({ message });
@@ -113,9 +128,11 @@ export function useShareFact(): {
     } finally {
       photoDone.current = null;
       photoLoadedRef.current = false;
-      setHost(null);
-      setIsSharing(false);
-      busy.current = false;
+      shareInFlight = false;
+      if (mountedRef.current) {
+        setHost(null);
+        setIsSharing(false);
+      }
     }
   }, []);
 
