@@ -17,6 +17,8 @@ export const DEFAULT_DAYS = 7;
 export const LABEL = 'weekly-sample';
 /** 100 kart/gün × 7 gün = 700; bunun üstü örnekleme için gereksiz. */
 export const MAX_ROWS = 2000;
+/** Haftalık Issue'da gösterilecek en fazla incelemedeki kart (gövde boyut sınırı). */
+export const REVIEW_MAX_SHOWN = 40;
 const BODY_MAX_CHARS = 600;
 
 function positiveInt(raw, label) {
@@ -150,7 +152,8 @@ export function formatSampleIssue(
         'işaretlenmeyenler arşivlenir.',
       '',
     );
-    inReview.forEach((card, i) => {
+    // Issue gövdesi GitHub sınırını aşmasın: en çok REVIEW_MAX_SHOWN kart gösterilir.
+    inReview.slice(0, REVIEW_MAX_SHOWN).forEach((card, i) => {
       const category = card.category ? ` · ${oneLine(card.category)}` : '';
       const terms = card.verification?.review?.terms;
       const termText =
@@ -163,6 +166,12 @@ export function formatSampleIssue(
         '',
       );
     });
+    if (inReview.length > REVIEW_MAX_SHOWN) {
+      lines.push(
+        `… ve ${inReview.length - REVIEW_MAX_SHOWN} kart daha incelemede (Supabase'de status = review).`,
+        '',
+      );
+    }
   }
   lines.push(
     "<sub>Bu Issue `content-v2-weekly-sample` workflow'u tarafından otomatik açıldı. Değerlendirince kapatabilirsiniz.</sub>",
@@ -221,7 +230,15 @@ export async function runWeeklySample(argv, deps) {
   const since = new Date(now.getTime() - opts.days * 24 * 60 * 60 * 1000).toISOString();
   const rows = await deps.repo.listPublishedSince(since);
   const cards = pickRandom(rows, opts.count, deps.random ?? Math.random);
-  const inReview = deps.repo.listInReview ? await deps.repo.listInReview() : [];
+  // İnceleme listesi okunamazsa haftalık örnek yine açılır (liste boş geçer).
+  let inReview = [];
+  if (deps.repo.listInReview) {
+    try {
+      inReview = await deps.repo.listInReview();
+    } catch (err) {
+      log(`[v2-weekly-sample] uyarı: incelemedeki kartlar okunamadı: ${err?.message ?? err}`);
+    }
+  }
   const issue = formatSampleIssue(cards, {
     now,
     days: opts.days,

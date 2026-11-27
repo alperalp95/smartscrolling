@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   LABEL,
+  REVIEW_MAX_SHOWN,
   createIssue,
   createSampleRepo,
   formatSampleIssue,
@@ -296,4 +297,35 @@ test('createSampleRepo.listInReview: status=review, created_at artan, limit', as
     }),
   });
   await assert.rejects(() => failing.listInReview(), /facts okunamadı: x/);
+});
+
+test('runWeeklySample: listInReview hata verirse Issue yine oluşur, uyarı loglanır', async () => {
+  const logs = [];
+  const r = await runWeeklySample([], {
+    repo: {
+      listPublishedSince: async () => cards(3),
+      listInReview: async () => {
+        throw new Error('ağ yok');
+      },
+    },
+    now: NOW,
+    stdout: () => {},
+    log: (s) => logs.push(s),
+  });
+  assert.doesNotMatch(r.issue.body, /İncelemede/);
+  assert.ok(logs.some((s) => /uyarı: incelemedeki kartlar okunamadı: ağ yok/.test(s)));
+});
+
+test('formatSampleIssue: incelemede REVIEW_MAX_SHOWN üstü kart kısaltılır', () => {
+  const many = Array.from({ length: REVIEW_MAX_SHOWN + 3 }, (_, i) => ({
+    id: `r-${i}`,
+    title: `Kart ${i}`,
+    content: 'metin',
+    verification: { review: { terms: ['cinayet'] } },
+  }));
+  const { title, body } = formatSampleIssue(cards(2), { now: NOW, inReview: many });
+  assert.match(title, new RegExp(`· ${REVIEW_MAX_SHOWN + 3} incelemede$`));
+  assert.match(body, new RegExp(`R${REVIEW_MAX_SHOWN}\.`));
+  assert.doesNotMatch(body, new RegExp(`R${REVIEW_MAX_SHOWN + 1}\.`));
+  assert.match(body, /… ve 3 kart daha incelemede/);
 });
