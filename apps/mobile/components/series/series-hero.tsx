@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors, radius, space, type } from '../../src/theme';
 import type { SeriesSummary } from '../../src/types';
@@ -8,6 +9,9 @@ import { Media } from '../ui/media';
 // Kapak yüksekliği (taslak A: öne çıkan seri).
 const HERO_HEIGHT = space.xxxl * 6 + space.sm * 2;
 // Tahmini okuma süresi: kart başına dakika.
+// Üst uç saydam, alt yarı tam koyu: alttaki yazılar açık fotoğrafta da okunur.
+const SCRIM_COLORS = [colors.scrimClear, colors.scrimStrong, colors.scrimStrong] as const;
+const SCRIM_LOCATIONS = [0, 0.5, 1] as const;
 export const MINUTES_PER_CARD = 1;
 
 type SeriesHeroProps = {
@@ -29,7 +33,12 @@ export function SeriesHero({ series, onPress }: SeriesHeroProps) {
       style={s.root}
     >
       <Media uri={series.coverUrl} category={series.category ?? undefined} style={s.cover} />
-      <View style={s.scrim} pointerEvents="none" />
+      <LinearGradient
+        colors={SCRIM_COLORS}
+        locations={SCRIM_LOCATIONS}
+        style={s.scrim}
+        pointerEvents="none"
+      />
       {series.isFree ? null : (
         <View style={s.chip}>
           <Chip label="PREMIUM" selected />
@@ -55,9 +64,9 @@ const s = StyleSheet.create({
     backgroundColor: colors.surfaceRaised,
   },
   cover: { width: '100%', height: HERO_HEIGHT },
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.scrim },
+  scrim: { ...StyleSheet.absoluteFillObject },
   chip: { position: 'absolute', top: space.md, left: space.md },
   over: { position: 'absolute', left: space.md, right: space.md, bottom: space.md },
   title: { ...type.cardTitle, color: colors.text, marginTop: space.xs },
-  caption: { ...type.caption, color: colors.textSecondary, marginTop: space.xs },
+  caption: { ...type.caption, color: colors.text, marginTop: space.xs },
 });

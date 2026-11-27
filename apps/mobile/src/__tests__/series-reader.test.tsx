@@ -112,23 +112,23 @@ beforeEach(() => {
 });
 
 describe('SeriesReaderScreen', () => {
-  it('kartları sırayla çizer ve "Seri · n / N" gösterir', async () => {
+  it('kartları sırayla çizer ve "<seri adı> · n / N" gösterir', async () => {
     mockSeries.mockResolvedValue(detail({ isFree: true, cardCount: 3 }));
     const { findByTestId, getByText, queryByTestId } = render(<SeriesReaderScreen />);
     await findByTestId('series-reader');
     expect(getByText('Gövde 1')).toBeTruthy();
     expect(getByText('Gövde 3')).toBeTruthy();
-    expect(getByText('Seri · 1 / 3')).toBeTruthy();
+    expect(getByText('Galata Kulesi · 1 / 3')).toBeTruthy();
     expect(queryByTestId('series-lock')).toBeNull();
     expect(mockListProps.data.map((d: { position: number }) => d.position)).toEqual([1, 2, 3]);
     viewItem(1);
-    expect(getByText('Seri · 2 / 3')).toBeTruthy();
+    expect(getByText('Galata Kulesi · 2 / 3')).toBeTruthy();
   });
 
   it('?from= konumundan açılır', async () => {
     mockParams = { slug: 'galata-kulesi', from: '3' };
     const { findByText } = render(<SeriesReaderScreen />);
-    expect(await findByText('Seri · 3 / 31')).toBeTruthy();
+    expect(await findByText('Galata Kulesi · 3 / 31')).toBeTruthy();
     expect(mockListProps.initialScrollIndex).toBe(2);
   });
 

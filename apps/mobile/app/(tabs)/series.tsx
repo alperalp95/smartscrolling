@@ -1,9 +1,10 @@
 import { useIsFocused } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -40,25 +41,49 @@ export default function SeriesTabScreen() {
   const [list, setList] = useState<SeriesSummary[]>([]);
   const [progress, setProgress] = useState<Record<string, SeriesProgress>>({});
   const [attempt, setAttempt] = useState(0);
+  // Her başarılı çekimde artar: liste aynı kalsa da "Devam et" ilerlemesi yenilenir.
+  const [fetchTick, setFetchTick] = useState(0);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt "yeniden dene" ile tetiklenir
-  useEffect(() => {
-    let cancelled = false;
-    setStatus('loading');
-    void fetchSeriesList()
-      .then((next) => {
-        if (cancelled) return;
-        setList(next);
-        setStatus('ready');
-      })
-      .catch(() => {
-        if (!cancelled) setStatus('error');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [attempt]);
+  const hasLoaded = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // Sekme her odaklandığında listeyi yeniden çeker; ilk yüklemede yükleme ekranı, sonrakilerde sessiz.
+  useFocusEffect(
+    // biome-ignore lint/correctness/useExhaustiveDependencies: attempt "yeniden dene" ile tetiklenir
+    useCallback(() => {
+      let cancelled = false;
+      const silent = hasLoaded.current;
+      if (!silent) setStatus('loading');
+      void fetchSeriesList()
+        .then((next) => {
+          if (cancelled) return;
+          hasLoaded.current = true;
+          setList(next);
+          setFetchTick((n) => n + 1);
+          setStatus('ready');
+        })
+        .catch(() => {
+          if (!cancelled && !silent) setStatus('error');
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, [attempt]),
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      setList(await fetchSeriesList());
+      setFetchTick((n) => n + 1);
+    } catch {
+      // Yenileme başarısızsa mevcut içerik kalır.
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchTick her çekimde ilerlemeyi yeniler
   useEffect(() => {
     let cancelled = false;
     if (!isFocused || list.length === 0) return;
@@ -74,7 +99,7 @@ export default function SeriesTabScreen() {
     return () => {
       cancelled = true;
     };
-  }, [isFocused, list, userId]);
+  }, [isFocused, list, userId, fetchTick]);
 
   const open = useCallback((slug: string) => router.push(`/series/${slug}` as never), [router]);
   const shelves = useMemo(() => groupForShelves(list), [list]);
@@ -103,7 +128,20 @@ export default function SeriesTabScreen() {
             <Text style={s.message}>Yakında</Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={s.content}>
+          <ScrollView
+            contentContainerStyle={s.content}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  void onRefresh();
+                }}
+                tintColor={colors.text}
+                colors={[colors.text]}
+                progressBackgroundColor={colors.surfaceRaised}
+              />
+            }
+          >
             {shelves.featured ? <SeriesHero series={shelves.featured} onPress={open} /> : null}
             {inProgress.length > 0 ? (
               <View style={s.continue}>
