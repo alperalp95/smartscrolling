@@ -37,7 +37,65 @@ export const CATEGORIES = [
   '👤 BİYOGRAFİ',
 ];
 
-const ALLOWED_FIELDS = new Set(['title', 'free', 'category', 'sections']);
+const ALLOWED_FIELDS = new Set(['title', 'free', 'category', 'sections', 'cover']);
+export const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
+const COVER_WIDTH = 960;
+
+/**
+ * `cover` alanı: yok/null → null (madde görseli), "none" → "none", Commons dosya adı → "File:Ad".
+ * @returns {{ error?: string, value?: string|null }}
+ */
+function parseCover(cover) {
+  if (cover === undefined || cover === null) return { value: null };
+  if (typeof cover !== 'string' || !cover.trim()) {
+    return { error: 'cover metin olmalı: "none" ya da Commons dosya adı' };
+  }
+  const text = cover.trim();
+  if (text === 'none') return { value: 'none' };
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(text) || text.startsWith('//')) {
+    return {
+      error:
+        'cover doğrudan URL olamaz; yalnız Commons dosya adı (ör. "File:Galata Tower.jpg") ya da "none"',
+    };
+  }
+  const name = text.replace(/^(file|dosya):/i, '').trim();
+  if (!name) return { error: 'cover dosya adı boş' };
+  return { value: `File:${name}` };
+}
+
+/** Commons dosyasının 960px küçük resim URL'si; bulunamaz ya da serbest değilse hata verir. */
+export async function fetchCommonsCover(fileTitle, { fetchImpl = fetch } = {}) {
+  const params = new URLSearchParams({
+    action: 'query',
+    titles: fileTitle,
+    prop: 'imageinfo',
+    iiprop: 'url|extmetadata',
+    iiurlwidth: String(COVER_WIDTH),
+    format: 'json',
+  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetchImpl(`${COMMONS_API}?${params}`, {
+      headers: { 'User-Agent': USER_AGENT },
+      signal: controller.signal,
+    });
+    if (!res?.ok) throw new Error(`HTTP ${res?.status ?? '?'} (${fileTitle})`);
+    const pages = (await res.json())?.query?.pages ?? {};
+    const page = Object.values(pages)[0];
+    const info = page?.imageinfo?.[0];
+    if (!page || page.missing !== undefined || !info) {
+      throw new Error(`kapak dosyası Commons'ta bulunamadı: ${fileTitle}`);
+    }
+    const nonFree = String(info.extmetadata?.NonFree?.value ?? '').toLowerCase() === 'true';
+    if (nonFree) throw new Error(`kapak dosyasının lisansı serbest değil (NonFree): ${fileTitle}`);
+    const url = info.thumburl ?? info.url;
+    if (!url) throw new Error(`kapak URL'si alınamadı: ${fileTitle}`);
+    return url;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 const TR_ASCII = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u' };
 
 export class UsageError extends Error {}
@@ -92,6 +150,8 @@ export function validateSeriesConfig(raw) {
       sec === undefined ||
       (Array.isArray(sec) && sec.every((s) => typeof s === 'string' && s.trim()));
     if (!secOk) errors.push(`${label}: sections null ya da başlık listesi olmalı`);
+    const cover = parseCover(entry.cover);
+    if (cover.error) errors.push(`${label}: ${cover.error}`);
     if (errors.length > before) return;
 
     const slug = slugify(entry.title);
@@ -110,6 +170,7 @@ export function validateSeriesConfig(raw) {
       free: entry.free === true,
       category: entry.category,
       sections: sec ?? null,
+      cover: cover.value,
     });
   });
   return { errors, items };
@@ -187,7 +248,7 @@ export async function fetchWikiPage(title, { fetchImpl = fetch } = {}) {
 const wikiUrl = (title) =>
   `https://tr.wikipedia.org/wiki/${encodeURIComponent(title.replaceAll(' ', '_'))}`;
 
-function buildSeries(item, page) {
+function buildSeries(item, page, coverUrl) {
   const sections = filterSections(parseWikiExtract(page.text, page.title), item.sections);
   const cards = splitIntoCards(sections, { maxChars: DEFAULT_MAX_CHARS });
   if (cards.length === 0) throw new Error(`kart üretilemedi: ${item.title}`);
@@ -199,7 +260,7 @@ function buildSeries(item, page) {
       title: item.title,
       summary: makeSummary(cards[0].body),
       category: item.category,
-      cover_url: page.cover,
+      cover_url: coverUrl,
       source_title: page.title,
       source_url: wikiUrl(page.title),
       source_revid: page.revid,
@@ -294,7 +355,12 @@ export async function run(argv = [], deps = {}) {
       result.processed += 1;
       try {
         const page = await fetchWikiPage(item.title, { fetchImpl: deps.fetchImpl });
-        const built = buildSeries(item, page);
+        let coverUrl = page.cover;
+        if (item.cover === 'none') coverUrl = null;
+        else if (item.cover) {
+          coverUrl = await fetchCommonsCover(item.cover, { fetchImpl: deps.fetchImpl });
+        }
+        const built = buildSeries(item, page, coverUrl);
         fs.writeFileSync(
           path.join(cacheDir, `series-${item.slug}.json`),
           `${JSON.stringify({ ...built.row, cards: built.cards }, null, 2)}\n`,

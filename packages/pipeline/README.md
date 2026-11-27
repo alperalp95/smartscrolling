@@ -304,6 +304,7 @@ Her satır bir maddedir:
 | `free` | `true` = herkese açık seri; `false` = premium (ilk 3 kart ücretsiz önizleme). |
 | `category` | Uygulama kategorisi, aynen: `🔬 BİLİM`, `📜 TARİH`, `🧠 FELSEFE`, `💻 TEKNOLOJİ`, `🌱 SAĞLIK`, `🌍 ÇEVRE`, `🎨 SANAT & KÜLTÜR`, `🏆 SPOR`, `👤 BİYOGRAFİ`. |
 | `sections` | `null` = maddenin tamamı (Kaynakça, Notlar, Dış bağlantılar, Ayrıca bakınız gibi bölümler otomatik atılır). Ya da yalnız alınacak bölüm başlıklarının listesi: `["Tarihçe", "Mimari"]`. |
+| `cover` | İsteğe bağlı kapak seçimi. Yazılmazsa maddenin kendi serbest lisanslı Commons görseli kullanılır. `"none"` = kapaksız (uygulama marka renk geçişini gösterir). Ya da bir Commons dosya adı: `"File:Galata Tower.jpg"` (`Dosya:` ile ya da öneksiz `"Galata Tower.jpg"` de olur); 960 px küçük resmi alınır. Doğrudan URL yazılamaz. Dosya bulunamazsa ya da lisansı serbest değilse (NonFree) yalnız o satır hata verir, diğerleri devam eder. Mevcut bir seride `cover` değişirse bir sonraki `--apply` ile kapak güncellenir. |
 
 `_aciklama` ile başlayan alanlar açıklamadır, yok sayılır. Bilinmeyen alan, eksik başlık ya da listede olmayan kategori yazılırsa betik hiçbir şey yapmadan hata verir. Aynı kısa ad (slug) iki kez kullanılamaz. Kısa ad başlıktan üretilir: `İbn Haldun` → `ibn-haldun`.
 

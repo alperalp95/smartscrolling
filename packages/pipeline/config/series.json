@@ -1,5 +1,5 @@
 {
-  "_aciklama": "Seri listesi. Her satir bir Vikipedi maddesidir; bu dosyayi kod bilmeden duzenleyebilirsiniz. Adaylari gormek icin once 'series-candidates' betigini calistirin (README: Seriler). Alanlar yalnizca title, free, category, sections olabilir; '_' ile baslayan alanlar aciklamadir ve yok sayilir.",
+  "_aciklama": "Seri listesi. Her satir bir Vikipedi maddesidir; bu dosyayi kod bilmeden duzenleyebilirsiniz. Adaylari gormek icin once 'series-candidates' betigini calistirin (README: Seriler). Alanlar yalnizca title, free, category, sections ve istege bagli cover olabilir. cover: yazilmazsa maddenin kendi serbest Commons gorseli kullanilir; \"none\" kapaksiz birakir (uygulama marka renk gecisini gosterir); ya da Wikimedia Commons dosya adi yazilir, ornegin \"File:Galata Tower.jpg\" (dogrudan URL kabul edilmez, lisansi serbest olmayan dosya reddedilir); '_' ile baslayan alanlar aciklamadir ve yok sayilir.",
   "series": [
     {
       "_aciklama": "title: Turkce Vikipedi madde adi (birebir). free: true ise seri herkese acik, false ise premium (ilk 3 kart onizleme). category: asagidaki kategori metinlerinden biri, aynen. sections: null = maddenin tamami (Kaynakca, Notlar, Dis baglantilar gibi bolumler otomatik atilir); ya da sadece alinacak bolum basliklarinin listesi.",
