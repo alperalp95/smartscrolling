@@ -158,5 +158,41 @@
     "_aciklama": "Yayın: günde kaç kart yayınlanır, stokta en az kaç günlük kart beklesin. Elle yayında bu sayı kullanılmaz; günlük otomatik yayın açıkken geçerlidir.",
     "dailyCount": 10,
     "minStockDays": 7
+  },
+
+  "review": {
+    "_aciklama": "Bu kelimelerden biri kartın başlığında, metninde ya da kancasında geçerse kart reddedilmez; 'review' (incelemede) durumunda bekler, onaylanınca yayına girer. Kelime kökü yazılır: 'öldürül' → öldürüldü, öldürülen… Çok kısa ve başka kelimelerin başı olabilecek kökler (ör. 'idam' → 'idame') için tam kelime listesi 'sensitiveWords'e yazılır.",
+    "sensitiveStems": [
+      "katliam",
+      "katled",
+      "cinayet",
+      "kürtaj",
+      "öldürül",
+      "öldürd",
+      "soykırım",
+      "tecavüz",
+      "işkence",
+      "intihar",
+      "linç",
+      "massacre",
+      "murder",
+      "abortion",
+      "genocide",
+      "suicide",
+      "lynch",
+      "tortur"
+    ],
+    "sensitiveWords": [
+      "idam",
+      "idamı",
+      "idama",
+      "idamla",
+      "idamından",
+      "killed",
+      "rape",
+      "raped",
+      "executed",
+      "execution"
+    ]
   }
 }

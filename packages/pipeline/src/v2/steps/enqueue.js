@@ -8,6 +8,7 @@ import { DuplicateInsertError } from '../db/steps-repo.js';
 import { resolveWikiImage } from '../media/wiki-image.js';
 import { STATUS, forEachCandidate, newStats, reject, wikiLang } from './common.js';
 import { cardText } from './dedup-card.js';
+import { reviewFlags } from './review-flags.js';
 
 export function sourceLabel(cand) {
   return wikiLang(cand) === 'tr' ? 'Vikipedi' : 'Wikipedia';
@@ -81,6 +82,11 @@ export async function runEnqueue(deps, { limit = 50 } = {}) {
 
   await forEachCandidate(deps, cands, stats, async (cand) => {
     const row = buildFactRow(cand);
+    const flags = reviewFlags(cand, row, deps.config?.review);
+    if (flags) {
+      row.status = 'review';
+      row.verification = { ...(row.verification ?? {}), review: flags };
+    }
     // Görsel bulunamaması kartı asla engellemez (resolveWikiImage fırlatmaz; yine de sar).
     let mediaUrl = null;
     try {
@@ -101,6 +107,10 @@ export async function runEnqueue(deps, { limit = 50 } = {}) {
     }
     await deps.repo.updateCandidate(cand.id, { status: STATUS.QUEUED, fact_id: inserted.id });
     stats.advanced += 1;
+    if (flags) {
+      stats.review = (stats.review ?? 0) + 1;
+      deps.log?.(`[enqueue] ${cand.id} incelemede: ${flags.terms.join(', ')}`);
+    }
     if (mediaUrl) stats.media.found += 1;
     else stats.media.missing += 1;
   });

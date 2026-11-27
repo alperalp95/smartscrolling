@@ -174,3 +174,28 @@ test('runEnqueue: fetchImpl enjekte edilir (özet adresi çağrılır)', async (
   assert.deepEqual(urls, ['https://en.wikipedia.org/api/rest_v1/page/summary/Octopus']);
   assert.equal(repo.facts().length, 1);
 });
+
+const REVIEW_CFG = { review: { sensitiveStems: ['cinayet'], sensitiveWords: [] } };
+
+test('runEnqueue: hassas kelimeli aday review durumunda eklenir, aday queued', async () => {
+  const cand = verifiedCand();
+  cand.hook_text = 'Gerçek bir cinayete dayanan öykü';
+  const repo = createMemoryStepsRepo({ candidates: [cand] });
+  const stats = await runEnqueue(deps({ repo, config: REVIEW_CFG }));
+  const facts = repo.facts();
+  assert.equal(facts[0].status, 'review');
+  assert.deepEqual(facts[0].verification.review.terms, ['cinayet']);
+  assert.equal(facts[0].verification.result, 'supported');
+  assert.equal(stats.review, 1);
+  assert.equal(repo.get('q1').status, 'queued');
+  assert.equal(repo.get('q1').fact_id, facts[0].id);
+});
+
+test('runEnqueue: temiz aday queued kalır, verification.review yok', async () => {
+  const repo = createMemoryStepsRepo({ candidates: [verifiedCand()] });
+  const stats = await runEnqueue(deps({ repo, config: REVIEW_CFG }));
+  const f = repo.facts()[0];
+  assert.equal(f.status, 'queued');
+  assert.equal(f.verification.review, undefined);
+  assert.ok(!stats.review);
+});
