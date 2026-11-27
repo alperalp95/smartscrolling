@@ -280,6 +280,44 @@ npm run backfill:v2-media -- --apply --limit 100   # gerçekten yazar
 
 Her istek arasında 300 ms beklenir; `--limit` varsayılanı 100'dür. Kartın `media_url`'i zaten doluysa dokunulmaz.
 
+## Seriler (uzun, kesintisiz okuma dizileri)
+
+Seri, bir Vikipedi maddesinin metninin **aynen** (özet ve yapay zeka yok) kartlara bölünmüş halidir. Her kart en çok 600 karakterdir ve cümle sonunda biter. Seriler `facts` (akış) tablosuna girmez; ayrı `series` tablolarına yazılır. Hangi maddelerin seri olacağını editör seçer.
+
+### 1. Aday maddeleri görmek
+
+```
+cd packages/pipeline
+node src/runners/series-candidates.js              # Seçkin + Kaliteli maddeler (internet gerekir, birkaç dakika sürer)
+node src/runners/series-candidates.js --limit 20   # deneme: her listeden ilk 20 madde
+```
+
+Sonuç `packages/pipeline/.cache/series-candidates.json` dosyasına yazılır: her madde için karakter sayısı, tahmini kart sayısı ve serbest lisanslı (Commons) kapak görseli olup olmadığı. Veritabanına dokunmaz.
+
+### 2. Seri listesini düzenlemek: `config/series.json`
+
+Her satır bir maddedir:
+
+| Alan | Anlamı |
+|---|---|
+| `title` | Türkçe Vikipedi madde adı, birebir (ör. `Galata Kulesi`). |
+| `free` | `true` = herkese açık seri; `false` = premium (ilk 3 kart ücretsiz önizleme). |
+| `category` | Uygulama kategorisi, aynen: `🔬 BİLİM`, `📜 TARİH`, `🧠 FELSEFE`, `💻 TEKNOLOJİ`, `🌱 SAĞLIK`, `🌍 ÇEVRE`, `🎨 SANAT & KÜLTÜR`, `🏆 SPOR`, `👤 BİYOGRAFİ`. |
+| `sections` | `null` = maddenin tamamı (Kaynakça, Notlar, Dış bağlantılar, Ayrıca bakınız gibi bölümler otomatik atılır). Ya da yalnız alınacak bölüm başlıklarının listesi: `["Tarihçe", "Mimari"]`. |
+
+`_aciklama` ile başlayan alanlar açıklamadır, yok sayılır. Bilinmeyen alan, eksik başlık ya da listede olmayan kategori yazılırsa betik hiçbir şey yapmadan hata verir. Aynı kısa ad (slug) iki kez kullanılamaz. Kısa ad başlıktan üretilir: `İbn Haldun` → `ibn-haldun`.
+
+### 3. İçe aktarmak
+
+```
+node src/runners/series-import.js                            # deneme: veritabanına yazmaz, .cache/series-<slug>.json önizlemesi yazar
+node src/runners/series-import.js --apply                    # veritabanına TASLAK (draft) olarak yazar; uygulamada görünmez
+node src/runners/series-import.js --apply --publish <slug>   # yalnız o seriyi içe aktarır ve yayınlar
+node src/runners/series-import.js --apply --publish-all      # listedekilerin hepsini içe aktarır ve yayınlar
+```
+
+`--apply` için `SUPABASE_URL` ve `SUPABASE_SERVICE_ROLE_KEY` ortam değişkenleri gerekir. Aynı madde tekrar içe aktarılırsa kartlar yeni sürümle değiştirilir; yayın durumu ve okurların ilerlemesi korunur (kart sayısı azaldıysa ilerleme son karta kırpılır). Kapak yalnız Wikimedia Commons görselidir; yerel "adil kullanım" dosyaları alınmaz, Commons görseli yoksa kapak boş kalır (uygulamada marka rengi görünür).
+
 ## Otomatik çalışma (GitHub Actions)
 
 Hat GitHub'da kendiliğinden çalışır; bilgisayarınızın açık olması gerekmez. Üç workflow var:

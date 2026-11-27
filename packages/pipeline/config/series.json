@@ -1,0 +1,26 @@
+{
+  "_aciklama": "Seri listesi. Her satir bir Vikipedi maddesidir; bu dosyayi kod bilmeden duzenleyebilirsiniz. Adaylari gormek icin once 'series-candidates' betigini calistirin (README: Seriler). Alanlar yalnizca title, free, category, sections olabilir; '_' ile baslayan alanlar aciklamadir ve yok sayilir.",
+  "series": [
+    {
+      "_aciklama": "title: Turkce Vikipedi madde adi (birebir). free: true ise seri herkese acik, false ise premium (ilk 3 kart onizleme). category: asagidaki kategori metinlerinden biri, aynen. sections: null = maddenin tamami (Kaynakca, Notlar, Dis baglantilar gibi bolumler otomatik atilir); ya da sadece alinacak bolum basliklarinin listesi.",
+      "title": "Galata Kulesi",
+      "free": true,
+      "category": "📜 TARİH",
+      "sections": null
+    },
+    {
+      "_aciklama": "Premium ornek. sections listesi verilirse yalniz o bolumler (ve alt bolumleri) alinir; basliklar maddedeki gibi yazilir.",
+      "title": "İbn Haldun",
+      "free": false,
+      "category": "👤 BİYOGRAFİ",
+      "sections": null
+    },
+    {
+      "_aciklama": "Kategori secenekleri: 🔬 BİLİM, 📜 TARİH, 🧠 FELSEFE, 💻 TEKNOLOJİ, 🌱 SAĞLIK, 🌍 ÇEVRE, 🎨 SANAT & KÜLTÜR, 🏆 SPOR, 👤 BİYOGRAFİ.",
+      "title": "Sabahattin Ali",
+      "free": false,
+      "category": "🎨 SANAT & KÜLTÜR",
+      "sections": null
+    }
+  ]
+}
