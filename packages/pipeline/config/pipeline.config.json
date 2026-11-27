@@ -161,14 +161,13 @@
   },
 
   "review": {
-    "_aciklama": "Bu kelimelerden biri kartın başlığında, metninde ya da kancasında geçerse kart reddedilmez; 'review' (incelemede) durumunda bekler, onaylanınca yayına girer. Kelime kökü yazılır: 'öldürül' → öldürüldü, öldürülen… Çok kısa ve başka kelimelerin başı olabilecek kökler (ör. 'idam' → 'idame') için tam kelime listesi 'sensitiveWords'e yazılır.",
+    "_aciklama": "Bu kelimelerden biri kartın başlığında, metninde ya da kancasında geçerse kart reddedilmez; 'review' (incelemede) durumunda bekler, onaylanınca yayına girer. Kelime kökü yazılır: 'öldür' → öldürdü, öldürmüş, öldürülen… Çok kısa ve başka kelimelerin başı olabilecek kökler (ör. 'idam' → 'idame') için tam kelime listesi 'sensitiveWords'e yazılır.",
     "sensitiveStems": [
       "katliam",
       "katled",
       "cinayet",
       "kürtaj",
-      "öldürül",
-      "öldürd",
+      "öldür",
       "soykırım",
       "tecavüz",
       "işkence",
