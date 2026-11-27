@@ -179,6 +179,21 @@ describe('SeriesReaderScreen', () => {
     expect(mockRefresh).toHaveBeenCalledTimes(1);
   });
 
+  it('premium ama belirteç eskiyse bilgi sayfası çıkar; yeniden dene oturumu tekrar yeniler; ilerleme düşmez', async () => {
+    mockParams = { slug: 'galata-kulesi', from: '10' };
+    useAuthStore.setState({ hasPremium: true } as never);
+    const { findByTestId, getByText, queryByTestId } = render(<SeriesReaderScreen />);
+    await findByTestId('series-pending');
+    expect(queryByTestId('series-lock')).toBeNull();
+    expect(getByText('Premium erişimin hazırlanıyor')).toBeTruthy();
+    expect(getByText('Birkaç saniye sonra yeniden dene.')).toBeTruthy();
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalledTimes(1));
+    viewItem(2);
+    expect(mockSave).not.toHaveBeenCalled();
+    fireEvent.press(getByText('Yeniden dene'));
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalledTimes(2));
+  });
+
   it('premium ve tüm kartlar geliyorsa oturum yenilenmez', async () => {
     useAuthStore.setState({ hasPremium: true } as never);
     mockCards.mockResolvedValue(cards(31));

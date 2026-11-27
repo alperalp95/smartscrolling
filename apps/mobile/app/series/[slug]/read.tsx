@@ -16,7 +16,7 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { colors, space, type } from '../../../src/theme';
 import type { SeriesCard, SeriesDetail } from '../../../src/types';
 
-// Akıştaki ilerleme çizgisiyle aynı kalınlık.
+// fact-post.tsx'teki PROGRESS_LINE_HEIGHT ile aynı değer; biri değişirse diğeri de değişmeli.
 const PROGRESS_LINE_HEIGHT = 2;
 // Bir sayfanın "görünür" sayılması için gereken oran (akışla aynı).
 const VIEWABLE_PERCENT = 60;
@@ -24,11 +24,13 @@ const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: VIEWABLE_PERCENT };
 const GRADIENT_START = { x: 0, y: 0 };
 const GRADIENT_END = { x: 1, y: 0 };
 
-type LockItem = { lock: true };
+// 'lock': premium değil; 'pending': premium görünüyor ama kartlar henüz gelmedi.
+type LockItem = { lock: 'lock' | 'pending' };
 type ListItem = SeriesCard | LockItem;
 type Status = 'loading' | 'ready' | 'missing' | 'error';
 
-const LOCK_ITEM: LockItem = { lock: true };
+const LOCK_ITEM: LockItem = { lock: 'lock' };
+const PENDING_ITEM: LockItem = { lock: 'pending' };
 const isLock = (item: ListItem): item is LockItem => 'lock' in item;
 
 export default function SeriesReaderScreen() {
@@ -52,6 +54,10 @@ export default function SeriesReaderScreen() {
   const loadedOnce = useRef(false);
   const sessionRefreshed = useRef(false);
   const startIndex = useRef(0);
+  // Kartlar eksik gelirken istenen konumun gerisine ilerleme yazılmaz.
+  const saveFloor = useRef(0);
+  const requestedFrom = useRef(position);
+  const [pending, setPending] = useState(false);
   const seriesRef = useRef<SeriesDetail | null>(null);
   const userIdRef = useRef<string | null>(userId);
   seriesRef.current = series;
@@ -89,11 +95,14 @@ export default function SeriesReaderScreen() {
         }
         if (cancelled) return;
         const locked = premiumSeries && !hasPremium;
+        const incomplete = premiumSeries && hasPremium && fetched.length < detail.cardCount;
+        saveFloor.current = incomplete ? requestedFrom.current : 0;
+        setPending(incomplete);
         const visible = locked
           ? fetched.filter((card) => card.position <= SERIES_CONFIG.previewCards)
           : fetched;
         if (!loadedOnce.current) {
-          const total = visible.length + (locked ? 1 : 0);
+          const total = visible.length + (locked || incomplete ? 1 : 0);
           startIndex.current = Math.max(0, Math.min(position - 1, total - 1));
           const first = visible[startIndex.current];
           if (first) setPosition(first.position);
@@ -118,7 +127,7 @@ export default function SeriesReaderScreen() {
       if (!item || isLock(item)) return;
       setPosition(item.position);
       const detail = seriesRef.current;
-      if (detail) {
+      if (detail && item.position >= saveFloor.current) {
         void saveProgress(detail.id, item.position, detail.cardCount, userIdRef.current).catch(
           () => {},
         );
@@ -127,7 +136,15 @@ export default function SeriesReaderScreen() {
   ).current;
 
   const locked = !!series && !series.isFree && !hasPremium && series.cardCount > cards.length;
-  const items: ListItem[] = locked ? [...cards, LOCK_ITEM] : cards;
+  const items: ListItem[] = locked
+    ? [...cards, LOCK_ITEM]
+    : pending
+      ? [...cards, PENDING_ITEM]
+      : cards;
+  const retryAccess = () => {
+    sessionRefreshed.current = false;
+    setReloadTick((n) => n + 1);
+  };
   const listHeight = measuredListHeight > 0 ? measuredListHeight : windowHeight;
   const total = series?.cardCount ?? 0;
   const fraction = total > 0 ? Math.min(1, position / total) : 0;
@@ -156,7 +173,7 @@ export default function SeriesReaderScreen() {
       <FlashList
         testID="series-reader"
         data={items}
-        keyExtractor={(item) => (isLock(item) ? 'lock' : `card-${item.position}`)}
+        keyExtractor={(item) => (isLock(item) ? item.lock : `card-${item.position}`)}
         initialScrollIndex={startIndex.current > 0 ? startIndex.current : undefined}
         disableIntervalMomentum
         pagingEnabled
@@ -166,7 +183,16 @@ export default function SeriesReaderScreen() {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={VIEWABILITY_CONFIG}
         renderItem={({ item }) =>
-          isLock(item) ? (
+          isLock(item) && item.lock === 'pending' ? (
+            <View style={[s.lock, { height: listHeight }]} testID="series-pending">
+              <PremiumUpsellCard
+                title="Premium erişimin hazırlanıyor"
+                body="Birkaç saniye sonra yeniden dene."
+                ctaLabel="Yeniden dene"
+                onPress={retryAccess}
+              />
+            </View>
+          ) : isLock(item) ? (
             <View style={[s.lock, { height: listHeight }]} testID="series-lock">
               <PremiumUpsellCard
                 title="Serinin devamı Premium'da"

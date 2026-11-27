@@ -24,7 +24,10 @@ import type { SeriesProgress, SeriesSummary } from '../../src/types';
 
 // Devam et satırındaki küçük kapak ve ilerleme çizgisi ölçüleri.
 const CONTINUE_THUMB = space.xxxl + space.xxl;
+// fact-post.tsx'teki PROGRESS_LINE_HEIGHT ile aynı değer; biri değişirse diğeri de değişmeli.
 const PROGRESS_LINE_HEIGHT = 2;
+const GRADIENT_START = { x: 0, y: 0 };
+const GRADIENT_END = { x: 1, y: 0 };
 
 type Status = 'loading' | 'ready' | 'error';
 
@@ -135,8 +138,8 @@ export default function SeriesTabScreen() {
                         <View style={s.track}>
                           <LinearGradient
                             colors={colors.brandGradient}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
+                            start={GRADIENT_START}
+                            end={GRADIENT_END}
                             style={[s.fill, { width: `${Math.min(100, ratio * 100)}%` }]}
                           />
                         </View>
