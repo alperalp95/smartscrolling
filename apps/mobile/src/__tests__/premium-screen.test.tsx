@@ -3,6 +3,11 @@ import PremiumScreen from '../../app/premium';
 import { purchasePackageSafe, restorePurchasesSafe } from '../lib/purchases';
 
 const mockBack = jest.fn();
+const mockRefreshSession = jest.fn(() => Promise.resolve({}));
+
+jest.mock('../lib/supabase', () => ({
+  supabase: { auth: { refreshSession: () => mockRefreshSession() } },
+}));
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ back: mockBack }) }));
 jest.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }));
@@ -43,5 +48,29 @@ describe('PremiumScreen', () => {
 
     fireEvent.press(getByTestId('premium-close'));
     expect(mockBack).toHaveBeenCalled();
+  });
+
+  it('satın alma başarısında oturumu yeniler (seri kilidi açılsın)', async () => {
+    mockRefreshSession.mockClear();
+    const { getByTestId, findByText } = render(<PremiumScreen />);
+    await findByText('₺49,99');
+    await waitFor(() =>
+      expect(getByTestId('premium-purchase-button').props.accessibilityState.disabled).toBe(false),
+    );
+    fireEvent.press(getByTestId('premium-purchase-button'));
+    await waitFor(() => expect(mockRefreshSession).toHaveBeenCalledTimes(1));
+  });
+
+  it('geri yükleme başarısında oturumu yeniler', async () => {
+    mockRefreshSession.mockClear();
+    const { getByTestId } = render(<PremiumScreen />);
+    fireEvent.press(getByTestId('premium-restore-button'));
+    await waitFor(() => expect(mockRefreshSession).toHaveBeenCalledTimes(1));
+  });
+
+  it('avantaj listesinde "Tüm seriler" yer alır', async () => {
+    const { getByText, findByText } = render(<PremiumScreen />);
+    await findByText('₺49,99');
+    expect(getByText('Tüm seriler')).toBeTruthy();
   });
 });

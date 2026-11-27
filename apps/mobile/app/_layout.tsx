@@ -24,6 +24,7 @@ import {
 } from '../src/lib/notifications';
 import { hydratePremiumEntitlement } from '../src/lib/premiumEntitlements';
 import { refreshCurrentExpoPushTokenIfPermissionGranted } from '../src/lib/pushTokens';
+import { mergeGuestProgress } from '../src/lib/series';
 import { supabase } from '../src/lib/supabase';
 import { fetchActivitySummary } from '../src/lib/userActivity';
 import { fetchUserPreferences } from '../src/lib/userPreferences';
@@ -72,8 +73,22 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    let mergedGuestSeriesFor: string | null = null;
+
     async function syncSessionSideEffects(userId?: string) {
       setHasPremium(await hydratePremiumEntitlement(userId));
+
+      if (userId && mergedGuestSeriesFor !== userId) {
+        // Misafirken okunan serilerin ilerlemesi hesaba taşınır (oturum başına bir kez).
+        mergedGuestSeriesFor = userId;
+        void mergeGuestProgress(userId).catch((error) => {
+          mergedGuestSeriesFor = null;
+          console.warn('[Series] guest progress merge failed:', error);
+        });
+      }
+      if (!userId) {
+        mergedGuestSeriesFor = null;
+      }
 
       if (userId) {
         try {
@@ -171,6 +186,7 @@ export default function RootLayout() {
         <Stack.Screen name="auth/callback" options={{ presentation: 'card' }} />
         <Stack.Screen name="fact/[id]" options={{ presentation: 'card' }} />
         <Stack.Screen name="series/[slug]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="series/[slug]/read" options={{ presentation: 'card' }} />
         <Stack.Screen name="saved" options={{ presentation: 'card' }} />
         <Stack.Screen name="saved-facts" options={{ presentation: 'card' }} />
         <Stack.Screen name="settings" options={{ presentation: 'card' }} />

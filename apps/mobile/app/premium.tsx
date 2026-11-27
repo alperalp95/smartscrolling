@@ -15,6 +15,7 @@ import {
   purchasePackageSafe,
   restorePurchasesSafe,
 } from '../src/lib/purchases';
+import { supabase } from '../src/lib/supabase';
 import { useAuthStore } from '../src/store/authStore';
 import { colors, radius, space, type } from '../src/theme';
 
@@ -37,9 +38,19 @@ const BENEFITS: {
     title: 'Kendi sorunu yaz',
     body: 'Hazır soruların ötesine geç.',
   },
+  { icon: 'albums-outline', title: 'Tüm seriler', body: 'Serilerin tamamını sonuna kadar oku.' },
 ];
 
 const FALLBACK_PRICE = '49.99 TL';
+
+// Premium bilgisi oturum belirtecinde taşınır; yenilenmezse seriler kilitli kalır.
+async function refreshPremiumSession() {
+  try {
+    await supabase.auth.refreshSession();
+  } catch {
+    // Yenileme başarısız olsa da satın alma geçerli; seri ekranı kendi yenilemesini dener.
+  }
+}
 
 export default function PremiumScreen() {
   const router = useRouter();
@@ -86,6 +97,7 @@ export default function PremiumScreen() {
 
     if (hasPremium) {
       setHasPremium(true);
+      await refreshPremiumSession();
       router.back();
     } else {
       showDialog({
@@ -105,6 +117,7 @@ export default function PremiumScreen() {
     setHasPremium(hasPremium);
 
     if (hasPremium) {
+      await refreshPremiumSession();
       router.back();
     } else {
       showDialog({ title: 'Geri yükleme', message: 'Aktif bir satın alma bulunamadı.' });
