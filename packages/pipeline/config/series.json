@@ -10,16 +10,106 @@
     },
     {
       "_aciklama": "Premium ornek. sections listesi verilirse yalniz o bolumler (ve alt bolumleri) alinir; basliklar maddedeki gibi yazilir.",
+      "title": "Nasreddin Hoca",
+      "free": true,
+      "category": "🎨 SANAT & KÜLTÜR",
+      "sections": null
+    },
+    {
+      "_aciklama": "Kategori secenekleri: 🔬 BİLİM, 📜 TARİH, 🧠 FELSEFE, 💻 TEKNOLOJİ, 🌱 SAĞLIK, 🌍 ÇEVRE, 🎨 SANAT & KÜLTÜR, 🏆 SPOR, 👤 BİYOGRAFİ.",
+      "title": "Fil",
+      "free": true,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Gezegen",
+      "free": true,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Lale çılgınlığı",
+      "free": true,
+      "category": "📜 TARİH",
+      "sections": null
+    },
+    {
+      "title": "Koala",
+      "free": true,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
       "title": "İbn Haldun",
       "free": false,
       "category": "👤 BİYOGRAFİ",
       "sections": null
     },
     {
-      "_aciklama": "Kategori secenekleri: 🔬 BİLİM, 📜 TARİH, 🧠 FELSEFE, 💻 TEKNOLOJİ, 🌱 SAĞLIK, 🌍 ÇEVRE, 🎨 SANAT & KÜLTÜR, 🏆 SPOR, 👤 BİYOGRAFİ.",
-      "title": "Sabahattin Ali",
+      "title": "Yerküre tarihi",
+      "free": false,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Augustus",
+      "free": false,
+      "category": "👤 BİYOGRAFİ",
+      "sections": null
+    },
+    {
+      "title": "Friedrich Nietzsche",
+      "free": false,
+      "category": "🧠 FELSEFE",
+      "sections": null
+    },
+    {
+      "title": "Gılgamış",
       "free": false,
       "category": "🎨 SANAT & KÜLTÜR",
+      "sections": null
+    },
+    {
+      "title": "Otomobilin tarihi",
+      "free": false,
+      "category": "💻 TEKNOLOJİ",
+      "sections": null
+    },
+    {
+      "title": "Astrobiyoloji",
+      "free": false,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Sonsuz maymun teoremi",
+      "free": false,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Orhan Veli Kanık",
+      "free": false,
+      "category": "🎨 SANAT & KÜLTÜR",
+      "sections": null
+    },
+    {
+      "title": "Leylek",
+      "free": false,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Tokyo Kulesi",
+      "free": false,
+      "category": "🎨 SANAT & KÜLTÜR",
+      "sections": null
+    },
+    {
+      "title": "Denizyıldızı",
+      "free": false,
+      "category": "🔬 BİLİM",
       "sections": null
     }
   ]
