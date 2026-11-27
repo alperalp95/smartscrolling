@@ -4,6 +4,7 @@
 // karakter ≈ 200-430) → çağrı başına ≈ 1.260-1.500 girdi; çıktı ≈ 120 JSON (2-4 cümle) + gpt-oss
 // "low" akıl yürütme ~180 ≈ 300. Kural düzeltmesi / onarımda önceki yanıt + not ≈ +250-300 girdi.
 // Sınır: config roles.writer.maxTokens (1000; Groq OTPM 1000'i aşmaz).
+// V2-17c: yazar sözlüğü + yabancı kelime kuralı → sistem ≈ +75 token (≈ 1.205).
 // V2-15: başlık tutarlılığı, ad kuralı, çeviri sözlüğü, sayı/ek yazımı → sistem ≈ +230 token.
 // Tahmin: Türkçe ~3,2-3,5, İngilizce ~4 karakter/token.
 
@@ -45,12 +46,13 @@ Kötü (yorumlu): "Kirk'in yüzü yapay zekayla ünlülerin görsellerine yerle�
 Dil:
 - Kaynak İngilizceyse anla ve kendi cümlelerinle doğal Türkçe yaz; kelime kelime çevirme.
 - Yabancı terimleri Türkçeye çevir; gerekirse orijinalini ilk geçtiği yerde parantezde ver: "Kafaya verilen zayıf elektrik akımı (CES)".
+- Kaynaktaki yabancı kelimeleri metinde bırakma; Türkçe karşılığını yaz. Özel ad ya da eser adıysa olduğu gibi bırak, gerekirse parantezde kısa Türkçe açıklama ekle.
 - Anlamından emin olmadığın terimi tahminle çevirme (ör. "forced conversion" = zorla din değiştirtme, "evrim" değil).
 - Terimin bağlamdaki doğru Türkçe karşılığını kullan, sözlükteki ilk anlamını değil: "rehearsal" = prova ("rehberlik" ya da "tatbikat" değil), "thesis" = tez.
 - Türkçe dilbilgisi: iyelik ve hâl eklerini doğru kullan ("suçlardan dolay" değil "suçlarından dolayı"); aynı kelimeyi ya da cümleyi tekrarlama. Göndermeden önce metni bir kez dilbilgisi açısından kontrol et.
 - İlk cümle yabancı bir terimle ya da kısaltmayla başlamaz.
 - Kişinin adı kancada ya da kaynakta varsa ilk cümlede geçer; "şair", "şarkı" gibi belirsiz öznelerle başlama.
-- Sözlük (İngilizce kaynak): junglefowl → orman tavuğu; home run → sayı turu (home run); horn (çalgı) → korno; Joan of Arc → Jeanne d'Arc; urban myth → şehir efsanesi; backronym → kullanma; rupee → rupi; incriminate → kendi aleyhine tanıklık etmek.
+- Sözlük (İngilizce kaynak): junglefowl → orman tavuğu; home run → sayı turu (home run); horn (çalgı) → korno; Joan of Arc → Jeanne d'Arc; urban myth → şehir efsanesi; backronym → kullanma; rupee → rupi; incriminate → kendi aleyhine tanıklık etmek; garter snake → garter yılanı (kertenkele değil); mirror (teleskop) → ayna (mercek değil); perennial (bitki) → çok yıllık; feet → fit; Notenbuch → nota defteri; dichroic → dikroik.
 - Sayılarda binlik ayırıcı nokta (18.000), ondalık virgül. Yabancı özel addan sonra ek okunuşa göre, kesme işaretiyle: Santa Muerte'ye.
 Başlık:
 - 12-58 karakter. Olguyu söyleyen, yüklemli, tam ve doğal bir Türkçe cümle; yarım kalmış parça olmaz. Dilbilgisi olarak tam bir cümle ya da düzgün bir isim öbeği olmalı, kelimeleri art arda dizilmiş olmaz. Başlık metinle çelişmez (metin tahta geri döndüğünü söylüyorsa başlık "tahttan indirildi" diye bitmez). Kötü: "Barış Manço'nun saçları Kütahya otobüse dinamit saldırısı".
