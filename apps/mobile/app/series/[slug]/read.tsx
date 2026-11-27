@@ -219,7 +219,7 @@ export default function SeriesReaderScreen() {
   return (
     <View style={[s.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <TopBar
-        title={series ? `Seri · ${position} / ${total}` : 'Seri'}
+        title={series ? `${series.title} · ${position} / ${total}` : 'Seri'}
         right={
           <IconButton
             name="close"
