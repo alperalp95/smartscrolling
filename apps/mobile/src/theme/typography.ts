@@ -12,6 +12,10 @@ export const fonts = {
 export const type = {
   screenTitle: { fontFamily: fonts.bold, fontSize: 17, lineHeight: 22 },
   cardTitle: { fontFamily: fonts.extrabold, fontSize: 22, lineHeight: 26, letterSpacing: -0.3 },
+  // Paylaşım görselinde başlık, uygulamadaki kart başlığından bir kademe büyüktür (26/30).
+  shareTitle: { fontFamily: fonts.extrabold, fontSize: 26, lineHeight: 30, letterSpacing: -0.3 },
+  // Paylaşım görselinde fotoğraf yoksa başlığın üstünde duran büyük tırnak işareti.
+  shareQuote: { fontFamily: fonts.extrabold, fontSize: 64, lineHeight: 64 },
   body: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 21 },
   // Not: textTransform 'i' harfini 'İ' yapmaz. Türkçe metni büyük harfle verin
   // (ör. 'TERCİHLER' ya da metin.toLocaleUpperCase('tr-TR')).

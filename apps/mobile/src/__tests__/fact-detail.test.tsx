@@ -3,6 +3,15 @@ import FactDetailScreen from '../../app/fact/[id]';
 
 const mockToggleSave = jest.fn();
 const mockFetchFactById = jest.fn();
+const mockShareFact = jest.fn();
+
+jest.mock('../lib/useShareFact', () => ({
+  useShareFact: () => ({
+    shareFact: (...args: unknown[]) => mockShareFact(...args),
+    isSharing: false,
+    shareHost: null,
+  }),
+}));
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
@@ -54,6 +63,15 @@ describe('FactDetailScreen', () => {
     const { findByTestId } = render(<FactDetailScreen />);
     fireEvent.press(await findByTestId('fact-detail-save'));
     expect(mockToggleSave).toHaveBeenCalledWith('f1');
+  });
+
+  it("Paylaş düğmesi shareFact'i doğru kartla bir kez çağırır", async () => {
+    mockShareFact.mockClear();
+    mockFetchFactById.mockResolvedValue(fact);
+    const { findByTestId } = render(<FactDetailScreen />);
+    fireEvent.press(await findByTestId('fact-detail-share'));
+    expect(mockShareFact).toHaveBeenCalledTimes(1);
+    expect(mockShareFact).toHaveBeenCalledWith(fact);
   });
 
   it('kart yoksa "Kart bulunamadı." görünür', async () => {

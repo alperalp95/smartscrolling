@@ -12,5 +12,7 @@ export const colors = {
   danger: '#ED4956',
   success: '#58C322',
   scrim: 'rgba(0,0,0,0.55)',
+  // Paylaşım görselindeki kartın zemini: `surface` rengi (#121212), %82 görünürlükle.
+  shareCardBg: 'rgba(18,18,18,0.82)',
   brandGradient: ['#FF7A45', '#FF3D7F', '#8B5CF6'] as readonly [string, string, string],
 } as const;
