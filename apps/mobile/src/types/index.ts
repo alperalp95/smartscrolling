@@ -30,3 +30,42 @@ export type UserType = {
   streakDays: number;
   avatarUrl?: string;
 };
+
+export type SeriesSummary = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  category: string | null;
+  coverUrl: string | null;
+  cardCount: number;
+  sectionCount: number;
+  isFree: boolean;
+  isFeatured: boolean;
+  publishedAt: string | null;
+};
+
+export type SeriesSection = {
+  title: string;
+  firstPosition: number;
+  cardCount: number;
+};
+
+export type SeriesDetail = SeriesSummary & {
+  sections: SeriesSection[];
+  sourceTitle: string;
+  sourceUrl: string;
+  license: string;
+};
+
+export type SeriesCard = {
+  position: number;
+  sectionTitle: string;
+  body: string;
+};
+
+export type SeriesProgress = {
+  seriesId: string;
+  lastPosition: number;
+  completedAt: string | null;
+};

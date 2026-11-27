@@ -1,0 +1,116 @@
+{
+  "_aciklama": "Seri listesi. Her satir bir Vikipedi maddesidir; bu dosyayi kod bilmeden duzenleyebilirsiniz. Adaylari gormek icin once 'series-candidates' betigini calistirin (README: Seriler). Alanlar yalnizca title, free, category, sections ve istege bagli cover olabilir. cover: yazilmazsa maddenin kendi serbest Commons gorseli kullanilir; \"none\" kapaksiz birakir (uygulama marka renk gecisini gosterir); ya da Wikimedia Commons dosya adi yazilir, ornegin \"File:Galata Tower.jpg\" (dogrudan URL kabul edilmez, lisansi serbest olmayan dosya reddedilir); '_' ile baslayan alanlar aciklamadir ve yok sayilir.",
+  "series": [
+    {
+      "_aciklama": "title: Turkce Vikipedi madde adi (birebir). free: true ise seri herkese acik, false ise premium (ilk 3 kart onizleme). category: asagidaki kategori metinlerinden biri, aynen. sections: null = maddenin tamami (Kaynakca, Notlar, Dis baglantilar gibi bolumler otomatik atilir); ya da sadece alinacak bolum basliklarinin listesi.",
+      "title": "Galata Kulesi",
+      "free": true,
+      "category": "📜 TARİH",
+      "sections": null
+    },
+    {
+      "_aciklama": "Premium ornek. sections listesi verilirse yalniz o bolumler (ve alt bolumleri) alinir; basliklar maddedeki gibi yazilir.",
+      "title": "Nasreddin Hoca",
+      "free": true,
+      "category": "🎨 SANAT & KÜLTÜR",
+      "sections": null
+    },
+    {
+      "_aciklama": "Kategori secenekleri: 🔬 BİLİM, 📜 TARİH, 🧠 FELSEFE, 💻 TEKNOLOJİ, 🌱 SAĞLIK, 🌍 ÇEVRE, 🎨 SANAT & KÜLTÜR, 🏆 SPOR, 👤 BİYOGRAFİ.",
+      "title": "Fil",
+      "free": true,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Gezegen",
+      "free": true,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Lale çılgınlığı",
+      "free": true,
+      "category": "📜 TARİH",
+      "sections": null
+    },
+    {
+      "title": "Koala",
+      "free": true,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "İbn Haldun",
+      "free": false,
+      "category": "👤 BİYOGRAFİ",
+      "sections": null
+    },
+    {
+      "title": "Yerküre tarihi",
+      "free": false,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Augustus",
+      "free": false,
+      "category": "👤 BİYOGRAFİ",
+      "sections": null
+    },
+    {
+      "title": "Friedrich Nietzsche",
+      "free": false,
+      "category": "🧠 FELSEFE",
+      "sections": null
+    },
+    {
+      "title": "Gılgamış",
+      "free": false,
+      "category": "🎨 SANAT & KÜLTÜR",
+      "sections": null
+    },
+    {
+      "title": "Otomobilin tarihi",
+      "free": false,
+      "category": "💻 TEKNOLOJİ",
+      "sections": null
+    },
+    {
+      "title": "Astrobiyoloji",
+      "free": false,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Sonsuz maymun teoremi",
+      "free": false,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Orhan Veli Kanık",
+      "free": false,
+      "category": "🎨 SANAT & KÜLTÜR",
+      "sections": null
+    },
+    {
+      "title": "Leylek",
+      "free": false,
+      "category": "🔬 BİLİM",
+      "sections": null
+    },
+    {
+      "title": "Tokyo Kulesi",
+      "free": false,
+      "category": "🎨 SANAT & KÜLTÜR",
+      "sections": null
+    },
+    {
+      "title": "Denizyıldızı",
+      "free": false,
+      "category": "🔬 BİLİM",
+      "sections": null
+    }
+  ]
+}
