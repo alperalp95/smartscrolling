@@ -117,4 +117,14 @@ describe('SeriesCoverScreen', () => {
     const { findByText } = render(<SeriesCoverScreen />);
     await waitFor(async () => expect(await findByText('Seri bulunamadı.')).toBeTruthy());
   });
+
+  it('ağ hatasında "Yüklenemedi" ve yeniden dene düğmesi çıkar (bulunamadı değil)', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('ağ'));
+    const { findByText, queryByText } = render(<SeriesCoverScreen />);
+    expect(await findByText('Yüklenemedi.')).toBeTruthy();
+    expect(queryByText('Seri bulunamadı.')).toBeNull();
+    fireEvent.press(await findByText('Yeniden dene'));
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
+    expect(await findByText('Okumaya başla')).toBeTruthy();
+  });
 });

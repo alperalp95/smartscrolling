@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { MINUTES_PER_CARD } from '../../components/series/series-hero';
+import { Button } from '../../components/ui/button';
 import { Chip } from '../../components/ui/chip';
 import { GradientButton, GradientText } from '../../components/ui/gradient';
 import { IconButton } from '../../components/ui/icon-button';
@@ -41,28 +42,35 @@ export default function SeriesCoverScreen() {
   const [series, setSeries] = useState<SeriesDetail | null>(null);
   const [progress, setProgress] = useState<SeriesProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt yalnızca yeniden denemeyi tetikler
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       setIsLoading(true);
+      setHasError(false);
       let next: SeriesDetail | null = null;
       let entry: SeriesProgress | null = null;
+      let failed = false;
       try {
         next = slug ? await fetchSeriesBySlug(slug) : null;
         entry = next ? await getProgress(next.id, userId) : null;
       } catch {
         next = null;
+        failed = true;
       }
       if (cancelled) return;
       setSeries(next);
       setProgress(entry);
+      setHasError(failed);
       setIsLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [slug, userId]);
+  }, [slug, userId, attempt]);
 
   const coverHeight = (width - space.screen * 2) * COVER_HEIGHT_RATIO;
 
@@ -75,6 +83,14 @@ export default function SeriesCoverScreen() {
       return (
         <View style={s.center}>
           <ActivityIndicator color={colors.textSecondary} />
+        </View>
+      );
+    }
+    if (hasError) {
+      return (
+        <View style={s.center} testID="series-cover-error">
+          <Text style={s.centerText}>Yüklenemedi.</Text>
+          <Button label="Yeniden dene" onPress={() => setAttempt((n) => n + 1)} />
         </View>
       );
     }
