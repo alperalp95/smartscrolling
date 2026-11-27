@@ -1,4 +1,5 @@
 import { fireEvent, render } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import type { FactType } from '../../../src/types';
 import { ShareCard } from '../share-card';
 
@@ -58,15 +59,34 @@ describe('ShareCard', () => {
     expect(queryByText(/dk/)).toBeNull();
   });
 
-  it('limits a long body to 4 lines and keeps the long title inside the card', () => {
-    const title = 'A'.repeat(58);
-    const content = Array.from({ length: 120 }, (_, i) => `kelime${i}`).join(' ');
+  const longTitle = 'A'.repeat(58);
+  const longBody = Array.from({ length: 120 }, (_, i) => `kelime${i}`).join(' ');
+
+  it('C1: title 26px max 4 lines, body max 4 lines', () => {
     const { getByTestId } = render(
-      <ShareCard fact={makeFact({ title, content })} variant="text" photoUri={null} />,
+      <ShareCard
+        fact={makeFact({ title: longTitle, content: longBody })}
+        variant="text"
+        photoUri={null}
+      />,
     );
+    expect(getByTestId('share-card-title')).toHaveTextContent(longTitle);
+    expect(getByTestId('share-card-title').props.numberOfLines).toBe(4);
     expect(getByTestId('share-card-body').props.numberOfLines).toBe(4);
-    expect(getByTestId('share-card-title')).toHaveTextContent(title);
-    expect(getByTestId('share-card-title').props.numberOfLines).toBeGreaterThan(0);
+    expect(StyleSheet.flatten(getByTestId('share-card-title').props.style).fontSize).toBe(26);
+  });
+
+  it('C2: title 22px max 3 lines, body max 3 lines', () => {
+    const { getByTestId } = render(
+      <ShareCard
+        fact={makeFact({ title: longTitle, content: longBody })}
+        variant="photo"
+        photoUri="https://example.com/a.jpg"
+      />,
+    );
+    expect(getByTestId('share-card-title').props.numberOfLines).toBe(3);
+    expect(getByTestId('share-card-body').props.numberOfLines).toBe(3);
+    expect(StyleSheet.flatten(getByTestId('share-card-title').props.style).fontSize).toBe(22);
   });
 
   it('calls onPhotoLoad and onPhotoError once each', () => {

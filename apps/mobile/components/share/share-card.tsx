@@ -47,7 +47,7 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
       <Text style={s.wordmark}>SmartScrolling</Text>
 
       <View style={s.middle}>
-        <View style={s.card}>
+        <View style={[s.card, isPhoto ? s.cardPhoto : s.cardText]}>
           {isPhoto ? (
             <View testID="share-card-photo" style={s.photoWrap}>
               <Media
@@ -66,10 +66,14 @@ export const ShareCard = forwardRef<View, ShareCardProps>(function ShareCard(
           <View testID="share-card-category" style={s.category}>
             <GradientText style={type.meta}>{shareCategoryLabel(fact.category)}</GradientText>
           </View>
-          <Text style={s.title} numberOfLines={3} testID="share-card-title">
+          <Text
+            style={isPhoto ? s.titlePhoto : s.titleText}
+            numberOfLines={isPhoto ? 3 : 4}
+            testID="share-card-title"
+          >
             {fact.title}
           </Text>
-          <Text style={s.body} numberOfLines={4} testID="share-card-body">
+          <Text style={s.body} numberOfLines={isPhoto ? 3 : 4} testID="share-card-body">
             {fact.content}
           </Text>
         </View>
@@ -106,19 +110,24 @@ const s = StyleSheet.create({
   },
   glowTop: { top: -share.glowSize / 2, right: -share.glowSize / 2 },
   glowBottom: { bottom: -share.glowSize / 2, left: -share.glowSize / 2 },
-  wordmark: { ...type.screenTitle, color: colors.text, textAlign: 'center' },
+  wordmark: { ...type.screenTitle, color: colors.text },
   middle: { flex: 1, justifyContent: 'center' },
   card: {
     backgroundColor: colors.shareCardBg,
     borderRadius: radius.lg,
-    padding: space.lg,
     gap: space.sm,
+    flexShrink: 1,
+    overflow: 'hidden',
   },
+  // C2 (fotoğraflı): dar iç boşluk, küçük başlık; C1 (yazılı): geniş iç boşluk, büyük başlık.
+  cardPhoto: { padding: space.md },
+  cardText: { padding: space.xl },
   photoWrap: { alignSelf: 'stretch' },
   photo: { height: share.photoHeight, borderRadius: radius.md },
   quote: { alignSelf: 'flex-start' },
   category: { alignSelf: 'flex-start' },
-  title: { ...type.shareTitle, color: colors.text },
+  titlePhoto: { ...type.cardTitle, color: colors.text },
+  titleText: { ...type.shareTitle, color: colors.text },
   body: { ...type.body, color: colors.text },
   cta: { marginTop: space.lg, borderRadius: radius.md, overflow: 'hidden' },
   ctaFill: { alignItems: 'center', justifyContent: 'center', paddingVertical: space.md },

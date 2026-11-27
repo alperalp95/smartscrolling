@@ -21,7 +21,7 @@ export const share = {
   safeTop: 56,
   safeBottom: 96,
   // Fotoğraflı görselde fotoğrafın yüksekliği.
-  photoHeight: 200,
+  photoHeight: 170,
   // Zemindeki renkli ışık lekelerinin çapı ve görünürlüğü (0 = yok, 1 = tam).
   glowSize: 280,
   glowOpacity: 0.3,
