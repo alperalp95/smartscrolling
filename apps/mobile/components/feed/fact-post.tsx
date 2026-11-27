@@ -6,7 +6,6 @@ import {
   Linking,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -20,6 +19,7 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import { failedRemoteImageUrls, resolveFactMedia } from '../../src/lib/factMedia';
+import { useShareFact } from '../../src/lib/useShareFact';
 import { colors, radius, space, type } from '../../src/theme';
 import type { FactType } from '../../src/types';
 import { Button } from '../ui/button';
@@ -242,9 +242,7 @@ export function FactPost({
     if (item.source_url) Linking.openURL(item.source_url);
   };
 
-  const sharePost = () => {
-    Share.share({ message: item.source_url ? `${item.title}\n${item.source_url}` : item.title });
-  };
+  const { shareFact, isSharing, shareHost } = useShareFact();
 
   const source = item.source_url ? (
     <Pressable onPress={openSource} accessibilityRole="link">
@@ -354,7 +352,9 @@ export function FactPost({
         />
         <IconButton
           name="paper-plane-outline"
-          onPress={sharePost}
+          onPress={() => {
+            if (!isSharing) void shareFact(item);
+          }}
           accessibilityLabel="Paylaş"
           testID="feed-share-button"
         />
@@ -417,6 +417,7 @@ export function FactPost({
           ) : null}
         </ScrollView>
       </View>
+      {shareHost}
     </View>
   );
 }

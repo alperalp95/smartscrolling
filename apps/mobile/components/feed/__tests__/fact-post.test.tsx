@@ -2,6 +2,14 @@ import { act, fireEvent, render } from '@testing-library/react-native';
 import type { FactType } from '../../../src/types';
 import { FactPost, type FactPostProps } from '../fact-post';
 
+const mockShareFact = jest.fn();
+jest.mock('../../../src/lib/useShareFact', () => ({
+  useShareFact: () => ({
+    shareFact: (...args: unknown[]) => mockShareFact(...args),
+    isSharing: false,
+    shareHost: null,
+  }),
+}));
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
@@ -141,5 +149,14 @@ describe('FactPost', () => {
     expect(props.onAsk).toHaveBeenCalledWith(item);
     fireEvent.press(getByTestId('feed-save-button'));
     expect(props.toggleSave).toHaveBeenCalledWith('f1');
+  });
+
+  it("Paylaş düğmesi shareFact'i doğru kartla bir kez çağırır", () => {
+    mockShareFact.mockClear();
+    const item = makeFact();
+    const { getByTestId } = renderPost(item);
+    fireEvent.press(getByTestId('feed-share-button'));
+    expect(mockShareFact).toHaveBeenCalledTimes(1);
+    expect(mockShareFact).toHaveBeenCalledWith(item);
   });
 });

@@ -5,7 +5,6 @@ import {
   Linking,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -18,6 +17,7 @@ import { Screen } from '../../components/ui/screen';
 import { TopBar } from '../../components/ui/top-bar';
 import { failedRemoteImageUrls, resolveFactMedia } from '../../src/lib/factMedia';
 import { fetchFactById } from '../../src/lib/facts';
+import { useShareFact } from '../../src/lib/useShareFact';
 import { useFeedStore } from '../../src/store/feedStore';
 import { colors, radius, space, type } from '../../src/theme';
 import type { FactType } from '../../src/types';
@@ -33,6 +33,7 @@ export default function FactDetailScreen() {
   const [fact, setFact] = useState<FactType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [, setMediaErrorTick] = useState(0);
+  const { shareFact, isSharing, shareHost } = useShareFact();
 
   useEffect(() => {
     let cancelled = false;
@@ -101,9 +102,7 @@ export default function FactDetailScreen() {
           <IconButton
             name="paper-plane-outline"
             onPress={() => {
-              void Share.share({
-                message: sourceUrl ? `${fact.title}\n${sourceUrl}` : fact.title,
-              });
+              if (!isSharing) void shareFact(fact);
             }}
             accessibilityLabel="Paylaş"
             testID="fact-detail-share"
@@ -155,6 +154,7 @@ export default function FactDetailScreen() {
           }
         />
         {renderBody()}
+        {shareHost}
       </View>
     </Screen>
   );

@@ -54,6 +54,16 @@ npx tsc --noEmit
 - feed store: `apps/mobile/src/store/feedStore.ts`
 - feed types: `apps/mobile/src/types/index.ts`
 
+## Paylaşım ayarları
+
+Paylaşım kartının bağlantısı ve alt yazısı `apps/mobile/src/config/share.ts` dosyasındaki `SHARE_CONFIG` alanlarından gelir. Kod bilmeden sadece tırnak içindeki değerleri değiştirin:
+
+- `baseUrl`: paylaşılan bağlantının başlangıcı (`<baseUrl>/fact/<kart numarası>`). Sonuna `/` koymayın.
+- `displayDomain`: paylaşım görselinin altında yazan alan adı (`https://` olmadan).
+- `photoTimeoutMs`: fotoğrafın yüklenmesi için beklenecek süre (milisaniye). Süre dolarsa kart fotoğrafsız, yazılı görselle paylaşılır.
+
+Gerçek alan adı alındığında `baseUrl` ve `displayDomain` aynı alan adına çevrilmelidir (ör. `https://<yeni-alan-adı>` ve `<yeni-alan-adı>`). Bu değişiklikten sonra eski alan adıyla paylaşılmış bağlantılar çalışmayabilir; yeni bağlantılar yeni alan adını kullanır.
+
 ## Maestro (uçtan uca testler)
 
 - Kurulum: Maestro `C:\Users\<kullanıcı>\.maestro` altında durur; `JAVA_HOME` Android Studio'nun `jbr` klasörünü göstermelidir.
