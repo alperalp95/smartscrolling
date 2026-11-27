@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   LABEL,
+  REVIEW_MAX_SHOWN,
   createIssue,
   createSampleRepo,
   formatSampleIssue,
@@ -177,4 +178,154 @@ test('createSampleRepo: published + published_at >= since sorgusu', async () => 
     q.some((x) => x[0] === 'gte' && x[1] === 'published_at' && x[2] === '2026-11-16T00:00:00.000Z'),
   );
   assert.match(q.find((x) => x[0] === 'select')[1], /source_url/);
+});
+
+function reviewCards() {
+  return [
+    {
+      id: 'r-1',
+      title: 'Tehlikeli konu',
+      content: 'Bir cinayet davası\nhakkında metin.',
+      category: 'TARİH',
+      source_url: 'https://en.wikipedia.org/wiki/Dava',
+      verification: { review: { terms: ['cinayet', 'idam'] } },
+      created_at: '2026-11-21T10:00:00Z',
+    },
+    {
+      id: 'r-2',
+      title: 'Belirsiz kart',
+      content: 'Metin.',
+      category: null,
+      source_url: null,
+      verification: null,
+      created_at: '2026-11-22T10:00:00Z',
+    },
+  ];
+}
+
+test('formatSampleIssue: incelemede kartlar varsa başlık sayısı + bölüm + kart satırları', () => {
+  const { title, body } = formatSampleIssue(cards(3), {
+    now: NOW,
+    days: 7,
+    totalPublished: 30,
+    inReview: reviewCards(),
+  });
+  assert.equal(title, 'Haftalık kart örneği (2026-11-23): 3 kart · 2 incelemede');
+  assert.match(body, /## İncelemede bekleyen kartlar \(2\)/);
+  assert.match(body, /hassas olabilecek bir kelime geçtiği için otomatik yayına girmediler/);
+  assert.match(body, /- \[ \] \*\*R1\. Tehlikeli konu\*\* · TARİH · kelime: cinayet, idam/);
+  assert.match(body, /- \[ \] \*\*R2\. Belirsiz kart\*\* · kelime: \(belirtilmemiş\)/);
+  assert.match(body, /Bir cinayet davası hakkında metin\./);
+  assert.match(body, /Kaynak: <https:\/\/en\.wikipedia\.org\/wiki\/Dava>/);
+  assert.match(body, /id: r-1/);
+  assert.match(body, /id: r-2/);
+  assert.ok(body.indexOf('## İncelemede') > body.indexOf('**3. Başlık 3**'));
+  assert.ok(body.indexOf('## İncelemede') < body.indexOf('<sub>'));
+});
+
+test('formatSampleIssue: inReview boşsa bölüm ve başlık eki yok', () => {
+  const { title, body } = formatSampleIssue(cards(2), { now: NOW, inReview: [] });
+  assert.equal(title, 'Haftalık kart örneği (2026-11-23): 2 kart');
+  assert.doesNotMatch(body, /İncelemede/);
+});
+
+test('runWeeklySample: repo.listInReview varsa Issue gövdesinde bölüm olur', async () => {
+  const repo = {
+    listPublishedSince: async () => cards(5),
+    listInReview: async () => reviewCards(),
+  };
+  const r = await runWeeklySample([], {
+    repo,
+    now: NOW,
+    random: seeded(2),
+    stdout: () => {},
+    log: () => {},
+  });
+  assert.match(r.issue.body, /## İncelemede bekleyen kartlar \(2\)/);
+  assert.match(r.issue.title, /· 2 incelemede$/);
+});
+
+test('runWeeklySample: listInReview olmayan repo ile hata vermez', async () => {
+  const r = await runWeeklySample([], {
+    repo: { listPublishedSince: async () => cards(4) },
+    now: NOW,
+    stdout: () => {},
+    log: () => {},
+  });
+  assert.doesNotMatch(r.issue.body, /İncelemede/);
+});
+
+test('createSampleRepo.listInReview: status=review, created_at artan, limit', async () => {
+  const q = [];
+  const builder = {
+    select(c) {
+      q.push(['select', c]);
+      return builder;
+    },
+    eq(c, v) {
+      q.push(['eq', c, v]);
+      return builder;
+    },
+    order(c, o) {
+      q.push(['order', c, o]);
+      return builder;
+    },
+    async limit(n) {
+      q.push(['limit', n]);
+      return { data: [{ id: 'r-1' }], error: null };
+    },
+  };
+  const repo = createSampleRepo({ from: () => builder });
+  assert.deepEqual(await repo.listInReview(), [{ id: 'r-1' }]);
+  assert.ok(q.some((x) => x[0] === 'eq' && x[1] === 'status' && x[2] === 'review'));
+  assert.deepEqual(
+    q.find((x) => x[0] === 'order'),
+    ['order', 'created_at', { ascending: true }],
+  );
+  assert.match(q.find((x) => x[0] === 'select')[1], /verification/);
+  assert.deepEqual(
+    q.find((x) => x[0] === 'limit'),
+    ['limit', 2000],
+  );
+  const failing = createSampleRepo({
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          order: () => ({ limit: async () => ({ data: null, error: { message: 'x' } }) }),
+        }),
+      }),
+    }),
+  });
+  await assert.rejects(() => failing.listInReview(), /facts okunamadı: x/);
+});
+
+test('runWeeklySample: listInReview hata verirse Issue yine oluşur, uyarı loglanır', async () => {
+  const logs = [];
+  const r = await runWeeklySample([], {
+    repo: {
+      listPublishedSince: async () => cards(3),
+      listInReview: async () => {
+        throw new Error('ağ yok');
+      },
+    },
+    now: NOW,
+    stdout: () => {},
+    log: (s) => logs.push(s),
+  });
+  assert.doesNotMatch(r.issue.body, /İncelemede/);
+  assert.ok(logs.some((s) => /uyarı: incelemedeki kartlar okunamadı: ağ yok/.test(s)));
+});
+
+test('formatSampleIssue: incelemede REVIEW_MAX_SHOWN üstü kart kısaltılır', () => {
+  const many = Array.from({ length: REVIEW_MAX_SHOWN + 3 }, (_, i) => ({
+    id: `r-${i}`,
+    title: `Kart ${i}`,
+    content: 'metin',
+    verification: { review: { terms: ['cinayet'] } },
+  }));
+  const { title, body } = formatSampleIssue(cards(2), { now: NOW, inReview: many });
+  assert.match(title, new RegExp(`· ${REVIEW_MAX_SHOWN + 3} incelemede$`));
+  assert.match(body, new RegExp(`R${REVIEW_MAX_SHOWN}\.`));
+  assert.doesNotMatch(body, new RegExp(`R${REVIEW_MAX_SHOWN + 1}\.`));
+  assert.match(body, /… ve 3 kart daha incelemede/);
 });

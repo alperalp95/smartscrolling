@@ -361,6 +361,13 @@ Her pazartesi `weekly-sample` etiketli bir Issue gelir: o haftanın kartları (e
 
 Hedef: kartların en az %90'ı iyi ve **hiç yanlış bilgi yok**. İşaretlenen kartlar yazar istemini ve puan eşiklerini ayarlamak için kullanılır.
 
+#### İncelemede bekleyen kartlar
+
+Issue'nun sonunda "İncelemede bekleyen kartlar" bölümü olabilir. Bir kartta hassas bir kelime geçerse (şiddet, ölüm, intihar gibi) kart silinmez ya da reddedilmez; yayına girmeden **incelemede** bekler. Hangi kelimenin yakalandığı kartın yanında yazar.
+
+- **Kelime listesi:** `packages/pipeline/config/pipeline.config.json` dosyasında `review` altındadır. `sensitiveStems` **kök** listesidir: kökle başlayan her kelime yakalanır (ör. `"öldür"` → öldürdü, öldürmüş, öldürülen). `sensitiveWords` **tam kelime** listesidir: yalnızca aynen yazılan kelime yakalanır (ör. `"idam"`). Kelime eklemek ya da çıkarmak için listeye tırnak içinde yazın / silin; virgüllere dikkat edin.
+- **Onaylamak için:** Issue'da yayına uygun kartın kutusunu işaretleyin; Atlas işaretlenenleri yayına alır, işaretlenmeyenleri arşivler. Dilerseniz Supabase **Table Editor**'de `facts` tablosunda ilgili satırın `status` değerini `review` yerine `queued` yapın (sonraki yayında çıkar) ya da `archived` yapın (hiç çıkmaz). Satırı bulmak için kartın altındaki `id` değerini kullanın.
+
 ### Komut satırından (geliştiriciler)
 
 ```

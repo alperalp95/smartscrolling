@@ -188,7 +188,8 @@ export function createMemoryStepsRepo({ candidates = [], facts = [] } = {}) {
       lastMatchArgs = { threshold, limit, kinds, excludeCandidate };
       const out = [];
       for (const f of kinds.includes('fact') ? factRows : []) {
-        if (!Array.isArray(f.embedding) || !['published', 'queued'].includes(f.status)) continue;
+        if (!Array.isArray(f.embedding) || !['published', 'queued', 'review'].includes(f.status))
+          continue;
         if (f.embedding.length !== embedding.length) continue;
         out.push({
           kind: 'fact',
