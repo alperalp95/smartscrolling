@@ -30,7 +30,7 @@ test('parseWikiExtract: ilk bölüm başlığı title, alt bölümler ayrı', ()
   assert.equal(s[0].text, 'Giriş cümlesi birinci. Giriş cümlesi ikinci.');
   assert.deepEqual(
     s.map((x) => x.heading),
-    ['Örnek', 'Tarih', 'Antik Çağ', 'Kaynakça', 'Dış bağlantılar', 'Coğrafya'],
+    ['Örnek', 'Tarih', 'Antik Çağ', 'Kaynakça', 'Dış bağlantılar', 'Boş', 'Coğrafya'],
   );
 });
 
@@ -114,4 +114,30 @@ test('summarizeSections: başlık, ilk pozisyon, kart sayısı', () => {
   assert.equal(sum[0].firstPosition, 1);
   assert.equal(sum[0].cardCount + sum[1].cardCount, cards.length);
   assert.equal(sum[1].firstPosition, sum[0].cardCount + 1);
+});
+
+test('boş üst bölümün alt bölümleri wanted ile gelir; boş hariç bölümün altları atılır', () => {
+  const extract = `Giriş.
+
+== Tarih ==
+=== Erken ===
+Erken metni.
+
+== Kaynakça ==
+=== Kitaplar ===
+Bir kitap.
+
+== Son ==
+Son metni.`;
+  const sections = parseWikiExtract(extract, 'Örnek');
+  const wanted = splitIntoCards(filterSections(sections, ['Tarih']));
+  assert.deepEqual(
+    wanted.map((c) => c.body),
+    ['Erken metni.'],
+  );
+  const all = filterSections(sections, null);
+  assert.deepEqual(
+    all.map((s) => s.heading),
+    ['Örnek', 'Erken', 'Son'],
+  );
 });
