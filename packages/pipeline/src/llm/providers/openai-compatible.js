@@ -66,6 +66,13 @@ export function parseOpenAiChatResponse(body) {
     usage: {
       inputTokens: Number(usage.prompt_tokens ?? usage.input_tokens ?? 0) || 0,
       outputTokens: Number(usage.completion_tokens ?? usage.output_tokens ?? 0) || 0,
+      // Önbellekten okunan girdi token'ları (inputTokens'ın içindedir; bütçeye ayrıca eklenmez).
+      cachedTokens:
+        Number(
+          usage.prompt_tokens_details?.cached_tokens ??
+            usage.input_tokens_details?.cached_tokens ??
+            0,
+        ) || 0,
     },
   };
 }

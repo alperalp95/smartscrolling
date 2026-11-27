@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { parseOpenAiChatResponse } from '../providers/openai-compatible.js';
 import {
   createFileUsageStore,
   createMemoryUsageStore,
@@ -89,4 +90,96 @@ test('dosya store: .cache/llm-usage-YYYY-MM-DD.json yazar ve geri okur', async (
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+const chatBody = (usage) => ({
+  choices: [{ message: { content: 'merhaba' }, finish_reason: 'stop' }],
+  usage,
+});
+
+test('parseOpenAiChatResponse: önbellekten gelen prompt token sayısını okur', () => {
+  const out = parseOpenAiChatResponse(
+    chatBody({
+      prompt_tokens: 2400,
+      completion_tokens: 300,
+      prompt_tokens_details: { cached_tokens: 1400 },
+    }),
+  );
+  assert.deepEqual(out.usage, { inputTokens: 2400, outputTokens: 300, cachedTokens: 1400 });
+});
+
+test('parseOpenAiChatResponse: prompt_tokens_details yoksa cachedTokens 0', () => {
+  const out = parseOpenAiChatResponse(chatBody({ prompt_tokens: 10, completion_tokens: 5 }));
+  assert.deepEqual(out.usage, { inputTokens: 10, outputTokens: 5, cachedTokens: 0 });
+});
+
+test('parseOpenAiChatResponse: input_tokens_details varyantını da okur', () => {
+  const out = parseOpenAiChatResponse(
+    chatBody({
+      input_tokens: 500,
+      output_tokens: 20,
+      input_tokens_details: { cached_tokens: 300 },
+    }),
+  );
+  assert.deepEqual(out.usage, { inputTokens: 500, outputTokens: 20, cachedTokens: 300 });
+});
+
+test('tracker: cachedTokens model kovasında ayrı toplanır, tokens değişmez', async () => {
+  const { providers } = realConfig();
+  const tracker = createUsageTracker({
+    providers,
+    store: createMemoryUsageStore(),
+    now: () => NOW,
+  });
+  await tracker.record('groq', 'openai/gpt-oss-120b', {
+    inputTokens: 2400,
+    outputTokens: 300,
+    cachedTokens: 1400,
+  });
+  const m = (await tracker.snapshot()).providers.groq.models['openai/gpt-oss-120b'];
+  assert.equal(m.tokens, 2700);
+  assert.equal(m.inputTokens, 2400);
+  assert.equal(m.cachedInputTokens, 1400);
+});
+
+test('tracker: eski kayıtta cachedInputTokens alanı yoksa hata vermez ve 0 sayılır', async () => {
+  const { providers } = realConfig();
+  const legacy = {
+    date: '2026-11-20',
+    providers: {
+      groq: {
+        requests: 1,
+        tokens: 100,
+        neurons: 0,
+        exhausted: false,
+        models: {
+          'openai/gpt-oss-120b': {
+            requests: 1,
+            inputTokens: 80,
+            outputTokens: 20,
+            tokens: 100,
+            neurons: 0,
+            exhausted: false,
+          },
+        },
+      },
+    },
+  };
+  const tracker = createUsageTracker({
+    providers,
+    store: createMemoryUsageStore({ '2026-11-20': legacy }),
+    now: () => NOW,
+  });
+  await tracker.record('groq', 'openai/gpt-oss-120b', { inputTokens: 10, outputTokens: 10 });
+  let m = (await tracker.snapshot()).providers.groq.models['openai/gpt-oss-120b'];
+  assert.equal(m.cachedInputTokens, 0);
+  assert.equal(m.tokens, 120);
+  await tracker.record('groq', 'openai/gpt-oss-120b', {
+    inputTokens: 10,
+    outputTokens: 0,
+    cachedTokens: 6,
+  });
+  m = (await tracker.snapshot()).providers.groq.models['openai/gpt-oss-120b'];
+  assert.equal(m.cachedInputTokens, 6);
+  assert.equal(m.tokens, 130);
 });
