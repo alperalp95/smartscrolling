@@ -27,6 +27,7 @@ export default function TabLayout() {
           },
         }}
       />
+      <Tabs.Screen name="series" options={{ title: 'Seriler' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
     </Tabs>
   );

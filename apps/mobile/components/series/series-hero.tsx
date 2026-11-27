@@ -1,0 +1,63 @@
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { colors, radius, space, type } from '../../src/theme';
+import type { SeriesSummary } from '../../src/types';
+import { Chip } from '../ui/chip';
+import { GradientText } from '../ui/gradient';
+import { Media } from '../ui/media';
+
+// Kapak yüksekliği (taslak A: öne çıkan seri).
+const HERO_HEIGHT = space.xxxl * 6 + space.sm * 2;
+// Tahmini okuma süresi: kart başına dakika.
+export const MINUTES_PER_CARD = 1;
+
+type SeriesHeroProps = {
+  series: SeriesSummary;
+  onPress: (slug: string) => void;
+};
+
+export function SeriesHero({ series, onPress }: SeriesHeroProps) {
+  const category = series.category ? ` · ${series.category}` : '';
+  const meta = `ÖNE ÇIKAN${category}`.toLocaleUpperCase('tr-TR');
+  const minutes = Math.max(1, Math.round(series.cardCount * MINUTES_PER_CARD));
+  return (
+    <TouchableOpacity
+      onPress={() => onPress(series.slug)}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={series.title}
+      testID="series-hero"
+      style={s.root}
+    >
+      <Media uri={series.coverUrl} category={series.category ?? undefined} style={s.cover} />
+      <View style={s.scrim} pointerEvents="none" />
+      {series.isFree ? null : (
+        <View style={s.chip}>
+          <Chip label="PREMIUM" selected />
+        </View>
+      )}
+      <View style={s.over} pointerEvents="none">
+        <GradientText style={type.meta}>{meta}</GradientText>
+        <Text style={s.title} numberOfLines={2}>
+          {series.title}
+        </Text>
+        <Text style={s.caption}>{`${series.cardCount} kart · ~${minutes} dk`}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const s = StyleSheet.create({
+  root: {
+    height: HERO_HEIGHT,
+    marginHorizontal: space.screen,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceRaised,
+  },
+  cover: { width: '100%', height: HERO_HEIGHT },
+  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.scrim },
+  chip: { position: 'absolute', top: space.md, left: space.md },
+  over: { position: 'absolute', left: space.md, right: space.md, bottom: space.md },
+  title: { ...type.cardTitle, color: colors.text, marginTop: space.xs },
+  caption: { ...type.caption, color: colors.textSecondary, marginTop: space.xs },
+});
