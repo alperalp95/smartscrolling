@@ -53,9 +53,10 @@ type MediaProps = {
   category?: string;
   style?: StyleProp<ImageStyle>;
   onError?: () => void;
+  onLoad?: () => void;
 };
 
-export function Media({ uri, localSource, category, style, onError }: MediaProps) {
+export function Media({ uri, localSource, category, style, onError, onLoad }: MediaProps) {
   const [failed, setFailed] = useState(false);
   // Liste aynı bileşeni başka kart için yeniden kullanırsa eski hata taşınmasın.
   // biome-ignore lint/correctness/useExhaustiveDependencies: uri değişince sıfırlanır
@@ -68,6 +69,7 @@ export function Media({ uri, localSource, category, style, onError }: MediaProps
     <Image
       source={source}
       contentFit="cover"
+      onLoad={onLoad}
       onError={() => {
         setFailed(true);
         onError?.();
