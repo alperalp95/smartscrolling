@@ -144,11 +144,12 @@ describe('SeriesReaderScreen', () => {
         body: `Gövde ${position}`,
       })),
     );
-    const { findByTestId, getByText, queryByText, getAllByTestId } = render(<SeriesReaderScreen />);
+    const { findByTestId, getByText, getAllByTestId } = render(<SeriesReaderScreen />);
     await findByTestId('series-reader');
-    expect(getByText('GİRİŞ · 1/3')).toBeTruthy();
-    expect(getByText('GİRİŞ · 3/3')).toBeTruthy();
-    expect(queryByText(/TARİHÇE/)?.props.children).toBe('TARİHÇE');
+    expect(getByText('BÖLÜM 1 / 3 · 1/3')).toBeTruthy();
+    expect(getByText('BÖLÜM 1 / 3 · 3/3')).toBeTruthy();
+    expect(getByText('BÖLÜM 2 / 3')).toBeTruthy();
+    expect(getByText('BÖLÜM 3 / 3')).toBeTruthy();
     // Yalnız bölümün son kartlarında ipucu: kart 3 (→ Tarihçe) ve kart 4 (→ Sonrası); son bölümde yok.
     expect(getAllByTestId('series-next-section')).toHaveLength(2);
     expect(getByText('Tarihçe ↓')).toBeTruthy();

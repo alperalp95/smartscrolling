@@ -37,12 +37,22 @@ const isLock = (item: ListItem): item is LockItem => 'lock' in item;
 function sectionProgress(position: number, sections: SeriesSection[]) {
   const index = sections.findLastIndex((section) => section.firstPosition <= position);
   const section = sections[index];
-  if (!section) return { sectionIndex: 1, sectionCount: 1, nextSectionTitle: null };
+  if (!section) {
+    return {
+      sectionIndex: 1,
+      sectionCount: 1,
+      sectionNumber: 0,
+      sectionTotal: 0,
+      nextSectionTitle: null,
+    };
+  }
   const sectionIndex = position - section.firstPosition + 1;
   const isLast = sectionIndex >= section.cardCount;
   return {
     sectionIndex,
     sectionCount: section.cardCount,
+    sectionNumber: index + 1,
+    sectionTotal: sections.length,
     nextSectionTitle: isLast ? (sections[index + 1]?.title ?? null) : null,
   };
 }

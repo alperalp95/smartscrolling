@@ -24,6 +24,8 @@ const base = {
   sourceUrl: 'https://tr.wikipedia.org/wiki/Galata_Kulesi',
   sectionIndex: 1,
   sectionCount: 3,
+  sectionNumber: 2,
+  sectionTotal: 15,
   nextSectionTitle: null,
 };
 
@@ -31,7 +33,7 @@ describe('SeriesReaderCard', () => {
   it('meta satırı bölüm adı ve bölüm içi n/m yazar; başlık bölüm başlığıdır', () => {
     const { getByText, getByTestId } = render(<SeriesReaderCard {...base} />);
     expect(getByTestId('series-card-1')).toBeTruthy();
-    expect(getByText('GİRİŞ · 1/3')).toBeTruthy();
+    expect(getByText('BÖLÜM 2 / 15 · 1/3')).toBeTruthy();
     expect(getByText('Giriş')).toBeTruthy();
     expect(getByText('Kule 1348 yılında yapıldı.')).toBeTruthy();
     expect(getByText('Kaynak: Vikipedi — Galata Kulesi ›')).toBeTruthy();
@@ -41,7 +43,7 @@ describe('SeriesReaderCard', () => {
     const { getByText, queryByText } = render(
       <SeriesReaderCard {...base} sectionIndex={1} sectionCount={1} />,
     );
-    expect(getByText('GİRİŞ')).toBeTruthy();
+    expect(getByText('BÖLÜM 2 / 15')).toBeTruthy();
     expect(queryByText(/1\/1/)).toBeNull();
   });
 

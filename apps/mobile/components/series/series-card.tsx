@@ -20,6 +20,10 @@ type SeriesReaderCardProps = {
   sectionIndex: number;
   /** Bölümdeki toplam kart sayısı. */
   sectionCount: number;
+  /** Bölümün serideki sırası (1'den başlar); 0 ise bölüm bilgisi yok. */
+  sectionNumber: number;
+  /** Serideki toplam bölüm sayısı. */
+  sectionTotal: number;
   /** Yalnız bölümün son kartında dolu: bir sonraki bölümün adı. */
   nextSectionTitle: string | null;
 };
@@ -34,12 +38,13 @@ export function SeriesReaderCard({
   sourceUrl,
   sectionIndex,
   sectionCount,
+  sectionNumber,
+  sectionTotal,
   nextSectionTitle,
 }: SeriesReaderCardProps) {
   const isFirst = card.position === 1;
-  const name = card.sectionTitle.toLocaleUpperCase('tr-TR');
   const progress = sectionCount > 1 ? ` · ${sectionIndex}/${sectionCount}` : '';
-  const meta = name ? `${name}${progress}` : '';
+  const meta = sectionNumber > 0 ? `BÖLÜM ${sectionNumber} / ${sectionTotal}${progress}` : '';
   const sourceText = `Kaynak: Vikipedi — ${sourceTitle} ›`;
 
   return (
