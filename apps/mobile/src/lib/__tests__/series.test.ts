@@ -371,9 +371,9 @@ describe('getAllProgress', () => {
     expect(callsOf('series_progress', 'eq')[0].args).toEqual(['user_id', 'u1']);
   });
 
-  it('girişli: hata olursa boş harita', async () => {
+  it('girişli: sunucu hatasında hata fırlatır (boş harita dönmez)', async () => {
     mockResults.series_progress = { data: null, error: { message: 'ağ' } };
-    expect(await getAllProgress('u1')).toEqual({});
+    await expect(getAllProgress('u1')).rejects.toThrow('ağ');
   });
 });
 
