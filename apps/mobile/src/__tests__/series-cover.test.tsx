@@ -10,7 +10,13 @@ const mockBack = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: mockBack }),
   useLocalSearchParams: () => ({ slug: 'galata-kulesi' }),
+  // Odak simülasyonu: mockFocusTick artınca ve yeniden çizilince geri çağrı tekrar çalışır.
+  useFocusEffect: (cb: () => undefined | (() => void)) => {
+    const { useEffect } = require('react');
+    useEffect(cb, [cb, mockFocusTick]);
+  },
 }));
+let mockFocusTick = 0;
 jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
   return { LinearGradient: View };
@@ -84,6 +90,7 @@ const detail = (over: Partial<SeriesDetail> = {}): SeriesDetail => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockFocusTick = 0;
   mockFetch.mockResolvedValue(detail());
   mockProgress.mockResolvedValue(null);
   mockList.mockResolvedValue([]);
@@ -191,12 +198,32 @@ describe('SeriesCoverScreen', () => {
       expect(queryByText('Sıradaki öneri')).toBeNull();
     });
 
+    it('getAllProgress hata verirse öneri gizlenir, ekran çalışır', async () => {
+      mockAll.mockRejectedValue(new Error('ağ'));
+      const { findByTestId, queryByText } = render(<SeriesCoverScreen />);
+      expect(await findByTestId('series-restart')).toBeTruthy();
+      expect(queryByText('Sıradaki öneri')).toBeNull();
+    });
+
     it('liste çekilemezse sayfa yine açılır, öneri yok', async () => {
       mockList.mockRejectedValue(new Error('ağ'));
       const { findByTestId, queryByText } = render(<SeriesCoverScreen />);
       expect(await findByTestId('series-restart')).toBeTruthy();
       expect(queryByText('Sıradaki öneri')).toBeNull();
     });
+  });
+
+  it('odak değişince ilerleme tekrar çekilir, yükleme ekranı çıkmaz, düğme "Baştan oku" olur', async () => {
+    mockProgress.mockResolvedValue({ seriesId: 'g', lastPosition: 12, completedAt: null });
+    const view = render(<SeriesCoverScreen />);
+    expect(await view.findByText('Devam et (12/31)')).toBeTruthy();
+    mockProgress.mockResolvedValue(done);
+    mockAll.mockResolvedValue({ g: done });
+    mockFocusTick += 1;
+    view.rerender(<SeriesCoverScreen />);
+    expect(view.UNSAFE_queryByType(require('react-native').ActivityIndicator)).toBeNull();
+    expect(await view.findByTestId('series-restart')).toBeTruthy();
+    expect(view.queryByTestId('series-start')).toBeNull();
   });
 
   it('tamamlanmamış seride çip ve "Baştan oku" yok', async () => {
