@@ -83,15 +83,16 @@ export function SeriesReaderCard({
           contentContainerStyle={s.content}
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled
+          testID="series-card-scroll"
         >
           <Text style={s.body}>{card.body}</Text>
-          {nextSectionTitle ? (
-            <View style={s.hint} testID="series-next-section">
-              <Text style={s.hintLabel}>Sonraki bölüm</Text>
-              <Text style={s.hintTitle}>{`${nextSectionTitle} ↓`}</Text>
-            </View>
-          ) : null}
         </ScrollView>
+        {nextSectionTitle ? (
+          <View style={s.hint} testID="series-next-section">
+            <Text style={s.hintLabel}>Sonraki bölüm</Text>
+            <Text style={s.hintTitle}>{`${nextSectionTitle} ↓`}</Text>
+          </View>
+        ) : null}
         {sourceUrl ? (
           <Pressable
             onPress={() => {
@@ -133,9 +134,9 @@ const s = StyleSheet.create({
   coverFill: { flex: 1, width: '100%' },
   title: { ...type.cardTitle, color: colors.text },
   scroll: { flex: 1 },
-  content: { flexGrow: 1, gap: space.lg, paddingTop: space.sm },
+  content: { paddingTop: space.sm },
   body: { ...type.reading, color: colors.text },
-  hint: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.xs },
+  hint: { alignItems: 'center', gap: space.xs, paddingVertical: space.sm },
   hintLabel: { ...type.caption, color: colors.textTertiary, textAlign: 'center' },
   hintTitle: { ...type.button, color: colors.textSecondary, textAlign: 'center' },
   source: { ...type.caption, color: colors.textSecondary },

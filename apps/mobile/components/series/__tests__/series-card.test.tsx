@@ -1,4 +1,4 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, within } from '@testing-library/react-native';
 import { Linking, StyleSheet } from 'react-native';
 import { type } from '../../../src/theme';
 import { SeriesReaderCard } from '../series-card';
@@ -74,6 +74,16 @@ describe('SeriesReaderCard', () => {
     expect(getByTestId('series-next-section')).toBeTruthy();
     expect(getByText('Sonraki bölüm')).toBeTruthy();
     expect(getByText('Osmanlı dönemi ↓')).toBeTruthy();
+  });
+
+  it('sonraki bölüm ipucu kaydırılan alanın dışında render edilir', () => {
+    const { getByTestId } = render(
+      <SeriesReaderCard {...base} sectionIndex={3} nextSectionTitle="Osmanlı dönemi" />,
+    );
+    expect(
+      within(getByTestId('series-card-scroll')).queryByTestId('series-next-section'),
+    ).toBeNull();
+    expect(getByTestId('series-next-section')).toBeTruthy();
   });
 
   it('nextSectionTitle null ise (son bölüm) ipucu yoktur', () => {
