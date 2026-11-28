@@ -14,7 +14,7 @@ import { fetchSeriesBySlug, fetchSeriesCards, saveProgress } from '../../../src/
 import { supabase } from '../../../src/lib/supabase';
 import { useAuthStore } from '../../../src/store/authStore';
 import { colors, space, type } from '../../../src/theme';
-import type { SeriesCard, SeriesDetail } from '../../../src/types';
+import type { SeriesCard, SeriesDetail, SeriesSection } from '../../../src/types';
 
 // fact-post.tsx'teki PROGRESS_LINE_HEIGHT ile aynı değer; biri değişirse diğeri de değişmeli.
 const PROGRESS_LINE_HEIGHT = 2;
@@ -32,6 +32,30 @@ type Status = 'loading' | 'ready' | 'missing' | 'error';
 const LOCK_ITEM: LockItem = { lock: 'lock' };
 const PENDING_ITEM: LockItem = { lock: 'pending' };
 const isLock = (item: ListItem): item is LockItem => 'lock' in item;
+
+/** Kartın bölüm içi sırası ve (yalnız bölümün son kartında) sonraki bölümün adı. */
+function sectionProgress(position: number, sections: SeriesSection[]) {
+  const index = sections.findLastIndex((section) => section.firstPosition <= position);
+  const section = sections[index];
+  if (!section) {
+    return {
+      sectionIndex: 1,
+      sectionCount: 1,
+      sectionNumber: 0,
+      sectionTotal: 0,
+      nextSectionTitle: null,
+    };
+  }
+  const sectionIndex = position - section.firstPosition + 1;
+  const isLast = sectionIndex >= section.cardCount;
+  return {
+    sectionIndex,
+    sectionCount: section.cardCount,
+    sectionNumber: index + 1,
+    sectionTotal: sections.length,
+    nextSectionTitle: isLast ? (sections[index + 1]?.title ?? null) : null,
+  };
+}
 
 export default function SeriesReaderScreen() {
   const router = useRouter();
@@ -204,7 +228,7 @@ export default function SeriesReaderScreen() {
             <SeriesReaderCard
               card={item}
               height={listHeight}
-              seriesTitle={series.title}
+              {...sectionProgress(item.position, series.sections)}
               category={series.category}
               coverUrl={series.coverUrl}
               sourceTitle={series.sourceTitle}
