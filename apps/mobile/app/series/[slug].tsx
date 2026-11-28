@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -55,43 +55,55 @@ export default function SeriesCoverScreen() {
   const [hasError, setHasError] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt yalnızca yeniden denemeyi tetikler
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      setIsLoading(true);
-      setHasError(false);
-      let next: SeriesDetail | null = null;
-      let entry: SeriesProgress | null = null;
-      let failed = false;
-      try {
-        next = slug ? await fetchSeriesBySlug(slug) : null;
-        entry = next ? await getProgress(next.id, userId) : null;
-      } catch {
-        next = null;
-        failed = true;
-      }
-      // Sıradaki öneri yalnız bitmiş seride; liste çekilemezse öneri olmadan devam edilir.
-      let suggestion: SeriesSummary | null = null;
-      if (next && entry?.completedAt) {
-        try {
-          const [list, all] = await Promise.all([fetchSeriesList(), getAllProgress(userId)]);
-          suggestion = pickNextSeries(list, next, all);
-        } catch {
-          suggestion = null;
+  const hasLoaded = useRef(false);
+
+  // Ekran her odaklandığında yeniden çeker (okumadan dönünce ilerleme güncellenir).
+  // İlk yüklemede yükleme ekranı gösterilir, sonraki odaklarda sessiz yenilenir.
+  useFocusEffect(
+    // biome-ignore lint/correctness/useExhaustiveDependencies: attempt yalnızca yeniden denemeyi tetikler
+    useCallback(() => {
+      let cancelled = false;
+      const silent = hasLoaded.current;
+      void (async () => {
+        if (!silent) {
+          setIsLoading(true);
+          setHasError(false);
         }
-      }
-      if (cancelled) return;
-      setSeries(next);
-      setProgress(entry);
-      setSuggested(suggestion);
-      setHasError(failed);
-      setIsLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [slug, userId, attempt]);
+        let next: SeriesDetail | null = null;
+        let entry: SeriesProgress | null = null;
+        let failed = false;
+        try {
+          next = slug ? await fetchSeriesBySlug(slug) : null;
+          entry = next ? await getProgress(next.id, userId) : null;
+        } catch {
+          next = null;
+          failed = true;
+        }
+        // Sıradaki öneri yalnız bitmiş seride; liste çekilemezse öneri olmadan devam edilir.
+        let suggestion: SeriesSummary | null = null;
+        if (next && entry?.completedAt) {
+          try {
+            const [list, all] = await Promise.all([fetchSeriesList(), getAllProgress(userId)]);
+            suggestion = pickNextSeries(list, next, all);
+          } catch {
+            suggestion = null;
+          }
+        }
+        if (cancelled) return;
+        // Sessiz yenilemede hata olursa mevcut içerik kalır.
+        if (silent && failed) return;
+        hasLoaded.current = !failed;
+        setSeries(next);
+        setProgress(entry);
+        setSuggested(suggestion);
+        setHasError(failed);
+        setIsLoading(false);
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [slug, userId, attempt]),
+  );
 
   const coverHeight = (width - space.screen * 2) * COVER_HEIGHT_RATIO;
 
