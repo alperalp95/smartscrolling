@@ -1,8 +1,8 @@
-import { FlashList, type ViewToken } from '@shopify/flash-list';
+import { FlashList, type FlashListRef, type ViewToken } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PremiumUpsellCard } from '../../../components/premium-upsell-card';
 import { SeriesReaderCard } from '../../../components/series/series-card';
@@ -60,7 +60,6 @@ function sectionProgress(position: number, sections: SeriesSection[]) {
 export default function SeriesReaderScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { height: windowHeight } = useWindowDimensions();
   const params = useLocalSearchParams<{ slug?: string; from?: string }>();
   const slug = params.slug;
   const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -75,6 +74,9 @@ export default function SeriesReaderScreen() {
   const [reloadTick, setReloadTick] = useState(0);
   const [measuredListHeight, setMeasuredListHeight] = useState(0);
 
+  const listRef = useRef<FlashListRef<ListItem>>(null);
+  // Listenin en son hizalandığı yükseklik (0: henüz hizalanmadı).
+  const alignedHeight = useRef(0);
   const loadedOnce = useRef(false);
   const sessionRefreshed = useRef(false);
   const startIndex = useRef(0);
@@ -169,12 +171,24 @@ export default function SeriesReaderScreen() {
     sessionRefreshed.current = false;
     setReloadTick((n) => n + 1);
   };
-  const listHeight = measuredListHeight > 0 ? measuredListHeight : windowHeight;
+  const listHeight = measuredListHeight;
+  // Liste ölçülü yükseklikle ilk kez çizilince ve yükseklik sonradan değişince sayfa hizasını
+  // geçerli karta göre yeniden kurar (ilk seferde başlangıç kartına).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: konum ve kartlar yalnızca hizalama anında okunur
+  useEffect(() => {
+    if (status !== 'ready' || listHeight <= 0 || alignedHeight.current === listHeight) return;
+    const first = alignedHeight.current === 0;
+    alignedHeight.current = listHeight;
+    const current = items.findIndex((item) => !isLock(item) && item.position === position);
+    const index = first ? startIndex.current : Math.max(0, current);
+    listRef.current?.scrollToOffset({ offset: index * listHeight, animated: false });
+  }, [status, listHeight]);
   const total = series?.cardCount ?? 0;
   const fraction = total > 0 ? Math.min(1, position / total) : 0;
 
   const renderBody = () => {
-    if (status === 'loading') {
+    // Liste, gerçek (ölçülmüş) yükseklik bilinmeden çizilmez: ilk kaydırma ofseti yanlış boya göre kalmasın.
+    if (status === 'loading' || (status === 'ready' && listHeight <= 0)) {
       return (
         <View style={s.center}>
           <ActivityIndicator color={colors.textSecondary} />
@@ -195,6 +209,7 @@ export default function SeriesReaderScreen() {
     }
     return (
       <FlashList
+        ref={listRef}
         testID="series-reader"
         data={items}
         keyExtractor={(item) => (isLock(item) ? item.lock : `card-${item.position}`)}
@@ -261,7 +276,11 @@ export default function SeriesReaderScreen() {
           style={[s.progressFill, { width: `${fraction * 100}%` }]}
         />
       </View>
-      <View style={s.list} onLayout={(e) => setMeasuredListHeight(e.nativeEvent.layout.height)}>
+      <View
+        style={s.list}
+        testID="series-list-area"
+        onLayout={(e) => setMeasuredListHeight(e.nativeEvent.layout.height)}
+      >
         {renderBody()}
       </View>
     </View>
