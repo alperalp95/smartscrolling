@@ -21,10 +21,19 @@ import { Screen } from '../../components/ui/screen';
 import { StatBlock } from '../../components/ui/stat-block';
 import { TopBar } from '../../components/ui/top-bar';
 import { SERIES_CONFIG } from '../../src/config/series';
-import { fetchSeriesBySlug, getProgress } from '../../src/lib/series';
+import {
+  fetchSeriesBySlug,
+  fetchSeriesList,
+  getAllProgress,
+  getProgress,
+  pickNextSeries,
+} from '../../src/lib/series';
 import { useAuthStore } from '../../src/store/authStore';
 import { colors, radius, space, type } from '../../src/theme';
-import type { SeriesDetail, SeriesProgress } from '../../src/types';
+import type { SeriesDetail, SeriesProgress, SeriesSummary } from '../../src/types';
+
+// Öneri satırındaki küçük kapak ölçüsü (sekmedeki "Devam et" kapağıyla aynı).
+const NEXT_THUMB = space.xxxl + space.xxl;
 
 // Kapak yüksekliğinin genişliğe oranı (detay ekranıyla aynı).
 const COVER_HEIGHT_RATIO = 0.75;
@@ -41,6 +50,7 @@ export default function SeriesCoverScreen() {
 
   const [series, setSeries] = useState<SeriesDetail | null>(null);
   const [progress, setProgress] = useState<SeriesProgress | null>(null);
+  const [suggested, setSuggested] = useState<SeriesSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -61,9 +71,20 @@ export default function SeriesCoverScreen() {
         next = null;
         failed = true;
       }
+      // Sıradaki öneri yalnız bitmiş seride; liste çekilemezse öneri olmadan devam edilir.
+      let suggestion: SeriesSummary | null = null;
+      if (next && entry?.completedAt) {
+        try {
+          const [list, all] = await Promise.all([fetchSeriesList(), getAllProgress(userId)]);
+          suggestion = pickNextSeries(list, next, all);
+        } catch {
+          suggestion = null;
+        }
+      }
       if (cancelled) return;
       setSeries(next);
       setProgress(entry);
+      setSuggested(suggestion);
       setHasError(failed);
       setIsLoading(false);
     })();
@@ -105,6 +126,7 @@ export default function SeriesCoverScreen() {
     const minutes = Math.max(1, Math.round(series.cardCount * MINUTES_PER_CARD));
     const category = series.category ? `${series.category} · ` : '';
     const meta = `${category}Vikipedi`.toLocaleUpperCase('tr-TR');
+    const completed = !!progress?.completedAt;
     const resuming = !!progress && progress.lastPosition > 0 && !progress.completedAt;
     const startLabel = resuming
       ? `Devam et (${progress.lastPosition}/${series.cardCount})`
@@ -126,7 +148,13 @@ export default function SeriesCoverScreen() {
         <View style={s.text}>
           <View style={s.metaRow}>
             <GradientText style={type.meta}>{meta}</GradientText>
-            {series.isFree ? null : <Chip label="PREMIUM" selected />}
+            {completed ? (
+              <View testID={`series-done-${series.slug}`}>
+                <Chip label="✓ Tamamlandı" tone="success" />
+              </View>
+            ) : series.isFree ? null : (
+              <Chip label="PREMIUM" selected />
+            )}
           </View>
           <Text style={s.title} accessibilityRole="header">
             {series.title}
@@ -140,13 +168,48 @@ export default function SeriesCoverScreen() {
         </View>
 
         <View style={s.text}>
-          {series.summary ? <Text style={s.body}>{series.summary}</Text> : null}
-          <GradientButton
-            label={startLabel}
-            onPress={() => read(startFrom)}
-            testID="series-start"
-          />
+          {completed ? (
+            <Text style={s.doneText}>{`Seriyi bitirdin · ${series.cardCount} kart`}</Text>
+          ) : series.summary ? (
+            <Text style={s.body}>{series.summary}</Text>
+          ) : null}
+          {completed ? (
+            <Button label="Baştan oku" onPress={() => read(1)} testID="series-restart" />
+          ) : (
+            <GradientButton
+              label={startLabel}
+              onPress={() => read(startFrom)}
+              testID="series-start"
+            />
+          )}
         </View>
+
+        {completed && suggested ? (
+          <View style={s.text}>
+            <Text style={s.caption}>Sıradaki öneri</Text>
+            <Pressable
+              onPress={() => router.push(`/series/${suggested.slug}` as never)}
+              accessibilityRole="button"
+              accessibilityLabel={suggested.title}
+              testID={`series-next-${suggested.slug}`}
+              style={s.next}
+            >
+              <Media
+                uri={suggested.coverUrl}
+                category={suggested.category ?? undefined}
+                style={s.nextThumb}
+              />
+              <View style={s.nextText}>
+                <Text style={s.nextTitle} numberOfLines={2}>
+                  {suggested.title}
+                </Text>
+                <Text style={s.caption}>
+                  {`${suggested.cardCount} kart${suggested.category ? ` · ${suggested.category}` : ''}`}
+                </Text>
+              </View>
+            </Pressable>
+          </View>
+        ) : null}
 
         {series.sections.length > 0 ? (
           <View style={s.sections}>
@@ -225,6 +288,11 @@ const s = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   title: { ...type.cardTitle, color: colors.text },
   body: { ...type.body, color: colors.text },
+  doneText: { ...type.body, color: colors.textSecondary },
+  next: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  nextThumb: { width: NEXT_THUMB, height: NEXT_THUMB, borderRadius: radius.md },
+  nextText: { flex: 1 },
+  nextTitle: { ...type.body, color: colors.text },
   stats: {
     flexDirection: 'row',
     justifyContent: 'space-around',

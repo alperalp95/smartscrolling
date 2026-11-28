@@ -1,10 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors, radius, space, type } from '../../src/theme';
-import type { SeriesSummary } from '../../src/types';
+import type { SeriesProgress, SeriesSummary } from '../../src/types';
 import { Chip } from '../ui/chip';
 import { GradientText } from '../ui/gradient';
 import { Media } from '../ui/media';
+import { SeriesProgressLine } from './series-shelf';
 
 // Kapak yüksekliği (taslak A: öne çıkan seri).
 const HERO_HEIGHT = space.xxxl * 6 + space.sm * 2;
@@ -16,10 +17,13 @@ export const MINUTES_PER_CARD = 1;
 
 type SeriesHeroProps = {
   series: SeriesSummary;
+  progress?: SeriesProgress | null;
   onPress: (slug: string) => void;
 };
 
-export function SeriesHero({ series, onPress }: SeriesHeroProps) {
+export function SeriesHero({ series, progress, onPress }: SeriesHeroProps) {
+  const completed = !!progress?.completedAt;
+  const started = !!progress && !completed && progress.lastPosition > 0;
   const category = series.category ? ` · ${series.category}` : '';
   const meta = `ÖNE ÇIKAN${category}`.toLocaleUpperCase('tr-TR');
   const minutes = Math.max(1, Math.round(series.cardCount * MINUTES_PER_CARD));
@@ -39,7 +43,11 @@ export function SeriesHero({ series, onPress }: SeriesHeroProps) {
         style={s.scrim}
         pointerEvents="none"
       />
-      {series.isFree ? null : (
+      {completed ? (
+        <View style={s.chip} testID="series-hero-done">
+          <Chip label="✓ Tamamlandı" tone="success" />
+        </View>
+      ) : series.isFree ? null : (
         <View style={s.chip}>
           <Chip label="PREMIUM" selected />
         </View>
@@ -49,8 +57,21 @@ export function SeriesHero({ series, onPress }: SeriesHeroProps) {
         <Text style={s.title} numberOfLines={2}>
           {series.title}
         </Text>
-        <Text style={s.caption}>{`${series.cardCount} kart · ~${minutes} dk`}</Text>
+        <Text style={s.caption}>
+          {started
+            ? `${progress.lastPosition} / ${series.cardCount} kart · ~${minutes} dk`
+            : `${series.cardCount} kart · ~${minutes} dk`}
+        </Text>
       </View>
+      {started ? (
+        <View style={s.line} pointerEvents="none">
+          <SeriesProgressLine
+            position={progress.lastPosition}
+            total={series.cardCount}
+            testID="series-hero-progress"
+          />
+        </View>
+      ) : null}
     </TouchableOpacity>
   );
 }
@@ -66,6 +87,7 @@ const s = StyleSheet.create({
   cover: { width: '100%', height: HERO_HEIGHT },
   scrim: { ...StyleSheet.absoluteFillObject },
   chip: { position: 'absolute', top: space.md, left: space.md },
+  line: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   over: { position: 'absolute', left: space.md, right: space.md, bottom: space.md },
   title: { ...type.cardTitle, color: colors.text, marginTop: space.xs },
   caption: { ...type.caption, color: colors.text, marginTop: space.xs },

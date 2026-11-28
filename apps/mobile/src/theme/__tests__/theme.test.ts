@@ -5,6 +5,10 @@ describe('theme tokens', () => {
     expect([...colors.brandGradient]).toEqual(['#FF7A45', '#FF3D7F', '#8B5CF6']);
   });
 
+  it('has a soft success tint matching the success colour', () => {
+    expect(colors.successSoft).toBe('rgba(88,195,34,0.18)');
+  });
+
   it('uses multiples of 4 for spacing', () => {
     for (const v of Object.values(space)) expect(v % 4).toBe(0);
   });

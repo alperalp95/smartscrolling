@@ -1,9 +1,9 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import SeriesCoverScreen from '../../app/series/[slug]';
-import { fetchSeriesBySlug, getProgress } from '../lib/series';
+import { fetchSeriesBySlug, fetchSeriesList, getAllProgress, getProgress } from '../lib/series';
 import { useAuthStore } from '../store/authStore';
-import type { SeriesDetail } from '../types';
+import type { SeriesDetail, SeriesSummary } from '../types';
 
 const mockPush = jest.fn();
 const mockBack = jest.fn();
@@ -30,10 +30,34 @@ jest.mock('react-native-safe-area-context', () => {
   const { View } = require('react-native');
   return { SafeAreaView: View };
 });
-jest.mock('../lib/series', () => ({ fetchSeriesBySlug: jest.fn(), getProgress: jest.fn() }));
+jest.mock('../lib/series', () => ({
+  fetchSeriesBySlug: jest.fn(),
+  getProgress: jest.fn(),
+  fetchSeriesList: jest.fn(),
+  getAllProgress: jest.fn(),
+  pickNextSeries: jest.requireActual('../lib/series').pickNextSeries,
+}));
 
 const mockFetch = fetchSeriesBySlug as jest.Mock;
 const mockProgress = getProgress as jest.Mock;
+const mockList = fetchSeriesList as jest.Mock;
+const mockAll = getAllProgress as jest.Mock;
+
+const other = (over: Partial<SeriesSummary>): SeriesSummary => ({
+  id: 'l',
+  slug: 'lale-devri',
+  title: 'Lale Devri',
+  summary: null,
+  category: '📜 TARİH',
+  coverUrl: null,
+  cardCount: 43,
+  sectionCount: 3,
+  isFree: true,
+  isFeatured: false,
+  publishedAt: '2026-01-01',
+  ...over,
+});
+const done = { seriesId: 'g', lastPosition: 31, completedAt: '2026-11-01' };
 
 const detail = (over: Partial<SeriesDetail> = {}): SeriesDetail => ({
   id: 'g',
@@ -62,6 +86,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockFetch.mockResolvedValue(detail());
   mockProgress.mockResolvedValue(null);
+  mockList.mockResolvedValue([]);
+  mockAll.mockResolvedValue({});
   useAuthStore.setState({ hasPremium: false, user: null } as never);
 });
 
@@ -126,5 +152,57 @@ describe('SeriesCoverScreen', () => {
     fireEvent.press(await findByText('Yeniden dene'));
     await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
     expect(await findByText('Okumaya başla')).toBeTruthy();
+  });
+
+  describe('tamamlanmış seri', () => {
+    beforeEach(() => {
+      mockProgress.mockResolvedValue(done);
+      mockAll.mockResolvedValue({ g: done });
+      mockList.mockResolvedValue([detail(), other({})]);
+    });
+
+    it('çip, "Seriyi bitirdin" metni ve "Baştan oku" gösterir; başla düğmesi yok', async () => {
+      const { findByTestId, getByText, queryByTestId, queryByText } = render(<SeriesCoverScreen />);
+      expect(await findByTestId('series-done-galata-kulesi')).toBeTruthy();
+      expect(getByText('✓ Tamamlandı')).toBeTruthy();
+      expect(getByText('Seriyi bitirdin · 31 kart')).toBeTruthy();
+      expect(queryByText('Bir İstanbul simgesinin hikayesi.')).toBeNull();
+      expect(queryByTestId('series-start')).toBeNull();
+    });
+
+    it('"Baştan oku" 1. karttan açar', async () => {
+      const { findByTestId } = render(<SeriesCoverScreen />);
+      fireEvent.press(await findByTestId('series-restart'));
+      expect(mockPush).toHaveBeenCalledWith('/series/galata-kulesi/read?from=1');
+    });
+
+    it('aynı kategoriden tamamlanmamış seriyi önerir ve ona gider', async () => {
+      const { findByTestId, getByText } = render(<SeriesCoverScreen />);
+      fireEvent.press(await findByTestId('series-next-lale-devri'));
+      expect(getByText('Sıradaki öneri')).toBeTruthy();
+      expect(mockPush).toHaveBeenCalledWith('/series/lale-devri');
+    });
+
+    it('tamamlanmamış başka seri yoksa öneri gösterilmez', async () => {
+      mockAll.mockResolvedValue({ g: done, l: { ...done, seriesId: 'l' } });
+      const { findByTestId, queryByTestId, queryByText } = render(<SeriesCoverScreen />);
+      await findByTestId('series-restart');
+      expect(queryByTestId('series-next-lale-devri')).toBeNull();
+      expect(queryByText('Sıradaki öneri')).toBeNull();
+    });
+
+    it('liste çekilemezse sayfa yine açılır, öneri yok', async () => {
+      mockList.mockRejectedValue(new Error('ağ'));
+      const { findByTestId, queryByText } = render(<SeriesCoverScreen />);
+      expect(await findByTestId('series-restart')).toBeTruthy();
+      expect(queryByText('Sıradaki öneri')).toBeNull();
+    });
+  });
+
+  it('tamamlanmamış seride çip ve "Baştan oku" yok', async () => {
+    const { findByTestId, queryByTestId } = render(<SeriesCoverScreen />);
+    await findByTestId('series-start');
+    expect(queryByTestId('series-done-galata-kulesi')).toBeNull();
+    expect(queryByTestId('series-restart')).toBeNull();
   });
 });

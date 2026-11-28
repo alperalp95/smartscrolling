@@ -1,5 +1,4 @@
 import { useIsFocused } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -12,23 +11,19 @@ import {
   View,
 } from 'react-native';
 import { SeriesHero } from '../../components/series/series-hero';
-import { SeriesShelf } from '../../components/series/series-shelf';
+import { SeriesProgressLine, SeriesShelf } from '../../components/series/series-shelf';
 import { Button } from '../../components/ui/button';
 import { GradientText } from '../../components/ui/gradient';
 import { Media } from '../../components/ui/media';
 import { Screen } from '../../components/ui/screen';
 import { TopBar } from '../../components/ui/top-bar';
-import { fetchSeriesList, getProgress, groupForShelves } from '../../src/lib/series';
+import { fetchSeriesList, getAllProgress, groupForShelves } from '../../src/lib/series';
 import { useAuthStore } from '../../src/store/authStore';
 import { colors, radius, space, type } from '../../src/theme';
 import type { SeriesProgress, SeriesSummary } from '../../src/types';
 
 // Devam et satırındaki küçük kapak ve ilerleme çizgisi ölçüleri.
 const CONTINUE_THUMB = space.xxxl + space.xxl;
-// fact-post.tsx'teki PROGRESS_LINE_HEIGHT ile aynı değer; biri değişirse diğeri de değişmeli.
-const PROGRESS_LINE_HEIGHT = 2;
-const GRADIENT_START = { x: 0, y: 0 };
-const GRADIENT_END = { x: 1, y: 0 };
 
 type Status = 'loading' | 'ready' | 'error';
 
@@ -88,12 +83,8 @@ export default function SeriesTabScreen() {
     let cancelled = false;
     if (!isFocused || list.length === 0) return;
     void (async () => {
-      const entries = await Promise.all(
-        list.map(async (item) => [item.id, await getProgress(item.id, userId)] as const),
-      );
-      if (cancelled) return;
-      const next: Record<string, SeriesProgress> = {};
-      for (const [id, value] of entries) if (value) next[id] = value;
+      const next = await getAllProgress(userId).catch(() => null);
+      if (cancelled || !next) return;
       setProgress(next);
     })();
     return () => {
@@ -142,7 +133,13 @@ export default function SeriesTabScreen() {
               />
             }
           >
-            {shelves.featured ? <SeriesHero series={shelves.featured} onPress={open} /> : null}
+            {shelves.featured ? (
+              <SeriesHero
+                series={shelves.featured}
+                progress={progress[shelves.featured.id]}
+                onPress={open}
+              />
+            ) : null}
             {inProgress.length > 0 ? (
               <View style={s.continue}>
                 <View style={s.heading}>
@@ -150,7 +147,6 @@ export default function SeriesTabScreen() {
                 </View>
                 {inProgress.map((item) => {
                   const entry = progress[item.id];
-                  const ratio = item.cardCount > 0 ? entry.lastPosition / item.cardCount : 0;
                   return (
                     <TouchableOpacity
                       key={item.id}
@@ -174,11 +170,9 @@ export default function SeriesTabScreen() {
                           style={s.caption}
                         >{`${entry.lastPosition} / ${item.cardCount} kart`}</Text>
                         <View style={s.track}>
-                          <LinearGradient
-                            colors={colors.brandGradient}
-                            start={GRADIENT_START}
-                            end={GRADIENT_END}
-                            style={[s.fill, { width: `${Math.min(100, ratio * 100)}%` }]}
+                          <SeriesProgressLine
+                            position={entry.lastPosition}
+                            total={item.cardCount}
                           />
                         </View>
                       </View>
@@ -192,6 +186,7 @@ export default function SeriesTabScreen() {
                 key={group.category}
                 category={group.category}
                 items={group.items}
+                progress={progress}
                 onPress={open}
               />
             ))}
@@ -220,12 +215,5 @@ const s = StyleSheet.create({
   continueText: { flex: 1 },
   continueTitle: { ...type.body, color: colors.text },
   caption: { ...type.caption, color: colors.textSecondary },
-  track: {
-    height: PROGRESS_LINE_HEIGHT,
-    backgroundColor: colors.fill,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-    marginTop: space.xs,
-  },
-  fill: { height: PROGRESS_LINE_HEIGHT },
+  track: { marginTop: space.xs },
 });

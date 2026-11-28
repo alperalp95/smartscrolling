@@ -1,7 +1,7 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { RefreshControl } from 'react-native';
 import SeriesScreen from '../../app/(tabs)/series';
-import { fetchSeriesList, getProgress } from '../lib/series';
+import { fetchSeriesList, getAllProgress } from '../lib/series';
 import type { SeriesSummary } from '../types';
 
 const mockPush = jest.fn();
@@ -38,13 +38,13 @@ jest.mock('../lib/series', () => {
   const actual = jest.requireActual('../lib/series');
   return {
     fetchSeriesList: jest.fn(),
-    getProgress: jest.fn(),
+    getAllProgress: jest.fn(),
     groupForShelves: actual.groupForShelves,
   };
 });
 
 const mockFetch = fetchSeriesList as jest.Mock;
-const mockProgress = getProgress as jest.Mock;
+const mockProgress = getAllProgress as jest.Mock;
 
 const make = (over: Partial<SeriesSummary>): SeriesSummary => ({
   id: 'id',
@@ -77,7 +77,7 @@ beforeEach(() => {
   mockPush.mockClear();
   mockFocusTick = 0;
   mockFetch.mockReset();
-  mockProgress.mockReset().mockResolvedValue(null);
+  mockProgress.mockReset().mockResolvedValue({});
 });
 
 describe('Seriler sekmesi', () => {
@@ -98,12 +98,36 @@ describe('Seriler sekmesi', () => {
 
   it('shows Devam et with progress only when a series is in progress', async () => {
     mockFetch.mockResolvedValue(list);
-    mockProgress.mockImplementation(async (id: string) =>
-      id === 'l' ? { seriesId: 'l', lastPosition: 12, completedAt: null } : null,
-    );
-    const { findByTestId, getByText } = render(<SeriesScreen />);
+    mockProgress.mockResolvedValue({
+      l: { seriesId: 'l', lastPosition: 12, completedAt: null },
+    });
+    const { findByTestId, getAllByText } = render(<SeriesScreen />);
     expect(await findByTestId('series-continue')).toBeTruthy();
-    expect(getByText('12 / 31 kart')).toBeTruthy();
+    // Devam et satırı ve raf kapağı aynı metni yazar.
+    expect(getAllByText('12 / 31 kart').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('marks a completed series on shelf and hero and keeps it out of Devam et', async () => {
+    mockFetch.mockResolvedValue(list);
+    mockProgress.mockResolvedValue({
+      l: { seriesId: 'l', lastPosition: 31, completedAt: '2026-11-01' },
+      g: { seriesId: 'g', lastPosition: 68, completedAt: '2026-11-02' },
+    });
+    const { findByTestId, queryByTestId } = render(<SeriesScreen />);
+    expect(await findByTestId('series-done-lale-devri')).toBeTruthy();
+    expect(await findByTestId('series-hero-done')).toBeTruthy();
+    expect(queryByTestId('series-continue')).toBeNull();
+    expect(queryByTestId('series-progress-lale-devri')).toBeNull();
+  });
+
+  it('draws a progress line on the shelf cover of a started series', async () => {
+    mockFetch.mockResolvedValue(list);
+    mockProgress.mockResolvedValue({
+      l: { seriesId: 'l', lastPosition: 12, completedAt: null },
+    });
+    const { findByTestId, queryByTestId } = render(<SeriesScreen />);
+    expect(await findByTestId('series-progress-lale-devri')).toBeTruthy();
+    expect(queryByTestId('series-done-lale-devri')).toBeNull();
   });
 
   it('shows Yakında when the list is empty', async () => {
@@ -148,9 +172,9 @@ describe('Seriler sekmesi', () => {
     mockFetch.mockResolvedValue(list);
     const view = render(<SeriesScreen />);
     expect(await view.findByTestId('series-hero')).toBeTruthy();
-    mockProgress.mockImplementation(async (id: string) =>
-      id === 'l' ? { seriesId: 'l', lastPosition: 5, completedAt: null } : null,
-    );
+    mockProgress.mockResolvedValue({
+      l: { seriesId: 'l', lastPosition: 5, completedAt: null },
+    });
     await act(async () => {
       view.UNSAFE_getByType(RefreshControl).props.onRefresh();
     });
