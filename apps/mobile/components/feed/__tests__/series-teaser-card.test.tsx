@@ -106,6 +106,17 @@ describe('SeriesTeaserCard', () => {
     expect(base.onOpen).toHaveBeenCalledWith('galata-kulesi', 17);
   });
 
+  it('premium seri, premium olmayan kullanıcı, kaldığın yerden: PREMIUM çipi, devam düğmesi, kilit alt yazısı', () => {
+    const { getByText, getByTestId } = render(
+      <SeriesTeaserCard {...base} series={premium} mode="continue" lastPosition={5} />,
+    );
+    expect(getByText('PREMIUM')).toBeTruthy();
+    expect(getByText('Kaldığın yerden devam et →')).toBeTruthy();
+    expect(getByText("144 kart · tamamı Premium'da")).toBeTruthy();
+    fireEvent.press(getByTestId('feed-series-cta'));
+    expect(base.onOpen).toHaveBeenCalledWith('ibn-haldun', 5);
+  });
+
   it('etkin olunca görüldü işaretlenir, etkin değilken işaretlenmez', async () => {
     const { rerender } = render(
       <SeriesTeaserCard {...base} series={free} mode="teaser" lastPosition={0} />,
