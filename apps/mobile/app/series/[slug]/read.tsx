@@ -1,8 +1,7 @@
-import { FlashList, type FlashListRef, type ViewToken } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View, type ViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PremiumUpsellCard } from '../../../components/premium-upsell-card';
 import { SeriesReaderCard } from '../../../components/series/series-card';
@@ -20,6 +19,9 @@ import type { SeriesCard, SeriesDetail, SeriesSection } from '../../../src/types
 const PROGRESS_LINE_HEIGHT = 2;
 // Bir sayfanın "görünür" sayılması için gereken oran (akışla aynı).
 const VIEWABLE_PERCENT = 60;
+// Sabit boylu sayfalar: bellekte tutulan sayfa penceresi ve parti başına çizilen sayfa sayısı.
+const LIST_WINDOW_SIZE = 5;
+const LIST_RENDER_BATCH = 3;
 const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: VIEWABLE_PERCENT };
 const GRADIENT_START = { x: 0, y: 0 };
 const GRADIENT_END = { x: 1, y: 0 };
@@ -74,7 +76,7 @@ export default function SeriesReaderScreen() {
   const [reloadTick, setReloadTick] = useState(0);
   const [measuredListHeight, setMeasuredListHeight] = useState(0);
 
-  const listRef = useRef<FlashListRef<ListItem>>(null);
+  const listRef = useRef<FlatList<ListItem>>(null);
   // Listenin en son hizalandığı yükseklik (0: henüz hizalanmadı).
   const alignedHeight = useRef(0);
   const loadedOnce = useRef(false);
@@ -172,16 +174,16 @@ export default function SeriesReaderScreen() {
     setReloadTick((n) => n + 1);
   };
   const listHeight = measuredListHeight;
-  // Liste ölçülü yükseklikle ilk kez çizilince ve yükseklik sonradan değişince sayfa hizasını
-  // geçerli karta göre yeniden kurar (ilk seferde başlangıç kartına).
+  // Liste yüksekliği ilk ölçümden sonra değişirse (klavye, döndürme) sayfa hizası geçerli karta göre
+  // yeniden kurulur. İlk konumu initialScrollIndex + getItemLayout zaten kesin verir.
   // biome-ignore lint/correctness/useExhaustiveDependencies: konum ve kartlar yalnızca hizalama anında okunur
   useEffect(() => {
     if (status !== 'ready' || listHeight <= 0 || alignedHeight.current === listHeight) return;
     const first = alignedHeight.current === 0;
     alignedHeight.current = listHeight;
+    if (first) return;
     const current = items.findIndex((item) => !isLock(item) && item.position === position);
-    const index = first ? startIndex.current : Math.max(0, current);
-    listRef.current?.scrollToOffset({ offset: index * listHeight, animated: false });
+    listRef.current?.scrollToIndex({ index: Math.max(0, current), animated: false });
   }, [status, listHeight]);
   const total = series?.cardCount ?? 0;
   const fraction = total > 0 ? Math.min(1, position / total) : 0;
@@ -208,13 +210,23 @@ export default function SeriesReaderScreen() {
       );
     }
     return (
-      <FlashList
+      <FlatList
         ref={listRef}
         testID="series-reader"
         data={items}
         keyExtractor={(item) => (isLock(item) ? item.lock : `card-${item.position}`)}
         initialScrollIndex={startIndex.current > 0 ? startIndex.current : undefined}
+        getItemLayout={(_, index) => ({
+          length: listHeight,
+          offset: listHeight * index,
+          index,
+        })}
         disableIntervalMomentum
+        decelerationRate="fast"
+        windowSize={LIST_WINDOW_SIZE}
+        initialNumToRender={LIST_RENDER_BATCH}
+        maxToRenderPerBatch={LIST_RENDER_BATCH}
+        removeClippedSubviews
         pagingEnabled
         snapToInterval={listHeight}
         snapToAlignment="start"

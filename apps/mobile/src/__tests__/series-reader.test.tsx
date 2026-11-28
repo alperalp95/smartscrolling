@@ -32,24 +32,29 @@ jest.mock('@expo/vector-icons', () => {
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
-// FlashList sanal liste çizer; testte tüm öğeleri çizen ve görünürlük olayını dışarı veren sahtesi.
+// FlatList sanal liste çizer; testte tüm öğeleri çizen ve görünürlük olayını dışarı veren sahtesi.
 type MockListProps = {
   testID?: string;
   data: { position: number }[];
   initialScrollIndex?: number;
   snapToInterval?: number;
+  getItemLayout: (
+    data: unknown,
+    index: number,
+  ) => { length: number; offset: number; index: number };
   keyExtractor: (item: unknown, index: number) => string;
   renderItem: (arg: { item: unknown; index: number }) => ReactNode;
   onViewableItemsChanged: (arg: { viewableItems: { item: unknown; index: number }[] }) => void;
 };
 let mockListProps = {} as MockListProps;
-jest.mock('@shopify/flash-list', () => {
+jest.mock('react-native/Libraries/Lists/FlatList', () => {
   const { View } = require('react-native');
   const { forwardRef, useImperativeHandle } = require('react');
   return {
-    FlashList: forwardRef((props: MockListProps, ref: unknown) => {
+    __esModule: true,
+    default: forwardRef((props: MockListProps, ref: unknown) => {
       mockListProps = props;
-      useImperativeHandle(ref, () => ({ scrollToOffset: mockScrollToOffset }));
+      useImperativeHandle(ref, () => ({ scrollToIndex: mockScrollToIndex }));
       return (
         <View testID={props.testID}>
           {props.data.map((item: unknown, index: number) => (
@@ -60,7 +65,7 @@ jest.mock('@shopify/flash-list', () => {
     }),
   };
 });
-const mockScrollToOffset = jest.fn();
+const mockScrollToIndex = jest.fn();
 
 const LIST_HEIGHT = 700;
 const layoutList = (utils: ReturnType<typeof render>, height = LIST_HEIGHT) =>
@@ -195,13 +200,16 @@ describe('SeriesReaderScreen', () => {
       await waitFor(() => expect(mockCards).toHaveBeenCalled());
       await act(async () => {});
       expect(utils.queryByTestId('series-reader')).toBeNull();
-      expect(mockScrollToOffset).not.toHaveBeenCalled();
       layoutList(utils, 700);
       expect(utils.getByTestId('series-reader')).toBeTruthy();
       expect(mockListProps.initialScrollIndex).toBe(19);
       expect(mockListProps.snapToInterval).toBe(700);
-      expect(mockScrollToOffset).toHaveBeenCalledTimes(1);
-      expect(mockScrollToOffset).toHaveBeenCalledWith({ offset: 19 * 700, animated: false });
+      expect(mockListProps.getItemLayout(null, 19)).toEqual({
+        length: 700,
+        offset: 13300,
+        index: 19,
+      });
+      expect(mockScrollToIndex).not.toHaveBeenCalled();
       const card = utils.getByTestId('series-card-20');
       expect(StyleSheet.flatten(card.props.style).height).toBe(700);
     });
@@ -211,10 +219,11 @@ describe('SeriesReaderScreen', () => {
       const utils = renderReader();
       await utils.findByTestId('series-reader');
       viewItem(21); // 22. karta kaydırıldı
-      mockScrollToOffset.mockClear();
+      mockScrollToIndex.mockClear();
       layoutList(utils, 500);
       expect(mockListProps.snapToInterval).toBe(500);
-      expect(mockScrollToOffset).toHaveBeenCalledWith({ offset: 21 * 500, animated: false });
+      expect(mockListProps.getItemLayout(null, 21).offset).toBe(21 * 500);
+      expect(mockScrollToIndex).toHaveBeenCalledWith({ index: 21, animated: false });
     });
   });
 
