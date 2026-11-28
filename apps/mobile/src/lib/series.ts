@@ -205,8 +205,8 @@ export async function getAllProgress(
     data: ProgressRow[] | null;
     error: { message: string } | null;
   };
-  if (error || !data) return out;
-  for (const r of data) {
+  if (error) throw new Error(error.message);
+  for (const r of data ?? []) {
     out[r.series_id] = {
       seriesId: r.series_id,
       lastPosition: r.last_position ?? 0,
