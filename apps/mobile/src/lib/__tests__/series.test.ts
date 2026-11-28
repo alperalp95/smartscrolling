@@ -5,9 +5,11 @@ import {
   fetchSeriesBySlug,
   fetchSeriesCards,
   fetchSeriesList,
+  getAllProgress,
   getProgress,
   groupForShelves,
   mergeGuestProgress,
+  pickNextSeries,
   saveProgress,
 } from '../series';
 
@@ -328,5 +330,87 @@ describe('groupForShelves', () => {
     expect(byCategory.map((g) => g.category)).toEqual(['📜 TARİH', '🔬 BİLİM', 'Diğer']);
     expect(byCategory[0].items.map((i) => i.id)).toEqual(['a', 'd']);
     expect(byCategory[2].items.map((i) => i.id)).toEqual(['c']);
+  });
+});
+
+describe('getAllProgress', () => {
+  it('misafir: AsyncStorage haritasını döner, ağa gitmez', async () => {
+    await AsyncStorage.setItem(
+      GUEST_PROGRESS_KEY,
+      JSON.stringify({
+        a: { lastPosition: 5, completedAt: null },
+        b: { lastPosition: 12, completedAt: '2026-11-02T00:00:00Z' },
+      }),
+    );
+    const map = await getAllProgress(null);
+    expect(map).toEqual({
+      a: { seriesId: 'a', lastPosition: 5, completedAt: null },
+      b: { seriesId: 'b', lastPosition: 12, completedAt: '2026-11-02T00:00:00Z' },
+    });
+    expect(mockCalls).toHaveLength(0);
+  });
+
+  it('misafir: kayıt yoksa boş harita', async () => {
+    expect(await getAllProgress(null)).toEqual({});
+  });
+
+  it('girişli: tek sorguda tüm satırlar haritaya eşlenir', async () => {
+    mockResults.series_progress = {
+      data: [
+        { series_id: 'a', last_position: 3, completed_at: null },
+        { series_id: 'b', last_position: null, completed_at: '2026-11-03T00:00:00Z' },
+      ],
+      error: null,
+    };
+    const map = await getAllProgress('u1');
+    expect(map).toEqual({
+      a: { seriesId: 'a', lastPosition: 3, completedAt: null },
+      b: { seriesId: 'b', lastPosition: 0, completedAt: '2026-11-03T00:00:00Z' },
+    });
+    expect(callsOf('series_progress', 'select')).toHaveLength(1);
+    expect(callsOf('series_progress', 'eq')[0].args).toEqual(['user_id', 'u1']);
+  });
+
+  it('girişli: hata olursa boş harita', async () => {
+    mockResults.series_progress = { data: null, error: { message: 'ağ' } };
+    expect(await getAllProgress('u1')).toEqual({});
+  });
+});
+
+describe('pickNextSeries', () => {
+  const cur = summary({ id: 'cur', category: '📜 TARİH', publishedAt: '2026-11-01T00:00:00Z' });
+  const sameOld = summary({
+    id: 'same-old',
+    category: '📜 TARİH',
+    publishedAt: '2026-11-02T00:00:00Z',
+  });
+  const sameNew = summary({
+    id: 'same-new',
+    category: '📜 TARİH',
+    publishedAt: '2026-11-09T00:00:00Z',
+  });
+  const other = summary({ id: 'other', category: '🔬 BİLİM', publishedAt: '2026-11-20T00:00:00Z' });
+  const done = (id: string) => ({
+    [id]: { seriesId: id, lastPosition: 10, completedAt: '2026-11-10T00:00:00Z' },
+  });
+
+  it('aynı kategoriden tamamlanmamış en yeniyi seçer', () => {
+    expect(pickNextSeries([cur, sameOld, sameNew, other], cur, {})?.id).toBe('same-new');
+  });
+
+  it('tamamlananı ve kendisini atlar', () => {
+    expect(pickNextSeries([cur, sameOld, sameNew, other], cur, done('same-new'))?.id).toBe(
+      'same-old',
+    );
+  });
+
+  it('aynı kategoride kalmadıysa herhangi bir tamamlanmamışın en yenisi', () => {
+    const progress = { ...done('same-old'), ...done('same-new') };
+    expect(pickNextSeries([cur, sameOld, sameNew, other], cur, progress)?.id).toBe('other');
+  });
+
+  it('hepsi tamamlandıysa ya da tek seri varsa null', () => {
+    expect(pickNextSeries([cur], cur, {})).toBeNull();
+    expect(pickNextSeries([cur, other], cur, done('other'))).toBeNull();
   });
 });

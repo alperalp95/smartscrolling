@@ -186,6 +186,52 @@ export async function getProgress(
   };
 }
 
+/** Tüm serilerin ilerlemesi tek seferde. Girişli satırlar updated_at artan sırada (son = en yeni). */
+export async function getAllProgress(
+  userId: string | null,
+): Promise<Record<string, SeriesProgress>> {
+  const out: Record<string, SeriesProgress> = {};
+  if (!userId) {
+    for (const [seriesId, e] of Object.entries(await readGuest())) {
+      out[seriesId] = { seriesId, lastPosition: e.lastPosition, completedAt: e.completedAt };
+    }
+    return out;
+  }
+  const { data, error } = (await supabase
+    .from('series_progress')
+    .select('series_id,last_position,completed_at')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: true })) as {
+    data: ProgressRow[] | null;
+    error: { message: string } | null;
+  };
+  if (error || !data) return out;
+  for (const r of data) {
+    out[r.series_id] = {
+      seriesId: r.series_id,
+      lastPosition: r.last_position ?? 0,
+      completedAt: r.completed_at ?? null,
+    };
+  }
+  return out;
+}
+
+/** Sıradaki öneri: aynı kategoriden, tamamlanmamış en yeni; yoksa herhangi bir tamamlanmamışın en yenisi. */
+export function pickNextSeries(
+  list: SeriesSummary[],
+  current: SeriesSummary,
+  progress: Record<string, SeriesProgress>,
+): SeriesSummary | null {
+  const open = list.filter((s) => s.id !== current.id && !progress[s.id]?.completedAt);
+  const newest = (arr: SeriesSummary[]) =>
+    arr.reduce<SeriesSummary | null>(
+      (a, b) => (!a || (b.publishedAt ?? '') > (a.publishedAt ?? '') ? b : a),
+      null,
+    );
+  const sameCategory = open.filter((s) => s.category === current.category);
+  return newest(sameCategory) ?? newest(open);
+}
+
 export async function saveProgress(
   seriesId: string,
   position: number,
