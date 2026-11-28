@@ -11,6 +11,8 @@ export const colors = {
   like: '#FF3040',
   danger: '#ED4956',
   success: '#58C322',
+  // "✓ Tamamlandı" çipinin zemini: `success` rengi (#58C322), %18 görünürlükle.
+  successSoft: 'rgba(88,195,34,0.18)',
   scrim: 'rgba(0,0,0,0.55)',
   // Açık renkli fotoğraf üstündeki yazılar için: alt karartma %80 koyu, üst uç saydam.
   scrimStrong: 'rgba(0,0,0,0.8)',
