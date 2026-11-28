@@ -107,7 +107,7 @@ export function SeriesTeaserCard({
           </View>
         </View>
       </View>
-      <View style={s.text}>
+      <View style={s.text} testID="feed-series-text">
         <GradientText style={type.meta}>{meta}</GradientText>
         <Text style={s.title} numberOfLines={2}>
           {title}
@@ -118,7 +118,7 @@ export function SeriesTeaserCard({
           </Text>
         ) : null}
       </View>
-      <View style={s.action}>
+      <View style={s.action} testID="feed-series-action">
         <GradientButton
           label={cta}
           onPress={() => onOpen(series.slug, resuming ? lastPosition : TEASER_START_POSITION)}
@@ -136,24 +136,25 @@ const s = StyleSheet.create({
     backgroundColor: colors.bg,
     paddingHorizontal: space.screen,
     paddingBottom: space.lg,
+    justifyContent: 'center',
   },
-  stack: { height: teaser.coverHeight + teaser.ghostFarTop },
+  stack: { paddingTop: teaser.ghostFarRise },
   ghost: {
     position: 'absolute',
-    bottom: 0,
+    bottom: space.lg,
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
     borderColor: colors.separator,
   },
   ghostNear: {
-    top: teaser.ghostNearTop,
-    left: space.md,
-    right: space.md,
+    top: teaser.ghostFarRise - teaser.ghostNearRise,
+    left: teaser.ghostNearInset,
+    right: teaser.ghostNearInset,
     opacity: teaser.ghostNearOpacity,
   },
   ghostFar: {
-    top: teaser.ghostFarTop,
+    top: 0,
     left: teaser.ghostFarInset,
     right: teaser.ghostFarInset,
     opacity: teaser.ghostFarOpacity,
@@ -172,10 +173,10 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     gap: space.sm,
   },
-  text: { marginTop: space.xxl },
+  text: { marginTop: space.xl },
   title: { ...type.cardTitle, color: colors.text, marginTop: space.xs },
   summary: { ...type.body, color: colors.textSecondary, marginTop: space.sm },
-  action: { marginTop: 'auto' },
+  action: { marginTop: space.lg },
   caption: {
     ...type.caption,
     color: colors.textTertiary,

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { SEEN_SERIES_TEASERS_KEY } from '../../../src/lib/seriesTeaser';
 import type { SeriesSummary } from '../../../src/types';
 import { SeriesTeaserCard, loadSeriesTeaserSlots, teaserSummary } from '../series-teaser-card';
@@ -86,6 +87,19 @@ describe('SeriesTeaserCard', () => {
     expect(queryByText('PREMIUM')).toBeNull();
     expect(queryByText('İlk 3 kartı ücretsiz oku →')).toBeNull();
     expect(getByText('Seriyi okumaya devam et →')).toBeTruthy();
+  });
+
+  it('düğme bloğu metinden sonra gelir ve alttan sabit değildir', () => {
+    const { getByTestId } = render(
+      <SeriesTeaserCard {...base} series={free} mode="teaser" lastPosition={0} />,
+    );
+    const root = getByTestId('feed-series-teaser-galata-kulesi');
+    const ids = (root.props.children as { props?: { testID?: string } }[])
+      .map((c) => c?.props?.testID ?? '')
+      .filter(Boolean);
+    expect(ids.indexOf('feed-series-text')).toBeLessThan(ids.indexOf('feed-series-action'));
+    const action = StyleSheet.flatten(getByTestId('feed-series-action').props.style);
+    expect(action.marginTop).not.toBe('auto');
   });
 
   it('düğme tanıtımda from=2 ile açar', () => {

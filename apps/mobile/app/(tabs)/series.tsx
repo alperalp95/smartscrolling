@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SeriesHero } from '../../components/series/series-hero';
 import { SeriesProgressLine, SeriesShelf } from '../../components/series/series-shelf';
@@ -19,17 +20,21 @@ import { Screen } from '../../components/ui/screen';
 import { TopBar } from '../../components/ui/top-bar';
 import { fetchSeriesList, getAllProgress, groupForShelves } from '../../src/lib/series';
 import { useAuthStore } from '../../src/store/authStore';
-import { colors, radius, space, type } from '../../src/theme';
+import { colors, fonts, radius, space, type } from '../../src/theme';
 import type { SeriesProgress, SeriesSummary } from '../../src/types';
 
-// Devam et satırındaki küçük kapak ve ilerleme çizgisi ölçüleri.
-const CONTINUE_THUMB = space.xxxl + space.xxl;
+// Devam et rafı: en çok kart, kart genişliği (ekranın oranı), yükseklik ve küçük resim ölçüleri.
+const CONTINUE_MAX = 5;
+const CONTINUE_WIDTH_RATIO = 0.7;
+const CONTINUE_HEIGHT = space.xxxl * 2;
+const CONTINUE_THUMB = space.xxxl + space.lg;
 
 type Status = 'loading' | 'ready' | 'error';
 
 export default function SeriesTabScreen() {
   const router = useRouter();
   const isFocused = useIsFocused();
+  const { width: windowWidth } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? null);
 
   const [status, setStatus] = useState<Status>('loading');
@@ -96,10 +101,12 @@ export default function SeriesTabScreen() {
   const shelves = useMemo(() => groupForShelves(list), [list]);
   const inProgress = useMemo(
     () =>
-      list.filter((item) => {
-        const entry = progress[item.id];
-        return entry && entry.lastPosition > 0 && !entry.completedAt;
-      }),
+      list
+        .filter((item) => {
+          const entry = progress[item.id];
+          return entry && entry.lastPosition > 0 && !entry.completedAt;
+        })
+        .slice(0, CONTINUE_MAX),
     [list, progress],
   );
 
@@ -145,40 +152,47 @@ export default function SeriesTabScreen() {
                 <View style={s.heading}>
                   <GradientText style={type.meta}>DEVAM ET</GradientText>
                 </View>
-                {inProgress.map((item) => {
-                  const entry = progress[item.id];
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      onPress={() => open(item.slug)}
-                      activeOpacity={0.85}
-                      accessibilityRole="button"
-                      accessibilityLabel={item.title}
-                      testID="series-continue"
-                      style={s.continueRow}
-                    >
-                      <Media
-                        uri={item.coverUrl}
-                        category={item.category ?? undefined}
-                        style={s.thumb}
-                      />
-                      <View style={s.continueText}>
-                        <Text style={s.continueTitle} numberOfLines={1}>
-                          {item.title}
-                        </Text>
-                        <Text
-                          style={s.caption}
-                        >{`${entry.lastPosition} / ${item.cardCount} kart`}</Text>
-                        <View style={s.track}>
-                          <SeriesProgressLine
-                            position={entry.lastPosition}
-                            total={item.cardCount}
-                          />
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={s.continueList}
+                  testID="series-continue-list"
+                >
+                  {inProgress.map((item) => {
+                    const entry = progress[item.id];
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        onPress={() => open(item.slug)}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        accessibilityLabel={item.title}
+                        testID="series-continue"
+                        style={[s.continueRow, { width: windowWidth * CONTINUE_WIDTH_RATIO }]}
+                      >
+                        <Media
+                          uri={item.coverUrl}
+                          category={item.category ?? undefined}
+                          style={s.thumb}
+                        />
+                        <View style={s.continueText}>
+                          <Text style={s.continueTitle} numberOfLines={1}>
+                            {item.title}
+                          </Text>
+                          <Text
+                            style={s.caption}
+                          >{`${entry.lastPosition} / ${item.cardCount} kart`}</Text>
+                          <View style={s.track}>
+                            <SeriesProgressLine
+                              position={entry.lastPosition}
+                              total={item.cardCount}
+                            />
+                          </View>
                         </View>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
               </View>
             ) : null}
             {shelves.byCategory.map((group) => (
@@ -204,16 +218,19 @@ const s = StyleSheet.create({
   message: { ...type.body, color: colors.textSecondary },
   continue: { marginTop: space.xl },
   heading: { paddingHorizontal: space.screen, marginBottom: space.sm },
+  continueList: { paddingHorizontal: space.screen, gap: space.sm },
   continueRow: {
+    height: CONTINUE_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    paddingHorizontal: space.screen,
-    marginBottom: space.sm,
+    padding: space.sm,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceRaised,
   },
   thumb: { width: CONTINUE_THUMB, height: CONTINUE_THUMB, borderRadius: radius.md },
   continueText: { flex: 1 },
-  continueTitle: { ...type.body, color: colors.text },
+  continueTitle: { ...type.body, fontFamily: fonts.bold, color: colors.text },
   caption: { ...type.caption, color: colors.textSecondary },
   track: { marginTop: space.xs },
 });

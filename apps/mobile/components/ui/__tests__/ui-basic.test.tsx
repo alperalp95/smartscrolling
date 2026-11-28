@@ -1,5 +1,6 @@
 import { fireEvent, render } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
+import { colors } from '../../../src/theme';
 import { Button } from '../button';
 import { Chip } from '../chip';
 import { GradientButton, GradientText } from '../gradient';
@@ -84,5 +85,21 @@ describe('ui basic components', () => {
       />,
     );
     expect(b.getByTestId('icon').props.children).toBe('star');
+  });
+
+  it('Chip success onImage: dark opaque background, green label', () => {
+    const { getByTestId, getByText } = render(
+      <Chip label="ok" tone="success" onImage testID="ch-img" />,
+    );
+    const chipStyle = StyleSheet.flatten(getByTestId('ch-img').props.style);
+    expect(chipStyle.backgroundColor).toBe(colors.scrimStrong);
+    expect(StyleSheet.flatten(getByText('ok').props.style).color).toBe(colors.success);
+  });
+
+  it('Chip success without onImage keeps the soft background', () => {
+    const { getByTestId } = render(<Chip label="ok" tone="success" testID="ch-plain" />);
+    expect(StyleSheet.flatten(getByTestId('ch-plain').props.style).backgroundColor).toBe(
+      colors.successSoft,
+    );
   });
 });

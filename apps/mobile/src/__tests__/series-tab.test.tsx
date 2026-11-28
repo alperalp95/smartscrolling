@@ -107,6 +107,22 @@ describe('Seriler sekmesi', () => {
     expect(getAllByText('12 / 31 kart').length).toBeGreaterThanOrEqual(1);
   });
 
+  it('Devam et is a horizontal list capped at 5 cards', async () => {
+    const many = Array.from({ length: 7 }, (_, i) =>
+      make({ id: `m${i}`, slug: `m${i}`, title: `Seri ${i}`, cardCount: 20 }),
+    );
+    mockFetch.mockResolvedValue(many);
+    mockProgress.mockResolvedValue(
+      Object.fromEntries(
+        many.map((m) => [m.id, { seriesId: m.id, lastPosition: 3, completedAt: null }]),
+      ),
+    );
+    const { findByTestId, getAllByTestId } = render(<SeriesScreen />);
+    const row = await findByTestId('series-continue-list');
+    expect(row.props.horizontal).toBe(true);
+    expect(getAllByTestId('series-continue')).toHaveLength(5);
+  });
+
   it('marks a completed series on shelf and hero and keeps it out of Devam et', async () => {
     mockFetch.mockResolvedValue(list);
     mockProgress.mockResolvedValue({
