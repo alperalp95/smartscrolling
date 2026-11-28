@@ -17,6 +17,8 @@ export const type = {
   // Paylaşım görselinde fotoğraf yoksa başlığın üstünde duran büyük tırnak işareti.
   shareQuote: { fontFamily: fonts.extrabold, fontSize: 64, lineHeight: 64 },
   body: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 21 },
+  // Seri okuma kartının gövde yazısı: uzun metin için akış gövdesinden büyük (17/27).
+  reading: { fontFamily: fonts.regular, fontSize: 17, lineHeight: 27 },
   // Not: textTransform 'i' harfini 'İ' yapmaz. Türkçe metni büyük harfle verin
   // (ör. 'TERCİHLER' ya da metin.toLocaleUpperCase('tr-TR')).
   meta: {

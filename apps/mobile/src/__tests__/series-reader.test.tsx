@@ -125,6 +125,36 @@ describe('SeriesReaderScreen', () => {
     expect(getByText('Galata Kulesi · 2 / 3')).toBeTruthy();
   });
 
+  it('bölüm içi n/m ve son kartta sonraki bölüm ipucunu sections üzerinden hesaplar', async () => {
+    mockSeries.mockResolvedValue(
+      detail({
+        isFree: true,
+        cardCount: 5,
+        sections: [
+          { title: 'Giriş', firstPosition: 1, cardCount: 3 },
+          { title: 'Tarihçe', firstPosition: 4, cardCount: 1 },
+          { title: 'Sonrası', firstPosition: 5, cardCount: 1 },
+        ],
+      }),
+    );
+    mockCards.mockResolvedValue(
+      [1, 2, 3, 4, 5].map((position) => ({
+        position,
+        sectionTitle: position <= 3 ? 'Giriş' : position === 4 ? 'Tarihçe' : 'Sonrası',
+        body: `Gövde ${position}`,
+      })),
+    );
+    const { findByTestId, getByText, queryByText, getAllByTestId } = render(<SeriesReaderScreen />);
+    await findByTestId('series-reader');
+    expect(getByText('GİRİŞ · 1/3')).toBeTruthy();
+    expect(getByText('GİRİŞ · 3/3')).toBeTruthy();
+    expect(queryByText(/TARİHÇE/)?.props.children).toBe('TARİHÇE');
+    // Yalnız bölümün son kartlarında ipucu: kart 3 (→ Tarihçe) ve kart 4 (→ Sonrası); son bölümde yok.
+    expect(getAllByTestId('series-next-section')).toHaveLength(2);
+    expect(getByText('Tarihçe ↓')).toBeTruthy();
+    expect(getByText('Sonrası ↓')).toBeTruthy();
+  });
+
   it('?from= konumundan açılır', async () => {
     mockParams = { slug: 'galata-kulesi', from: '3' };
     const { findByText } = render(<SeriesReaderScreen />);
