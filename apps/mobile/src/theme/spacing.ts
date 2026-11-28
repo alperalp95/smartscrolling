@@ -34,3 +34,17 @@ export const share = {
   glowSize: 280,
   glowOpacity: 0.3,
 } as const;
+
+// Akıştaki seri tanıtım kartı ölçüleri (dp). Kapağın arkasında iki kart silueti görünür:
+// yakın olan daha belirgin, uzak olan dar ve soluktur. Opaklıklar 0 (yok) - 1 (tam) arasıdır.
+export const teaser = {
+  // Kapak görselinin yüksekliği.
+  coverHeight: 256,
+  // Yakın siluetin kapağın üstünden aşağı kayması ve görünürlüğü.
+  ghostNearTop: 8,
+  ghostNearOpacity: 0.8,
+  // Uzak siluetin kayması, yanlardan içeri girintisi ve görünürlüğü.
+  ghostFarTop: 16,
+  ghostFarInset: 24,
+  ghostFarOpacity: 0.5,
+} as const;

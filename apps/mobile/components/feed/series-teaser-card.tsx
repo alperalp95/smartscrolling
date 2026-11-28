@@ -8,7 +8,7 @@ import {
   markSeriesTeaserSeen,
   planSeriesTeasers,
 } from '../../src/lib/seriesTeaser';
-import { colors, radius, space, type } from '../../src/theme';
+import { colors, radius, space, teaser, type } from '../../src/theme';
 import type { SeriesSummary } from '../../src/types';
 import { MINUTES_PER_CARD } from '../series/series-hero';
 import { Chip } from '../ui/chip';
@@ -20,14 +20,6 @@ import { FEED_TOP_BAR_HEIGHT } from './feed-top-bar';
 const SUMMARY_MAX_CHARS = 240;
 // Tanıtımdaki düğme serinin kaçıncı kartından açar (1. kart kapakta tanıtıldı).
 const TEASER_START_POSITION = 2;
-// Kapak yüksekliği (taslak bölüm 3).
-const COVER_HEIGHT = space.xxxl * 8;
-// Kapağın arkasındaki iki kart silueti: yakın olan daha belirgin, uzak olan dar ve soluk.
-const GHOST_NEAR_TOP = space.sm;
-const GHOST_FAR_TOP = space.lg;
-const GHOST_FAR_INSET = space.xxl;
-const GHOST_NEAR_OPACITY = 0.8;
-const GHOST_FAR_OPACITY = 0.5;
 
 /** Serinin ilk paragrafı; 240 karakteri aşarsa üç noktayla biter. */
 export function teaserSummary(summary: string | null | undefined): string {
@@ -145,7 +137,7 @@ const s = StyleSheet.create({
     paddingHorizontal: space.screen,
     paddingBottom: space.lg,
   },
-  stack: { height: COVER_HEIGHT + GHOST_FAR_TOP },
+  stack: { height: teaser.coverHeight + teaser.ghostFarTop },
   ghost: {
     position: 'absolute',
     bottom: 0,
@@ -155,24 +147,24 @@ const s = StyleSheet.create({
     borderColor: colors.separator,
   },
   ghostNear: {
-    top: GHOST_NEAR_TOP,
+    top: teaser.ghostNearTop,
     left: space.md,
     right: space.md,
-    opacity: GHOST_NEAR_OPACITY,
+    opacity: teaser.ghostNearOpacity,
   },
   ghostFar: {
-    top: GHOST_FAR_TOP,
-    left: GHOST_FAR_INSET,
-    right: GHOST_FAR_INSET,
-    opacity: GHOST_FAR_OPACITY,
+    top: teaser.ghostFarTop,
+    left: teaser.ghostFarInset,
+    right: teaser.ghostFarInset,
+    opacity: teaser.ghostFarOpacity,
   },
   cover: {
-    height: COVER_HEIGHT,
+    height: teaser.coverHeight,
     borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: colors.surfaceRaised,
   },
-  media: { width: '100%', height: COVER_HEIGHT },
+  media: { width: '100%', height: teaser.coverHeight },
   chips: {
     position: 'absolute',
     top: space.sm,
