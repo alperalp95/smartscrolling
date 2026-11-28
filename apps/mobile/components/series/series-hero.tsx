@@ -45,7 +45,7 @@ export function SeriesHero({ series, progress, onPress }: SeriesHeroProps) {
       />
       {completed ? (
         <View style={s.chip} testID="series-hero-done">
-          <Chip label="✓ Tamamlandı" tone="success" />
+          <Chip label="✓ Tamamlandı" tone="success" onImage />
         </View>
       ) : series.isFree ? null : (
         <View style={s.chip}>

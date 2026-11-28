@@ -7,10 +7,12 @@ type ChipProps = {
   selected?: boolean;
   // 'success': yeşil "tamamlandı" çipi.
   tone?: 'success';
+  // Fotoğrafın üstündeki çip: zemin koyu ve opak, yazı rengi aynı kalır.
+  onImage?: boolean;
   testID?: string;
 };
 
-export function Chip({ label, onPress, selected, tone, testID }: ChipProps) {
+export function Chip({ label, onPress, selected, tone, onImage, testID }: ChipProps) {
   const success = tone === 'success';
   return (
     <TouchableOpacity
@@ -20,7 +22,12 @@ export function Chip({ label, onPress, selected, tone, testID }: ChipProps) {
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityState={{ selected: !!selected }}
       testID={testID}
-      style={[s.chip, selected && s.selected, success && s.success]}
+      style={[
+        s.chip,
+        selected && s.selected,
+        success && s.success,
+        success && onImage && s.successOnImage,
+      ]}
     >
       <Text style={[s.label, selected && s.labelSelected, success && s.successLabel]}>{label}</Text>
     </TouchableOpacity>
@@ -39,5 +46,6 @@ const s = StyleSheet.create({
   label: { ...type.chip, color: colors.textSecondary },
   labelSelected: { color: colors.text },
   success: { backgroundColor: colors.successSoft, borderColor: colors.successSoft },
+  successOnImage: { backgroundColor: colors.scrimStrong, borderColor: colors.scrimStrong },
   successLabel: { color: colors.success },
 });

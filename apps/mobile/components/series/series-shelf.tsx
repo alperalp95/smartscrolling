@@ -67,7 +67,7 @@ export function SeriesShelf({ category, items, progress, onPress }: SeriesShelfP
                 <Media uri={item.coverUrl} category={item.category ?? undefined} style={s.cover} />
                 {completed ? (
                   <View style={s.chip} testID={`series-done-${item.slug}`}>
-                    <Chip label="✓ Tamamlandı" tone="success" />
+                    <Chip label="✓ Tamamlandı" tone="success" onImage />
                   </View>
                 ) : item.isFree ? null : (
                   <View style={s.chip}>
