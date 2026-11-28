@@ -54,6 +54,67 @@ describe('SeriesHero', () => {
   });
 });
 
+describe('SeriesHero progress', () => {
+  it('shows the Tamamlandı chip when completed', () => {
+    const { getByTestId, getByText } = render(
+      <SeriesHero
+        series={make({})}
+        progress={{ seriesId: 'id1', lastPosition: 68, completedAt: '2026-11-01' }}
+        onPress={() => {}}
+      />,
+    );
+    expect(getByTestId('series-hero-done')).toBeTruthy();
+    expect(getByText('✓ Tamamlandı')).toBeTruthy();
+  });
+
+  it('shows progress line and n / N kart when started, none when untouched', () => {
+    const started = render(
+      <SeriesHero
+        series={make({})}
+        progress={{ seriesId: 'id1', lastPosition: 17, completedAt: null }}
+        onPress={() => {}}
+      />,
+    );
+    expect(started.getByTestId('series-hero-progress')).toBeTruthy();
+    expect(started.getByText('17 / 68 kart · ~68 dk')).toBeTruthy();
+    const fresh = render(<SeriesHero series={make({})} onPress={() => {}} />);
+    expect(fresh.queryByTestId('series-hero-progress')).toBeNull();
+    expect(fresh.queryByTestId('series-hero-done')).toBeNull();
+  });
+});
+
+describe('SeriesShelf progress', () => {
+  const items = [
+    make({ id: 'a', slug: 'lale-devri', title: 'Lale Devri', cardCount: 43, isFree: true }),
+    make({ id: 'b', slug: 'galata-kulesi', title: 'Galata Kulesi', cardCount: 84, isFree: true }),
+    make({ id: 'c', slug: 'yerkure', title: 'Yerküre', cardCount: 136 }),
+  ];
+  const progress = {
+    a: { seriesId: 'a', lastPosition: 17, completedAt: null },
+    b: { seriesId: 'b', lastPosition: 84, completedAt: '2026-11-01' },
+  };
+
+  it('completed gets chip, started gets line and n / N kart, untouched gets neither', () => {
+    const { getByTestId, queryByTestId, getByText } = render(
+      <SeriesShelf category="📜 TARİH" items={items} progress={progress} onPress={() => {}} />,
+    );
+    expect(getByTestId('series-done-galata-kulesi')).toBeTruthy();
+    expect(queryByTestId('series-progress-galata-kulesi')).toBeNull();
+    expect(getByTestId('series-progress-lale-devri')).toBeTruthy();
+    expect(getByText('17 / 43 kart')).toBeTruthy();
+    expect(queryByTestId('series-done-yerkure')).toBeNull();
+    expect(queryByTestId('series-progress-yerkure')).toBeNull();
+    expect(getByText('136 kart')).toBeTruthy();
+  });
+
+  it('keeps PREMIUM chip on a premium series that is not completed', () => {
+    const { getAllByText } = render(
+      <SeriesShelf category="📜 TARİH" items={items} progress={progress} onPress={() => {}} />,
+    );
+    expect(getAllByText('PREMIUM')).toHaveLength(1);
+  });
+});
+
 describe('SeriesShelf', () => {
   it('draws a shelf with items, chip only on premium, and opens an item', () => {
     const onPress = jest.fn();

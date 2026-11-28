@@ -22,9 +22,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CardAskSheet } from '../../components/card-ask-sheet';
 import { FactPost, type FactReviewVerdict } from '../../components/feed/fact-post';
 import { FEED_TOP_BAR_HEIGHT, FeedTopBar } from '../../components/feed/feed-top-bar';
+import { SeriesTeaserCard, loadSeriesTeaserSlots } from '../../components/feed/series-teaser-card';
 import { PremiumUpsellCard } from '../../components/premium-upsell-card';
 import { Button } from '../../components/ui/button';
 import { IconButton } from '../../components/ui/icon-button';
+import { SERIES_TEASER_CONFIG } from '../../src/config/seriesTeaser';
 import { getGoogleMobileAdsBannerComponents } from '../../src/lib/adMob';
 import {
   type FeedAdSlot,
@@ -38,6 +40,7 @@ import { isBadFactMediaUrl } from '../../src/lib/factVisuals';
 import { reconcileDailyLocalReminder } from '../../src/lib/notifications';
 import { promptForPremium } from '../../src/lib/premiumPrompt';
 import { markFactSeen } from '../../src/lib/seenFacts';
+import { type FeedSeriesSlot, insertSeriesSlots } from '../../src/lib/seriesTeaser';
 import { fetchActivitySummary, incrementDailyActivity } from '../../src/lib/userActivity';
 import { useAuthStore } from '../../src/store/authStore';
 import { useFeedStore } from '../../src/store/feedStore';
@@ -74,10 +77,14 @@ type FactReviewExportEntry = FactReviewDraft & {
   visualKey: string | null;
 };
 
-type FeedListItem = FactType | FeedAdSlot;
+type FeedListItem = FactType | FeedAdSlot | FeedSeriesSlot;
 
 function isFeedAdSlot(item: FeedListItem): item is FeedAdSlot {
   return 'slotType' in item && item.slotType === 'ad';
+}
+
+function isFeedSeriesSlot(item: FeedListItem): item is FeedSeriesSlot {
+  return 'slotType' in item && item.slotType === 'series';
 }
 
 const REVIEW_TAG_OPTIONS: Array<{ value: FactReviewTag; label: string }> = [
@@ -225,13 +232,31 @@ export default function FeedScreen() {
   const dailyGoal = useOnboardingStore((state) => state.dailyGoal);
   const notificationsEnabled = useOnboardingStore((state) => state.notificationsEnabled);
   const notificationTime = useOnboardingStore((state) => state.notificationTime);
-  const feedItems = insertFeedAdSlots(
-    orderedFacts,
-    getAdAudience({
-      hasPremium,
-      isAuthenticated: Boolean(user),
-    }),
-  );
+  const [seriesSlots, setSeriesSlots] = useState<FeedSeriesSlot[]>([]);
+  const [activeSeriesSlotId, setActiveSeriesSlotId] = useState<string | null>(null);
+  const feedItems = insertSeriesSlots(
+    insertFeedAdSlots(
+      orderedFacts,
+      getAdAudience({
+        hasPremium,
+        isAuthenticated: Boolean(user),
+      }),
+    ),
+    seriesSlots,
+    SERIES_TEASER_CONFIG,
+  ) as FeedListItem[];
+
+  // Seri tanıtım kuyruğu akış açılırken bir kez kurulur; hata olursa tanıtımsız devam.
+  const userId = user?.id ?? null;
+  useEffect(() => {
+    let cancelled = false;
+    void loadSeriesTeaserSlots(userId).then((slots) => {
+      if (!cancelled) setSeriesSlots(slots);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   useEffect(() => {
     void fetchFacts({ reset: true });
@@ -298,7 +323,9 @@ export default function FeedScreen() {
       const firstViewableItem = viewableItems[0];
       const firstItem = firstViewableItem?.item;
 
-      if (firstItem && isFeedAdSlot(firstItem)) {
+      setActiveSeriesSlotId(firstItem && isFeedSeriesSlot(firstItem) ? firstItem.id : null);
+
+      if (firstItem && (isFeedAdSlot(firstItem) || isFeedSeriesSlot(firstItem))) {
         setActiveFactId(null);
       } else if (firstItem?.id) {
         setActiveFactId(firstItem.id);
@@ -585,6 +612,23 @@ export default function FeedScreen() {
                     slot={item}
                     topInset={insets.top}
                     onNext={() => handleFinish(index, feedItems.length)}
+                  />
+                );
+              }
+
+              if (isFeedSeriesSlot(item)) {
+                return (
+                  <SeriesTeaserCard
+                    series={item.series}
+                    mode={item.mode}
+                    lastPosition={item.lastPosition}
+                    height={listHeight}
+                    topInset={insets.top}
+                    isActive={activeSeriesSlotId === item.id}
+                    hasPremium={hasPremium}
+                    onOpen={(slug, from) =>
+                      router.push(`/series/${slug}/read?from=${from}` as never)
+                    }
                   />
                 );
               }
